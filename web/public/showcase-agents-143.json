@@ -6,10 +6,10 @@
  "factory": "0x0342d29055d77ba155c50233f550539E3029BA6a",
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T16:59:01.960Z",
- "updatedAt": "2026-10-13T21:16:49.230Z",
+ "updatedAt": "2026-10-13T21:44:28.902Z",
  "totals": {
   "allowed": 108,
-  "blocked": 43,
+  "blocked": 44,
   "ownerTxs": 31
  },
  "agents": [
@@ -55,7 +55,7 @@
    "agent": "0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E",
    "perActionCapMON": "0.01",
    "allowed": 0,
-   "blocked": 43
+   "blocked": 44
   },
   {
    "id": "dca1",
@@ -70,6 +70,15 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-13T21:44:28.901Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
+   "tx": "0x6b532208762f64a87c8c384c760d5f353027759104130d33c340fc39cc8c53a3"
+  },
   {
    "ts": "2026-10-13T21:16:49.230Z",
    "persona": "payroll",
@@ -552,14 +561,6 @@
    "label": "Staker unwraps 0.0145 WMON → MON",
    "status": "allowed",
    "tx": "0x949a368274acbc2bc7acd448ff45dd9a305c7b6616cfaf74c7d3a6dc65bc8121"
-  },
-  {
-   "ts": "2026-10-13T16:29:03.417Z",
-   "persona": "staker",
-   "actor": "owner",
-   "label": "Top up Staker agent gas",
-   "status": "owner",
-   "tx": "0xce1a2351b5a6745ca8ad8b1f3f16f2a9aa1424fa63ddd63c67e2877277e4a813"
   }
  ],
  "status": "running (GitHub Actions)"
