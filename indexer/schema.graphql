@@ -1,3 +1,37 @@
-type Execution { id: ID! requestId: String! recipient: String! amount: BigInt! totalSpent: BigInt! blockNumber: Int! txHash: String! }
-type Recipient { id: ID! allowed: Boolean! }
-type PolicyState { id: ID! budget: BigInt perRequestLimit: BigInt paused: Boolean totalSpent: BigInt! executions: Int! }
+"One successful PolicyPilot.execute() payout (Executed event)."
+type Execution {
+  id: ID!
+  requestId: String!
+  recipient: String!
+  amount: BigInt!
+  totalSpent: BigInt!
+  blockNumber: Int!
+  timestamp: Int!
+  txHash: String!
+}
+"Current allowlist status per recipient (RecipientSet)."
+type Recipient {
+  id: ID!
+  allowed: Boolean!
+  updatedBlock: Int!
+}
+"Aggregated current policy state for the indexed contract (id = contract address)."
+type PolicyState {
+  id: ID!
+  budget: BigInt
+  perRequestLimit: BigInt
+  paused: Boolean
+  totalSpent: BigInt!
+  executions: Int!
+  lastBlock: Int!
+}
+"Append-only audit log of every indexed policy event."
+type PolicyEvent {
+  id: ID!
+  kind: String!
+  detail: String!
+  blockNumber: Int!
+  timestamp: Int!
+  txHash: String!
+  logIndex: Int!
+}

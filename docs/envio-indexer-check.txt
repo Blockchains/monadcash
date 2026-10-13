@@ -1,0 +1,121 @@
+PolicyPilot Envio HyperIndex check — 2026-10-13 03:48:55 BST
+envio envio 3.14.0 | node v22.23.3 | Hasura v2.43.0 + Postgres 18.3 (docker, local)
+Source: Monad testnet public RPC https://testnet-rpc.monad.xyz/ (chain 10143), RPC sync, no HyperSync token, no Envio account
+Contract 0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E from block 70561954
+
+envio start log errors (current run): 0
+
+== GraphQL query (http://localhost:8080/v1/graphql, public role) ==
+{
+  "data": {
+    "PolicyState": [
+      {
+        "id": "0x583fdb6441a9bce517cf5bb15b9db7340bb57d4e",
+        "budget": "250000000000000000000",
+        "perRequestLimit": "100000000000000000000",
+        "paused": false,
+        "totalSpent": "200000000000000000000",
+        "executions": 2,
+        "lastBlock": 70562177
+      }
+    ],
+    "Execution": [
+      {
+        "requestId": "0x5521a70e306e4cf143fc3b54739d4053a40cc9765dbc2f1d2c86a2ea55e5dfe0",
+        "recipient": "0x77962b77c30762baf6996ee8a517826d8eed533b",
+        "amount": "100000000000000000000",
+        "totalSpent": "100000000000000000000",
+        "blockNumber": 70562052,
+        "txHash": "0x8e799909dd7155cac966ff15e14eb72d7cbaedc8bc8b58952f5392ed8b260305"
+      },
+      {
+        "requestId": "0x35258e700dd4b075d79ca8d57993c2c3b049216202a8a1fcd8aa652fb4135b6d",
+        "recipient": "0xe7e3e8b6237160fefe1ee1408f76969be8ea8895",
+        "amount": "100000000000000000000",
+        "totalSpent": "200000000000000000000",
+        "blockNumber": 70562068,
+        "txHash": "0x593705cc5d3bbcd6932cc37574e73bd97937ccbeca76bb151c00788ec6e451c3"
+      }
+    ],
+    "Recipient": [
+      {
+        "id": "0x77962b77c30762baf6996ee8a517826d8eed533b",
+        "allowed": true,
+        "updatedBlock": 70561958
+      },
+      {
+        "id": "0xe7e3e8b6237160fefe1ee1408f76969be8ea8895",
+        "allowed": true,
+        "updatedBlock": 70561961
+      }
+    ],
+    "PolicyEvent": [
+      {
+        "kind": "PerRequestLimitSet",
+        "detail": "100000000000000000000",
+        "blockNumber": 70561954,
+        "txHash": "0x7cefb14e4507381be84545c7a1f9f6a3210f07751fed127f54fe372565b708ca"
+      },
+      {
+        "kind": "BudgetSet",
+        "detail": "250000000000000000000",
+        "blockNumber": 70561954,
+        "txHash": "0x7cefb14e4507381be84545c7a1f9f6a3210f07751fed127f54fe372565b708ca"
+      },
+      {
+        "kind": "RecipientSet",
+        "detail": "0x77962b77c30762baf6996ee8a517826d8eed533b true",
+        "blockNumber": 70561958,
+        "txHash": "0x27a19f99c7fb9e259480cc9db040484cb058af3f66ab0cb0a5a05f1411c3594c"
+      },
+      {
+        "kind": "RecipientSet",
+        "detail": "0xe7e3e8b6237160fefe1ee1408f76969be8ea8895 true",
+        "blockNumber": 70561961,
+        "txHash": "0x888b15126e16c0f74b698a10347bf3c040f58b4cf661f9f11483b41890e2d06e"
+      },
+      {
+        "kind": "Executed",
+        "detail": "0x77962b77c30762BAF6996eE8a517826d8eeD533b 100000000000000000000",
+        "blockNumber": 70562052,
+        "txHash": "0x8e799909dd7155cac966ff15e14eb72d7cbaedc8bc8b58952f5392ed8b260305"
+      },
+      {
+        "kind": "Executed",
+        "detail": "0xE7E3E8B6237160fEFe1EE1408f76969BE8eA8895 100000000000000000000",
+        "blockNumber": 70562068,
+        "txHash": "0x593705cc5d3bbcd6932cc37574e73bd97937ccbeca76bb151c00788ec6e451c3"
+      },
+      {
+        "kind": "PausedSet",
+        "detail": "true",
+        "blockNumber": 70562145,
+        "txHash": "0x195ac238401bf6fd8681fe6591bc976e037bd5850aa5331759b82750939fcfa7"
+      },
+      {
+        "kind": "PausedSet",
+        "detail": "false",
+        "blockNumber": 70562177,
+        "txHash": "0x919240de6de013e59d3038b7a6f9493e5e065bdf9d0c78debb16e4f666dffc26"
+      }
+    ],
+    "chain_metadata": [
+      {
+        "chain_id": 10143,
+        "block_height": 70567779,
+        "latest_processed_block": 70567779
+      }
+    ]
+  }
+}
+
+== Cross-check vs direct RPC reads (cast call) ==
+budget()(uint256) = 250000000000000000000 [2.5e20]
+perRequestLimit()(uint256) = 100000000000000000000 [1e20]
+totalSpent()(uint256) = 200000000000000000000 [2e20]
+paused()(bool) = false
+
+== Headless frontend test (Chrome, puppeteer-core) ==
+indexer {"src":"Envio HyperIndex GraphQL (http://localhost:8080/v1/graphql)","st":"Loaded live from https://testnet-rpc.monad.xyz/. Explorer","state":["budget=250 mUSD","perRequestLimit=100 mUSD","totalSpent=200 mUSD","remainingBudget=50 mUSD","paused=false","executions=2","indexedUpToEventBlock=70562177"],"executed":2,"auditRows":8,"demoTx":9}
+rpc {"src":"direct JSON-RPC","st":"Loaded live from https://testnet-rpc.monad.xyz/. Explorer","state":["admin=0x549D8c5D94f8ec4Ea488a0283f8EbF16b509b411","executor=0x549D8c5D94f8ec4Ea488a0283f8EbF16b509b411","asset=0xE2966C817267FC7E63362895Cf55C6cb2548b9E3","perRequestLimit=100 mUSD","budget=250 mUSD","totalSpent=200 mUSD","remainingBudget=50 mUSD","paused=false"],"executed":2,"auditRows":0,"demoTx":9}
+indexer-down {"src":"RPC fallback (indexer failed: Failed to fetch)","st":"Loaded live from https://testnet-rpc.monad.xyz/. Explorer","state":["admin=0x549D8c5D94f8ec4Ea488a0283f8EbF16b509b411","executor=0x549D8c5D94f8ec4Ea488a0283f8EbF16b509b411","asset=0xE2966C817267FC7E63362895Cf55C6cb2548b9E3","perRequestLimit=100 mUSD","budget=250 mUSD","totalSpent=200 mUSD","remainingBudget=50 mUSD","paused=false"],"executed":2,"auditRows":0,"demoTx":9}

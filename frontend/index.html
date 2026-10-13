@@ -1,9 +1,11 @@
 <!doctype html><html><head><meta charset="utf-8"><title>PolicyPilot – read-only status (Monad testnet)</title>
 <style>body{font:14px system-ui;max-width:900px;margin:2rem auto}td,th{padding:2px 8px;text-align:left}input{width:420px}.ok{color:#080}.bad{color:#b00}</style></head>
-<body><h1>PolicyPilot (read-only)</h1><p>No wallet connection, no writes. Reads public state and receipts over JSON-RPC. Default: live <b>Monad testnet</b> deployment (chain 10143). Test token only, no real value.</p>
-RPC <input id="rpc" value="https://testnet-rpc.monad.xyz/"><br>Contract <input id="addr" value="0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E"><button onclick="go()">Load</button>
+<body><h1>PolicyPilot (read-only)</h1><p>No wallet connection, no writes. Reads public state and receipts over JSON-RPC, or (optional) from an Envio HyperIndex GraphQL endpoint via <code>?indexer=&lt;url&gt;</code>. Default: live <b>Monad testnet</b> deployment (chain 10143). Test token only, no real value.</p>
+RPC <input id="rpc" value="https://testnet-rpc.monad.xyz/"><br>Contract <input id="addr" value="0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E"><br>Envio indexer GraphQL (optional) <input id="idx" placeholder="e.g. http://localhost:8080/v1/graphql"><button onclick="go()">Load</button>
+<p>Data source: <b id="src">…</b></p>
 <h2>State</h2><table id="t"></table>
 <h2>Executed events</h2><table id="ev"></table>
+<h2>Policy audit log (Envio indexer mode only)</h2><table id="log"></table>
 <h2>Demo transactions (incl. reverted rejections)</h2><table id="tx"></table>
 <p id="st"></p>
 <script type="module">
@@ -15,18 +17,41 @@ window.go = async () => {
   const st=document.getElementById('st'); st.textContent='loading…';
   try {
   const c = createPublicClient({ transport: http(rpc.value) }); const address = addr.value; const t = document.getElementById('t'); t.innerHTML='';
-  for (const f of abi.filter(x=>x.type==='function').map(x=>x.name)) { const v = await c.readContract({ address, abi, functionName: f }); t.insertAdjacentHTML('beforeend', `<tr><td>${f}</td><td id="v-${f}">${fmt(v)}</td></tr>`); }
   let dep=null; try{ dep=await (await fetch('deployment.json')).json(); }catch{}
-  const ev=document.getElementById('ev'), tx=document.getElementById('tx'); ev.innerHTML='<tr><th>requestId</th><th>recipient</th><th>amount</th><th>totalSpent</th><th>tx</th></tr>'; tx.innerHTML='';
+  const ev=document.getElementById('ev'), tx=document.getElementById('tx'), lg=document.getElementById('log'); ev.innerHTML='<tr><th>requestId</th><th>recipient</th><th>amount</th><th>totalSpent</th><th>tx</th></tr>'; tx.innerHTML=''; lg.innerHTML='';
+  const idxUrl = idx.value || (dep && dep.indexerUrl) || '';
+  let indexed = false;
+  if (idxUrl) {
+    try {
+      const q = `query($a:String!){ PolicyState(where:{id:{_eq:$a}}){ budget perRequestLimit paused totalSpent executions lastBlock }
+        Execution(order_by:{blockNumber:asc}){ requestId recipient amount totalSpent blockNumber txHash }
+        PolicyEvent(order_by:[{blockNumber:asc},{logIndex:asc}]){ kind detail blockNumber txHash } }`;
+      const r = await fetch(idxUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({query:q,variables:{a:address.toLowerCase()}})});
+      const j = await r.json(); if (j.errors) throw new Error(j.errors[0].message);
+      const s = j.data.PolicyState[0]; if (!s) throw new Error('indexer has no state for this contract');
+      const B=x=>x==null?'n/a':fmt(BigInt(x));
+      const rem = s.budget!=null ? BigInt(s.budget)-BigInt(s.totalSpent) : null;
+      for (const [k,v] of [['budget',B(s.budget)],['perRequestLimit',B(s.perRequestLimit)],['totalSpent',B(s.totalSpent)],['remainingBudget',rem==null?'n/a':fmt(rem)],['paused',String(s.paused)],['executions',s.executions],['indexedUpToEventBlock',s.lastBlock]])
+        t.insertAdjacentHTML('beforeend', `<tr><td>${k}</td><td id="v-${k}">${v}</td></tr>`);
+      for (const e of j.data.Execution) ev.insertAdjacentHTML('beforeend', `<tr class="event"><td>${e.requestId.slice(0,12)}…</td><td>${e.recipient}</td><td>${B(e.amount)}</td><td>${B(e.totalSpent)}</td><td><a href="${EXP}/tx/${e.txHash}">tx</a></td></tr>`);
+      lg.innerHTML='<tr><th>block</th><th>event</th><th>detail</th><th>tx</th></tr>';
+      for (const e of j.data.PolicyEvent) lg.insertAdjacentHTML('beforeend', `<tr class="logrow"><td>${e.blockNumber}</td><td>${e.kind}</td><td>${e.detail}</td><td><a href="${EXP}/tx/${e.txHash}">${e.txHash.slice(0,12)}…</a></td></tr>`);
+      indexed = true; src.textContent = `Envio HyperIndex GraphQL (${idxUrl})`;
+    } catch (e) { src.textContent = `RPC fallback (indexer failed: ${e.message})`; t.innerHTML=''; ev.innerHTML='<tr><th>requestId</th><th>recipient</th><th>amount</th><th>totalSpent</th><th>tx</th></tr>'; lg.innerHTML=''; }
+  }
+  if (!indexed) {
+    if (!idxUrl) src.textContent = 'direct JSON-RPC';
+    for (const f of abi.filter(x=>x.type==='function').map(x=>x.name)) { const v = await c.readContract({ address, abi, functionName: f }); t.insertAdjacentHTML('beforeend', `<tr><td>${f}</td><td id="v-${f}">${fmt(v)}</td></tr>`); }
+  }
   if (dep && dep.contracts.PolicyPilot.address.toLowerCase()===address.toLowerCase()) {
     for (const d of dep.demoTxs) {
       const r = await c.getTransactionReceipt({ hash: d.tx });
       tx.insertAdjacentHTML('beforeend', `<tr><td>${d.label}</td><td class="${r.status==='success'?'ok':'bad'}">${r.status}</td><td>block ${r.blockNumber}</td><td><a href="${EXP}/tx/${d.tx}">${d.tx.slice(0,12)}…</a></td><td>${d.eth_call_preflight}</td></tr>`);
-      for (const l of r.logs) { if (l.address.toLowerCase()!==address.toLowerCase()) continue; try { const e=decodeEventLog({abi,data:l.data,topics:l.topics}); if(e.eventName==='Executed') ev.insertAdjacentHTML('beforeend', `<tr class="event"><td>${e.args.requestId.slice(0,12)}…</td><td>${e.args.recipient}</td><td>${fmt(e.args.amount)}</td><td>${fmt(e.args.totalSpent)}</td><td><a href="${EXP}/tx/${d.tx}">tx</a></td></tr>`);}catch{} }
+      for (const l of r.logs) { if (l.address.toLowerCase()!==address.toLowerCase()) continue; try { const e=decodeEventLog({abi,data:l.data,topics:l.topics}); if(e.eventName==='Executed' && !indexed) ev.insertAdjacentHTML('beforeend', `<tr class="event"><td>${e.args.requestId.slice(0,12)}…</td><td>${e.args.recipient}</td><td>${fmt(e.args.amount)}</td><td>${fmt(e.args.totalSpent)}</td><td><a href="${EXP}/tx/${d.tx}">tx</a></td></tr>`);}catch{} }
     }
   }
   st.innerHTML=`Loaded live from ${rpc.value}. <a href="${EXP}/address/${address}">Explorer</a>`;
   } catch(e){ st.textContent='Error: '+e.message; }
 };
-const q=new URLSearchParams(location.search); if(q.get('rpc')) rpc.value=q.get('rpc'); if(q.get('addr')) addr.value=q.get('addr'); go();
+const q=new URLSearchParams(location.search); if(q.get('rpc')) rpc.value=q.get('rpc'); if(q.get('addr')) addr.value=q.get('addr'); if(q.get('indexer')) idx.value=q.get('indexer'); go();
 </script></body></html>

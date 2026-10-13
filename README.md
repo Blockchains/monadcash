@@ -7,7 +7,8 @@ Status: IMPLEMENTED + TESTED locally (Foundry, anvil) and DEPLOYED to Monad test
 - `src/PolicyPilot.sol` non-upgradeable contract (OpenZeppelin v5.7.0 SafeERC20). `src/MockToken.sol` test-only.
 - `test/PolicyPilot.t.sol` 14 unit + 2 fuzz + 3 invariants (1 invariant suite).
 - `executor/` viem deterministic executor + `e2e-anvil.mjs` local demo (writes evidence JSON).
-- `frontend/index.html` static read-only viewer.
+- `frontend/index.html` static read-only viewer (RPC mode, or Envio indexer mode via `?indexer=`).
+- `indexer/` Envio HyperIndex indexer for all PolicyPilot events (local).
 Run: `forge test -vv`; `anvil &`; `cd executor && node e2e-anvil.mjs`.
 Deploy yourself: see [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
@@ -30,3 +31,9 @@ Deploy yourself: see [`docs/DEPLOY.md`](docs/DEPLOY.md).
 | unpause | success | [0x919240de6de0…](https://testnet.monadexplorer.com/tx/0x919240de6de013e59d3038b7a6f9493e5e065bdf9d0c78debb16e4f666dffc26) |
 
 Rejections are real on-chain **reverted** transactions (sent with a fixed gas limit after an `eth_call` preflight captured the revert reason).
+
+## Envio HyperIndex indexer (optional data source)
+`indexer/` is an Envio HyperIndex project that indexes every PolicyPilot event on Monad testnet (PerRequestLimitSet, BudgetSet, RecipientSet, Executed, PausedSet) into `PolicyState`, `Execution`, `Recipient` and an append-only `PolicyEvent` audit log, served over GraphQL.
+The viewer reads state, execution history and the audit log from it when opened with `?indexer=<graphql url>` (or `indexerUrl` in `frontend/deployment.json`), and falls back to direct RPC otherwise or if the indexer is unreachable.
+- Verified against the live contract: all 8 events indexed; indexer values match direct `cast call` reads (budget 250, limit 100, totalSpent 200 mUSD, paused false). Evidence: [`docs/envio-indexer-check.txt`](docs/envio-indexer-check.txt). Video (45 s): [envio-demo.mp4](https://blockchains.github.io/policypilot-monad/envio-demo.mp4).
+- **Local only**: not hosted (no Envio Cloud), so the public site runs in RPC mode. Uses the public Monad RPC as source, so no HyperSync token or Envio account is needed. Run: [`indexer/README.md`](indexer/README.md).
