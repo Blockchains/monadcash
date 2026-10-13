@@ -1,7 +1,7 @@
 'use client';
 import { createPublicClient, decodeErrorResult, decodeFunctionData, encodeFunctionData, formatEther, http, keccak256, parseAbi, toHex, type Abi, type Address, type Hex, type PublicClient } from 'viem';
 import ABI from './vault-abi.json';
-import { LIVE, QUOTERS, SERVICES, TOKENS, type Service, type TokenSym } from './services';
+import { KURU, LIVE, QUOTERS, SERVICES, TOKENS, type Service, type TokenSym } from './services';
 
 export const factoryAbi = ABI.factory as Abi; export const vaultAbi = ABI.vault as Abi;
 const errAbi = (ABI.vault as any[]).filter(x => x.type === 'error') as Abi;
@@ -90,6 +90,7 @@ const wmonAbi = parseAbi(['function deposit() payable', 'function withdraw(uint2
 const kintsuAbi = parseAbi(['function deposit(uint96 minShares,address receiver) payable returns (uint96)']);
 const aprAbi = parseAbi(['function deposit(uint256 assets,address receiver) payable returns (uint256)']);
 const magmaAbi = parseAbi(['function depositMON(address receiver,uint256 referralId) payable']);
+const kuruAbi = parseAbi(['function anyToAnySwap(address[] markets,bool[] isBuy,bool[] nativeSend,address debitToken,address creditToken,uint256 amount,uint256 minAmountOut) payable returns (uint256)']);
 const NONE = { approveToken: ZERO, approveAmount: 0n, outToken: ZERO, minOut: 0n };
 const svc = (id: string) => SERVICES.find(s => s.id === id)! as Service & { address: Address };
 export const vcall = (v: Address, fn: string, args: readonly unknown[]) => ({ to: v, data: encodeFunctionData({ abi: vaultAbi, functionName: fn as any, args: args as any }) });
@@ -110,6 +111,13 @@ export async function buildAction(pub: PublicClient, kind: string, vault: Addres
     case 'wmon': return call('wmon', amount, encodeFunctionData({ abi: wmonAbi, functionName: 'deposit' }), { outToken: TOKENS.WMON.address, minOut: amount }, `Agent wraps ${formatEther(amount)} MON → WMON`);
     case 'uniswap': return swap('uniswap');
     case 'pancake': return swap('pancake');
+    case 'kuru': {
+      const args = [[KURU.monUsdc], [false], [true], ZERO, TOKENS.USDC.address, amount, 1n] as const;
+      const sim = await pub.simulateContract({ account: vault, address: KURU.router, abi: kuruAbi, functionName: 'anyToAnySwap', args: args as any, value: amount }); // exact output, simulated from the vault
+      const minOut = ((sim.result as bigint) * 97n) / 100n;
+      const data = encodeFunctionData({ abi: kuruAbi, functionName: 'anyToAnySwap', args: [[KURU.monUsdc], [false], [true], ZERO, TOKENS.USDC.address, amount, minOut] });
+      return call('kuru', amount, data, { outToken: TOKENS.USDC.address, minOut }, `Agent swaps ${formatEther(amount)} MON → USDC on Kuru`);
+    }
     case 'kintsu': return call('kintsu', amount, encodeFunctionData({ abi: kintsuAbi, functionName: 'deposit', args: [1n, vault] }), { outToken: TOKENS.sMON.address, minOut: 1n }, `Agent stakes ${formatEther(amount)} MON → sMON (Kintsu)`);
     case 'apriori': return call('apriori', amount, encodeFunctionData({ abi: aprAbi, functionName: 'deposit', args: [amount, vault] }), { outToken: TOKENS.aprMON.address, minOut: 1n }, `Agent stakes ${formatEther(amount)} MON → aprMON (aPriori)`);
     case 'magma': return call('magma', amount, encodeFunctionData({ abi: magmaAbi, functionName: 'depositMON', args: [vault, 0n] }), { outToken: TOKENS.gMON.address, minOut: 1n }, `Agent stakes ${formatEther(amount)} MON → gMON (Magma)`);

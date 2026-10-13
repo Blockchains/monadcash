@@ -46,12 +46,16 @@ export const SERVICES: Service[] = [
     why: 'Morpho is deployed on Monad, but none of its Monad vaults are marked "listed" in Morpho’s official API yet. We will enable lending once there is a listed vault and a fork test.' },
   { id: 'usdcpay', name: 'USDC payouts', verb: 'Pay', category: 'Stablecoin', icon: '💵', status: 'soon', blurb: 'Pay invoices in dollars.', novice: 'Pay people in a stablecoin.',
     why: 'The vault blocks ERC-20 transfer() by design so an agent can never move tokens out. Allowlisted USDC payouts need a new vault version, which will be audited first.' },
-  { id: 'perps', name: 'Perps (Kuru)', verb: 'Trade', category: 'Perps', icon: '📈', status: 'soon', blurb: 'Order-book trading.', novice: 'Advanced trading with strict limits.',
-    why: 'We could not find an official mainnet router address in Kuru’s docs, so it is not enabled.' },
+  { id: 'kuru', name: 'Kuru', verb: 'Swap', category: 'Swap', icon: '📗', status: 'live', blurb: 'Swap MON → USDC on Kuru’s on-chain order book.', novice: 'A Monad-native order-book exchange, as a third place to get a price.',
+    address: '0xd651346d7c789536ebf06dc72aE3C8502cd695CC', source: 'https://docs.kuru.io/contracts/Contract-addresses',
+    rules: [{ fn: 'anyToAnySwap(address[],bool[],bool[],address,address,uint256,uint256)', selector: '0xffa5210a', recipientWord: 255 }], forkTest: 'test_fork_kuru_mon_to_usdc' },
+  { id: 'perps', name: 'Perps', verb: 'Trade', category: 'Perps', icon: '📈', status: 'soon', blurb: 'Leveraged trading.', novice: 'Advanced trading with strict limits.',
+    why: 'Kuru (enabled above) is spot only. We have not verified and fork-tested an official perps contract on Monad mainnet yet.' },
   { id: 'bridge', name: 'Bridge', verb: 'Bridge', category: 'Bridge', icon: '🌉', status: 'soon', blurb: 'Move funds to other chains.', novice: 'Move funds between chains.',
     why: 'A bridge sends funds to another chain, so the vault can’t force the output back to itself. This needs a new policy design first.' },
   { id: 'nft', name: 'NFTs (Magic Eden)', verb: 'Mint', category: 'NFT', icon: '🖼️', status: 'soon', blurb: 'Mint or buy NFTs.', novice: 'Let your agent collect for you.',
     why: 'The marketplace contracts are not verified from official docs yet, and NFT outputs need ERC-721 receipt checks.' },
 ];
 export const LIVE = SERVICES.filter(s => s.status === 'live');
+export const KURU = { router: '0xd651346d7c789536ebf06dc72aE3C8502cd695CC' as Address, monUsdc: '0x065C9d28E428A0db40191a54d33d5b7c71a9C394' as Address, source: 'https://docs.kuru.io/contracts/Contract-addresses' };
 export const QUOTERS = { uniswap: { address: '0x661e93cca42afacb172121ef892830ca3b70f08d' as Address, fee: 3000 }, pancake: { address: '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997' as Address, fee: 500 } };
