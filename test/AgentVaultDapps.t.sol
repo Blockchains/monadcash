@@ -260,3 +260,31 @@ contract AgentVaultForkV3Test is Test {
         v.executeCall("m2", GMON, 0.1 ether, abi.encodeCall(IMagma.depositMON, (agent, 0)), _o(address(0), 0, address(0), 0));
     }
 }
+
+interface IKuruRouter { function anyToAnySwap(address[] calldata m, bool[] calldata isBuy, bool[] calldata nativeSend, address debit, address credit, uint256 amount, uint256 minOut) external payable returns (uint256); }
+
+/// Kuru (orderbook DEX) fork test. Addresses: https://docs.kuru.io/contracts/Contract-addresses (Mainnet)
+contract AgentVaultForkKuruTest is Test {
+    address constant USDC = 0x754704Bc059F8C67012fEd69BC8A327a5aafb603;
+    address constant KURU_ROUTER = 0xd651346d7c789536ebf06dc72aE3C8502cd695CC; // Router (market factory)
+    address constant MON_USDC = 0x065C9d28E428A0db40191a54d33d5b7c71a9C394;    // official MON-USDC market
+    AgentVaultFactory f; AgentVault v; address owner = address(0xA11CE); address agent = address(0xA6E7); bool on;
+    function setUp() public {
+        if (block.chainid != 143) return; on = true;
+        f = new AgentVaultFactory(1 ether, 5 ether); vm.deal(owner, 5 ether);
+        CallRuleInit[] memory rules = new CallRuleInit[](1); rules[0] = CallRuleInit(KURU_ROUTER, IKuruRouter.anyToAnySwap.selector, 255);
+        vm.prank(owner); v = f.createVault{value: 1 ether}(agent, 0.3 ether, 1 ether, new address[](0), rules, new TokenCapInit[](0));
+    }
+    function _m() internal pure returns (address[] memory m, bool[] memory b, bool[] memory n) { m = new address[](1); m[0] = MON_USDC; b = new bool[](1); n = new bool[](1); n[0] = true; }
+    function test_fork_kuru_mon_to_usdc() public {
+        if (!on) return;
+        (address[] memory m, bool[] memory b, bool[] memory n) = _m();
+        bytes memory d = abi.encodeCall(IKuruRouter.anyToAnySwap, (m, b, n, address(0), USDC, 0.1 ether, 1));
+        vm.prank(agent); v.executeCall("k1", KURU_ROUTER, 0.1 ether, d, AgentVault.CallOpts(address(0), 0, USDC, 1));
+        uint256 got = IERC20(USDC).balanceOf(address(v)); assertGt(got, 0); emit log_named_uint("USDC (6dp) for 0.1 MON via Kuru", got);
+        assertEq(IERC20(USDC).balanceOf(agent), 0);
+        // vault's own minOut guard blocks an output below expectations
+        vm.prank(agent); vm.expectRevert();
+        v.executeCall("k2", KURU_ROUTER, 0.1 ether, d, AgentVault.CallOpts(address(0), 0, USDC, 10_000_000_000));
+    }
+}
