@@ -1,3 +1,26 @@
-{ "name": "policypilot-web", "private": true, "scripts": { "dev": "next dev", "build": "next build", "typecheck": "tsc --noEmit" },
-  "dependencies": { "next": "15.5.4", "react": "19.1.1", "react-dom": "19.1.1", "viem": "2.21.0", "lucide-react": "0.468.0" },
-  "devDependencies": { "typescript": "5.6.3", "@types/react": "19.1.12", "@types/node": "22.7.5", "tailwindcss": "3.4.14", "postcss": "8.4.47", "autoprefixer": "10.4.20" } }
+{
+  "name": "policypilot-web",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "node scripts/gen-icons.mjs",
+    "icons": "node scripts/gen-icons.mjs"
+  },
+  "dependencies": {
+    "next": "15.5.4",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "viem": "2.21.0",
+    "lucide-react": "0.468.0"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "@types/react": "19.1.12",
+    "@types/node": "22.7.5",
+    "tailwindcss": "3.4.14",
+    "postcss": "8.4.47",
+    "autoprefixer": "10.4.20"
+  }
+}
