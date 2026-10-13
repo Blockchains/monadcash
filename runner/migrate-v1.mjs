@@ -17,7 +17,7 @@ if (await pc.readContract({ address: dca, abi: agentVaultAbi, functionName: 'pau
 for (const id of ['staker', 'payroll', 'rogue']) {
   const v = st.agents[id].vault;
   for (const t of T) { const b = await pc.readContract({ address: t, abi: erc, functionName: 'balanceOf', args: [v] }); if (b > 0n) await otx(`Owner pulls tokens out of v1 ${id} vault`, id, v, encodeFunctionData({ abi: agentVaultAbi, functionName: 'withdrawToken', args: [t, owner.address, b] })); }
-  if (await pc.getBalance({ address: v }) > 0n) await otx(`Owner pulls all MON out of v1 ${id} vault`, id, v, encodeFunctionData({ abi: agentVaultAbi, functionName: 'emergencyWithdrawAll' }));
+  if (await pc.getBalance({ address: v }) > 0n) await otx(`Owner pulls all MON out of v1 ${id} vault`, id, v, encodeFunctionData({ abi: agentVaultAbi, functionName: 'withdraw', args: [ (await import('viem')).getAddress(process.env.OWNER || '0xc0c4E411e41bECAD6DA860F67063C2D6363a6113'), await pc.getBalance({ address: v }) ] }));
   const ag = privateKeyToAccount(st.agents[id].key); const w = createWalletClient({ account: ag, chain, transport: http(RPC) });
   const g = await pc.getBalance({ address: ag.address }); const gp = await pc.getGasPrice(); const fee = 21000n * gp * 2n;
   if (g > fee) { const h = await w.sendTransaction({ to: owner.address, value: g - fee, gas: 21000n, maxFeePerGas: gp * 2n, maxPriorityFeePerGas: gp / 50n }); const r = await pc.waitForTransactionReceipt({ hash: h }); console.log(r.status, `sweep v1 ${id} agent gas`, formatEther(g - fee)); rec({ persona: id, actor: 'agent-sweep', label: `Return v1 ${id} agent gas`, status: 'owner', tx: h }); }
