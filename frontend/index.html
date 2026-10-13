@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><title>PolicyPilot – read-only status</title>
+<style>body{font:14px system-ui;max-width:720px;margin:2rem auto}td{padding:2px 8px}input{width:420px}</style></head>
+<body><h1>PolicyPilot (read-only)</h1><p>No wallet connection, no writes. Reads public view functions over JSON-RPC.</p>
+RPC <input id="rpc" value="http://127.0.0.1:8545"><br>Contract <input id="addr" placeholder="0x..."><button onclick="go()">Load</button>
+<table id="t"></table>
+<script type="module">
+import { createPublicClient, http, parseAbi } from 'https://esm.sh/viem@2';
+const abi = parseAbi(['function admin() view returns (address)','function executor() view returns (address)','function asset() view returns (address)','function perRequestLimit() view returns (uint256)','function budget() view returns (uint256)','function totalSpent() view returns (uint256)','function remainingBudget() view returns (uint256)','function paused() view returns (bool)']);
+window.go = async () => {
+  const c = createPublicClient({ transport: http(rpc.value) }); const address = addr.value; const t = document.getElementById('t'); t.innerHTML='';
+  for (const f of abi.map(x=>x.name)) { const v = await c.readContract({ address, abi, functionName: f }); t.insertAdjacentHTML('beforeend', `<tr><td>${f}</td><td>${v}</td></tr>`); }
+};
+</script></body></html>
