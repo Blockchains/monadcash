@@ -1,5 +1,7 @@
 # PolicyPilot (Monad) – bounded transaction execution reference implementation
 
+**Pitch video (2 min):** [watch](https://blockchains.github.io/policypilot-monad/demo.html) · [download MP4](https://blockchains.github.io/policypilot-monad/pitch.mp4)
+
 **Demo video:** [watch](https://blockchains.github.io/policypilot-monad/demo.html) · [download MP4](https://blockchains.github.io/policypilot-monad/demo.mp4)
 Status: IMPLEMENTED + TESTED locally (Foundry, anvil). NOT DEPLOYED to any public network.
 - `src/PolicyPilot.sol` non-upgradeable contract (OpenZeppelin v5.7.0 SafeERC20). `src/MockToken.sol` test-only.
