@@ -6,12 +6,11 @@
  "factory": "0x0342d29055d77ba155c50233f550539E3029BA6a",
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T16:59:01.960Z",
- "updatedAt": "2026-10-13T17:00:21.195Z",
+ "updatedAt": "2026-10-13T21:16:49.230Z",
  "totals": {
-  "allowed": 107,
+  "allowed": 108,
   "blocked": 43,
-  "ownerTxs": 31,
-  "monConsumed": "2.266436636"
+  "ownerTxs": 31
  },
  "agents": [
   {
@@ -44,7 +43,7 @@
    "vault": "0xBB3b9a771Ff1ee29B47424dD9eEdF93ffad08240",
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
-   "allowed": 37,
+   "allowed": 38,
    "blocked": 0
   },
   {
@@ -71,6 +70,14 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-13T21:16:49.230Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0211 MON to the team treasury",
+   "status": "allowed",
+   "tx": "0xcc599f32ab6a7086342e68deb0c4af6e612b3ecdf5531cdb39f76c3447002202"
+  },
   {
    "ts": "2026-10-13T17:00:19.290Z",
    "persona": "dca1",
@@ -553,16 +560,7 @@
    "label": "Top up Staker agent gas",
    "status": "owner",
    "tx": "0xce1a2351b5a6745ca8ad8b1f3f16f2a9aa1424fa63ddd63c67e2877277e4a813"
-  },
-  {
-   "ts": "2026-10-13T16:26:24.979Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to raise its own budget (owner-only)",
-   "status": "blocked",
-   "reason": "NotOwner",
-   "tx": "0x8299d42dfae3c2693552806a846ca480d8771cde29166b5e3e8aab3ae76ef0ea"
   }
  ],
- "status": "running"
+ "status": "running (GitHub Actions)"
 }
