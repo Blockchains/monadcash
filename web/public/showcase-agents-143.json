@@ -1,0 +1,563 @@
+{
+ "label": "PolicyPilot showcase agents (operated by the team)",
+ "note": "These vaults and agent keys are run by the PolicyPilot team to demonstrate the product. They are not external users.",
+ "chainId": 143,
+ "explorer": "https://monadvision.com",
+ "factory": "0x8738B74778502ff3623A8319837A819d8dBdEeB7",
+ "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
+ "startedAt": "2026-10-13T11:13:51.867Z",
+ "updatedAt": "2026-10-13T16:20:46.720Z",
+ "totals": {
+  "allowed": 76,
+  "blocked": 30,
+  "ownerTxs": 13,
+  "monConsumed": "4.5460733765464428"
+ },
+ "agents": [
+  {
+   "id": "dca",
+   "name": "DCA bot",
+   "emoji": "📈",
+   "about": "Buys a little USDC with MON on Uniswap and PancakeSwap every round, then periodically swaps it back to MON and unwraps.",
+   "vault": "0x4443b84eF9FeeD617Af02dDE996b23748374DA81",
+   "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
+   "perActionCapMON": "0.03",
+   "allowed": 20,
+   "blocked": 0
+  },
+  {
+   "id": "staker",
+   "name": "Staker",
+   "emoji": "🥩",
+   "about": "Stakes tiny amounts of MON into Kintsu (sMON), aPriori (aprMON) and Magma (gMON), and wraps/unwraps WMON.",
+   "vault": "0x164C169F6C7ffa1825bd25D4f0A33ffe5B6057E6",
+   "agent": "0x63f0bD9FEAE167ebA156f7B5fF2d604fae913626",
+   "perActionCapMON": "0.03",
+   "allowed": 30,
+   "blocked": 0
+  },
+  {
+   "id": "payroll",
+   "name": "Payroll",
+   "emoji": "💸",
+   "about": "Pays small MON salaries to an allowlist of team-owned addresses.",
+   "vault": "0xC2AF28B2CB329D432601a7ED0610Ccd33d486629",
+   "agent": "0x8536f811E2Ac06dE9C7171473E30af135EC5f896",
+   "perActionCapMON": "0.03",
+   "allowed": 26,
+   "blocked": 0
+  },
+  {
+   "id": "rogue",
+   "name": "Rogue agent",
+   "emoji": "😈",
+   "about": "Deliberately tries out-of-policy actions (over cap, strangers, draining tokens, paying itself, owner-only calls). Every attempt is sent on-chain and reverted by the vault.",
+   "vault": "0x2611DD9678cd9a6Ba823b07c42242A5C27A83A25",
+   "agent": "0x777a8aF96f8bfBf9A8879C5228996A1b38eF6e20",
+   "perActionCapMON": "0.01",
+   "allowed": 0,
+   "blocked": 30
+  }
+ ],
+ "recent": [
+  {
+   "ts": "2026-10-13T16:20:45.151Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0x9ce30d26cccb9eacd18ec2feb93a386edb2b87fc61f2a4d84c2b7fcba4703f58"
+  },
+  {
+   "ts": "2026-10-13T16:20:34.389Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0069 MON → sMON (Kintsu)",
+   "status": "allowed",
+   "tx": "0x8f26851d09374caf902378bb853c188503cb3cfcee3c7edff98c58d81357fe58"
+  },
+  {
+   "ts": "2026-10-13T16:17:34.021Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0x777a8aF96f8bfBf9A8879C5228996A1b38eF6e20)",
+   "tx": "0x040a5c1603df8247adca8ec9b656bb9d4f517aa664b0b9acdae569bc6a2ecdec"
+  },
+  {
+   "ts": "2026-10-13T16:17:22.791Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker unwraps 0.0246 WMON → MON",
+   "status": "allowed",
+   "tx": "0x7ebb5fc93be99e72823759b5881db75244b84d274d068217ecd2e3bdbd536c05"
+  },
+  {
+   "ts": "2026-10-13T16:14:43.407Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
+   "tx": "0x5d0cdcc49c56223f6750623217fd5f1ea3cf4df699ed92bb789ede2fb1f6cbd8"
+  },
+  {
+   "ts": "2026-10-13T16:14:32.458Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker wraps 0.0246 MON → WMON",
+   "status": "allowed",
+   "tx": "0x8c3721def087c42524ed2127a97244e99557052c8ce3ad098b34a809aaf87e8d"
+  },
+  {
+   "ts": "2026-10-13T16:11:53.030Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay a stranger (0x…dEaD)",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0xf1dff50b1245a0275aee36423bb19209ebfc9160d7aa1f9b21c0e50a7e1755ed"
+  },
+  {
+   "ts": "2026-10-13T16:11:40.730Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0066 MON → gMON (Magma)",
+   "status": "allowed",
+   "tx": "0x50552002fb475459c86c52e4ef818b14062ea1733fc6dc521bf619ce0744f415"
+  },
+  {
+   "ts": "2026-10-13T16:08:57.331Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
+   "tx": "0x4c4d999e12e9436fe00c807d9cc3a688062aa7475a9a043fcb4fa9319b530ac3"
+  },
+  {
+   "ts": "2026-10-13T16:08:54.317Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.016 MON to the DCA bot agent",
+   "status": "allowed",
+   "tx": "0x3e9cc3474f300e1da73a2301ce6978dc003c96dddd4f6871ce68dcef682cc4d8"
+  },
+  {
+   "ts": "2026-10-13T16:08:50.917Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0069 MON → aprMON (aPriori)",
+   "status": "allowed",
+   "tx": "0x7e071da6129a957dd6675f73ca83be4bc7c553ab54a7cfdf6723e5abe3b9953e"
+  },
+  {
+   "ts": "2026-10-13T16:06:11.570Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to raise its own budget (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0xc344f8d3652148422c35d807ff5a0988f5204bc7d97801027babd981fde6d4b7"
+  },
+  {
+   "ts": "2026-10-13T16:06:08.079Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0146 MON to the team treasury",
+   "status": "allowed",
+   "tx": "0x2a9c8ae259ec138fecf612ca2deff2260c432b6f48e7fa397e00a27fc9294231"
+  },
+  {
+   "ts": "2026-10-13T16:06:04.193Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0068 MON → sMON (Kintsu)",
+   "status": "allowed",
+   "tx": "0x2cc6bcbbaef10fcff5d4d60791ce372826c53eaa07a453239f9057b0e02aa2c1"
+  },
+  {
+   "ts": "2026-10-13T16:03:24.955Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to stake via Kintsu (not on its allowlist)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0xA3227C5969757783154C60bF0bC1944180ed81B9, 0x1c3477dd)",
+   "tx": "0xb170035c1ea520ca2b69a1bdfc476d13d4bb9b361eb0944178498dde2647e927"
+  },
+  {
+   "ts": "2026-10-13T16:03:21.842Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0067 MON to the Rogue agent agent",
+   "status": "allowed",
+   "tx": "0xda6952d87b9f2aacc80cebe68e9bab7ca50a1d0a53d17c1e33e420a0c15c598d"
+  },
+  {
+   "ts": "2026-10-13T16:03:18.316Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker unwraps 0.0246 WMON → MON",
+   "status": "allowed",
+   "tx": "0xbbf6aacfc9ea7694ed4241ba3a01f751fe29de66dbc46c8b06c710af4ae9b3d5"
+  },
+  {
+   "ts": "2026-10-13T16:00:38.882Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0xa798cc7ef09030fec0692b23951929a02500c37a7f72856f5874dcb1b0a6ea5f"
+  },
+  {
+   "ts": "2026-10-13T16:00:35.979Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0192 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0x35a25e4fdefac56c4cff78013f6d10d303485bc828d9c7b4127f41bc49a44136"
+  },
+  {
+   "ts": "2026-10-13T16:00:32.128Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker wraps 0.0246 MON → WMON",
+   "status": "allowed",
+   "tx": "0xe9ed5525439876cee015104c3c6c2daa71388dc0224f92c8d5951316630e482c"
+  },
+  {
+   "ts": "2026-10-13T16:00:30.300Z",
+   "persona": "staker",
+   "actor": "owner",
+   "label": "Top up Staker agent gas",
+   "status": "owner",
+   "tx": "0x08fc2ecdc9a6e2c995396c66cf89b13b8d23e1296360571075e6412a41c06308"
+  },
+  {
+   "ts": "2026-10-13T15:57:51.357Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0x777a8aF96f8bfBf9A8879C5228996A1b38eF6e20)",
+   "tx": "0xb5fd89a9f9808da182af5d8d5f7d567c4eeacc3bfb42d71297e605ce08dd36e8"
+  },
+  {
+   "ts": "2026-10-13T15:57:48.344Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0234 MON to the DCA bot agent",
+   "status": "allowed",
+   "tx": "0xf7477f73f11c3438ff4f4f1b299cccc6606d57d42e3655a4acf43e4908e08d31"
+  },
+  {
+   "ts": "2026-10-13T15:57:44.986Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0107 MON → gMON (Magma)",
+   "status": "allowed",
+   "tx": "0x55617f3ce41883b334fc759dfe6f204c60ebb6bfbc2518e0619268a14e6acfb5"
+  },
+  {
+   "ts": "2026-10-13T15:55:05.861Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
+   "tx": "0x5ee42caa4833c39e8a80e8af1560142146ed2783e7a1edbb0d6b92d9de160d17"
+  },
+  {
+   "ts": "2026-10-13T15:55:02.927Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0177 MON to the team treasury",
+   "status": "allowed",
+   "tx": "0xd665b67a87b1c3517f24729e6740d4bd24921823f0519ca6e4724bbe5a2333dc"
+  },
+  {
+   "ts": "2026-10-13T15:54:59.243Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0118 MON → aprMON (aPriori)",
+   "status": "allowed",
+   "tx": "0xb0a87c2d3511ca816ce35d70864ded175bc6031a63fb245500ebd210dc8db509"
+  },
+  {
+   "ts": "2026-10-13T15:54:54.392Z",
+   "persona": "dca",
+   "actor": "owner",
+   "label": "Owner tops up DCA bot vault with 0.4 MON",
+   "status": "owner",
+   "tx": "0x0a5ca899fa4d304156da29b4f0832c2443e3d8d20b94486c4de58e87b3294fb6"
+  },
+  {
+   "ts": "2026-10-13T15:54:49.873Z",
+   "persona": "dca",
+   "actor": "owner",
+   "label": "Fund DCA bot agent gas",
+   "status": "owner",
+   "tx": "0xdf9d1d8554864ec0e19438ff66dd2d1e71e86a58b45f11def76794fe6cb0f1c3"
+  },
+  {
+   "ts": "2026-10-13T15:54:42.924Z",
+   "persona": "staker",
+   "actor": "owner",
+   "label": "Owner pulls sMON out of Staker vault",
+   "status": "owner",
+   "tx": "0x61c6b9408c14e3ffac5b78d730f4b77e557418a27477faa0995c24e60625446f"
+  },
+  {
+   "ts": "2026-10-13T15:54:40.899Z",
+   "persona": "dca",
+   "actor": "agent-sweep",
+   "label": "Return DCA bot agent gas to the owner",
+   "status": "owner",
+   "tx": "0xbc4dcde4158bf6212b09c1f0137b82a6972acdf96f94f54b10680fc25f3e336a"
+  },
+  {
+   "ts": "2026-10-13T15:54:39.391Z",
+   "persona": "dca",
+   "actor": "owner",
+   "label": "Owner pulls all MON out of DCA bot vault (kill-switch)",
+   "status": "owner",
+   "tx": "0x790595ef3e0bb1b1ebd56d0c688e26335049ceac8f882efbb15bc985f7d1deed"
+  },
+  {
+   "ts": "2026-10-13T11:22:04.604Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay a stranger (0x…dEaD)",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0xf28832116556cb00b7b277b8b4504b4df16caa12b80d990fab34ea26f0645e33"
+  },
+  {
+   "ts": "2026-10-13T11:22:01.446Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.019 MON to the Rogue agent agent",
+   "status": "allowed",
+   "tx": "0x4078b457fc322047cbd5f253e3481e604fef08ef4579fdc5afacd6f7dc1449d8"
+  },
+  {
+   "ts": "2026-10-13T11:21:57.908Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0112 MON → sMON (Kintsu)",
+   "status": "allowed",
+   "tx": "0xfa54cc9fc6c75920e00e1bcfb5edba927d97d694d0fc548939c0f5564c130c2a"
+  },
+  {
+   "ts": "2026-10-13T11:21:54.381Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot unwraps 0.052399460148076254 WMON → MON",
+   "status": "allowed",
+   "tx": "0x74f0c9bb50feae04ac738b10b3f89ac51c5a66ac0f448676879ce35a432eff69"
+  },
+  {
+   "ts": "2026-10-13T11:18:47.162Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
+   "tx": "0x068df7dbf32b8340f7100386f65cd52c11f3f31064f4c5668027f2d4cb310478"
+  },
+  {
+   "ts": "2026-10-13T11:18:44.241Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0091 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0x405195fdba36fb770bbbac4347d0ebbe3b6d3bb8b3ad266d78d6e3d96e094291"
+  },
+  {
+   "ts": "2026-10-13T11:18:40.964Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker unwraps 0.0218 WMON → MON",
+   "status": "allowed",
+   "tx": "0x1b1f3daa3e03acb3897289d7de4e2cf31d94c451619326542fd77c06a6be6be1"
+  },
+  {
+   "ts": "2026-10-13T11:18:37.142Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot takes profit: swaps 0.001271 USDC → WMON",
+   "status": "allowed",
+   "tx": "0xf360ae64c5f60a4ec3e2e62d23fad02895b1f87181a82271b541fb195419890e"
+  },
+  {
+   "ts": "2026-10-13T11:18:31.545Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to raise its own budget (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0x47b1cdf753df9451bb6ea52435e7f0fce1853a211efcb19be02e87a527c97359"
+  },
+  {
+   "ts": "2026-10-13T11:18:28.283Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0171 MON to the DCA bot agent",
+   "status": "allowed",
+   "tx": "0x27203e1caf5a117988c19c8cd9f2e0d7b47d3d25078df5485777eed8ed574acb"
+  },
+  {
+   "ts": "2026-10-13T11:18:24.984Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker wraps 0.0218 MON → WMON",
+   "status": "allowed",
+   "tx": "0xd93b341727929935b3be126db3ea64a2a7e0cbcdcb2ac6e3b9af683883119199"
+  },
+  {
+   "ts": "2026-10-13T11:18:21.679Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0102 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0xd417ad9e61664469138bf010aed07de0e5d3689017a3c35723ca73bdd5ea3b1f"
+  },
+  {
+   "ts": "2026-10-13T11:17:23.497Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to stake via Kintsu (not on its allowlist)",
+   "status": "blocked",
+   "reason": "Execution reverted for an unknown reason.",
+   "tx": "0x2ec6cd1e2a8fbb1e251d4f961c816defd7960763ed10031321d05cff94fc9ac0"
+  },
+  {
+   "ts": "2026-10-13T11:17:20.353Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0101 MON to the team treasury",
+   "status": "allowed",
+   "tx": "0xe75bbdaf12fec867b13b16c1a2b8616e3d4714675386560b73b64d0ecaba496f"
+  },
+  {
+   "ts": "2026-10-13T11:17:16.644Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0073 MON → gMON (Magma)",
+   "status": "allowed",
+   "tx": "0x6d364dd850578da9784f804c3621e2f5cc5724f0005e056c52a889e2a7d28be8"
+  },
+  {
+   "ts": "2026-10-13T11:17:13.136Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0186 MON on Uniswap v3",
+   "status": "allowed",
+   "tx": "0x3f26a13a8c5111a53ae6279ba32e7d8c0d145898476e6f8742f2f8da9289fae9"
+  },
+  {
+   "ts": "2026-10-13T11:17:07.367Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
+   "status": "blocked",
+   "reason": "Execution reverted for an unknown reason.",
+   "tx": "0xb0efa7177ee7842cce42a9d3f346fcf081b0339e44ace9f180176a9c3f9a2448"
+  },
+  {
+   "ts": "2026-10-13T11:17:04.210Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0125 MON to the Rogue agent agent",
+   "status": "allowed",
+   "tx": "0xe834ceae2cfeeedf259f7e668ce962f81d147d0f40fbd60a2a2f89c751eaa848"
+  },
+  {
+   "ts": "2026-10-13T11:17:00.848Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.006 MON → aprMON (aPriori)",
+   "status": "allowed",
+   "tx": "0x44f82bc1ec9e13f284435467f538cbc2bd4c09cdf10c890f6919c9df8a686dff"
+  },
+  {
+   "ts": "2026-10-13T11:16:57.106Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0139 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0xfd0239b728be1a5bdb2875d0f478ca8fcf54f7e7fd4711f1312b6c1934d45a4f"
+  },
+  {
+   "ts": "2026-10-13T11:16:51.333Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
+   "status": "blocked",
+   "reason": "Execution reverted for an unknown reason.",
+   "tx": "0xc74e1ce761032be874b68056b172553e35134aa7816b90b33991d19bbe10c412"
+  },
+  {
+   "ts": "2026-10-13T11:16:48.173Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0056 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0x24870d2d2eae5dffab29514e1f7453f9743c228055e4024cd44397bb06173f50"
+  },
+  {
+   "ts": "2026-10-13T11:16:44.824Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0094 MON → sMON (Kintsu)",
+   "status": "allowed",
+   "tx": "0xc2b78b7ab60b5740a9d471ee82b2709f44ae376987861d59834b596d8320c58c"
+  },
+  {
+   "ts": "2026-10-13T11:16:41.492Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.01 MON on Uniswap v3",
+   "status": "allowed",
+   "tx": "0x0807f24f978d2ee21067a75f8ef60ba4255ef0a78192152138291b476b8a632e"
+  },
+  {
+   "ts": "2026-10-13T11:16:35.670Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
+   "status": "blocked",
+   "reason": "Execution reverted for an unknown reason.",
+   "tx": "0x0bb6ee7397b4324995b96fe8f344eccb6c4f5d60e39026e20857551666e43d96"
+  },
+  {
+   "ts": "2026-10-13T11:16:32.124Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0211 MON to the DCA bot agent",
+   "status": "allowed",
+   "tx": "0x5647664d409904e4898f5581d277d0bcab1f84d2891ba774191b23fc942aada3"
+  },
+  {
+   "ts": "2026-10-13T11:16:28.800Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0118 MON → sMON (Kintsu)",
+   "status": "allowed",
+   "tx": "0x83e8431aea79df5928c8164e148a9398f96e04597511eb09454410cf709d4f6b"
+  },
+  {
+   "ts": "2026-10-13T11:16:27.507Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
+   "status": "blocked",
+   "reason": "Execution reverted for an unknown reason.",
+   "tx": "0x6b86a78ee676415b3c4f5c8863356f4d5f4b1bfa69977d31aaf794a85ddc1f48"
+  }
+ ],
+ "status": "running"
+}

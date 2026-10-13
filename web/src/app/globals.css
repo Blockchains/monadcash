@@ -9,3 +9,6 @@ body { font-feature-settings: "tnum" 0; }
 @keyframes pop { from { transform: scale(.97); opacity: 0 } to { transform: none; opacity: 1 } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 input[type=range] { touch-action: pan-y; }
+
+html{scroll-padding-bottom:calc(6rem + env(safe-area-inset-bottom));scroll-padding-top:4.5rem}
+@media (min-width:1024px){html{scroll-padding-bottom:0}}
