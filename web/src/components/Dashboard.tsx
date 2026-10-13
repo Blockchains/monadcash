@@ -11,13 +11,13 @@ const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_0_40px_-20px_#836EF9] backdrop-blur-xl ${className}`}>{children}</div>;
+  return <div className={`min-w-0 rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:p-5 shadow-[0_0_40px_-20px_#836EF9] backdrop-blur-xl ${className}`}>{children}</div>;
 }
 function Metric({ label, value, sub, children }: { label: string; value: React.ReactNode; sub?: React.ReactNode; children?: React.ReactNode }) {
-  return <Card><div className="text-xs uppercase tracking-wider text-zinc-400">{label}</div><div className="mt-2 font-mono text-2xl tabular-nums text-zinc-50">{value}</div>{sub && <div className="mt-1 text-xs text-zinc-400">{sub}</div>}{children}</Card>;
+  return <Card><div className="text-xs uppercase tracking-wider text-zinc-400">{label}</div><div className="mt-2 truncate font-mono text-xl tabular-nums text-zinc-50 sm:text-2xl">{value}</div>{sub && <div className="mt-1 text-xs text-zinc-400">{sub}</div>}{children}</Card>;
 }
 
-export default function Dashboard() {
+export default function Dashboard({ embedded = false }: { embedded?: boolean }) {
   const pc = useMemo(() => client(), []);
   const [snap, setSnap] = useState<PolicySnapshot | null>(null);
   const [feed, setFeed] = useState<Feed | null>(null);
@@ -47,25 +47,20 @@ export default function Dashboard() {
   const allowedSet = useMemo(() => new Set((feed?.recipients ?? []).filter(r => r.allowed).map(r => r.id)), [feed]);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 text-zinc-200">
-      <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-200">Alpha · unaudited contract · only deposit what you&apos;re happy to lose. This dashboard reads the PolicyPilot reference deployment on Monad testnet (test token, no value).</div>
-      <header className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="mr-auto flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-monad" /><h1 className="text-xl font-semibold text-zinc-50">PolicyPilot <span className="text-monad">Dashboard</span></h1></div>
-        <span className="flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 font-mono text-xs tabular-nums" data-testid="block"><Radio className="h-3 w-3 text-emerald-400" />block {snap ? snap.block.toLocaleString() : '…'}</span>
-        <span className="rounded-full border border-white/10 px-3 py-1 font-mono text-xs">chain {DEPLOYMENT.chain.id}</span>
-        <button onClick={() => { navigator.clipboard?.writeText(DEPLOYMENT.policyPilot); setCopied(true); setTimeout(() => setCopied(false), 1200); }} className="flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 font-mono text-xs hover:border-monad"><Copy className="h-3 w-3" />{copied ? 'copied' : short(DEPLOYMENT.policyPilot)}</button>
-        <a href={DEPLOYMENT.sourcify} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300"><BadgeCheck className="h-3 w-3" />Sourcify verified</a>
+    <div className="min-w-0 text-zinc-200">
+      {!embedded && <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-200">Alpha · unaudited contract · only deposit what you&apos;re happy to lose. This dashboard reads the PolicyPilot reference deployment on Monad testnet (test token, no value).</div>}
+      <header className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
+        <div className="mr-auto flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-monad" /><h1 className="text-xl font-semibold text-zinc-50">Policy <span className="text-monad">dashboard</span></h1></div>
+        <span className="flex items-center gap-1 rounded-full border border-white/10 min-h-9 px-3 py-1 font-mono text-xs tabular-nums" data-testid="block"><Radio className="h-3 w-3 text-emerald-400" />block {snap ? snap.block.toLocaleString() : '…'}</span>
+        <span className="rounded-full border border-white/10 min-h-9 px-3 py-1 font-mono text-xs">chain {DEPLOYMENT.chain.id}</span>
+        <button onClick={() => { navigator.clipboard?.writeText(DEPLOYMENT.policyPilot); setCopied(true); setTimeout(() => setCopied(false), 1200); }} className="flex min-h-11 items-center gap-1 rounded-full border border-white/10 px-3 font-mono text-xs hover:border-monad"><Copy className="h-3 w-3" />{copied ? 'copied' : short(DEPLOYMENT.policyPilot)}</button>
+        <a href={DEPLOYMENT.sourcify} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 text-xs text-emerald-300"><BadgeCheck className="h-3 w-3" />Sourcify verified</a>
         <span data-testid="mode" className="flex items-center gap-1 rounded-full border border-monad/40 bg-monad/10 px-3 py-1 text-xs text-monad"><Database className="h-3 w-3" />{feed?.mode === 'envio' ? 'Envio HyperIndex' : 'RPC fallback'}</span>
       </header>
-      <nav className="mb-6 flex flex-wrap gap-2 text-sm">
-        <a className="rounded-lg bg-monad px-3 py-1.5 font-medium text-white" href={`${base}/harness.html?net=mainnet`}>Agent spending harness (mainnet) →</a>
-        <a className="rounded-lg border border-white/10 px-3 py-1.5" href={`${base}/agents-testnet.html`}>My Monad Agents (testnet)</a>
-        <a className="rounded-lg border border-white/10 px-3 py-1.5" href={`${base}/demo-agent.html`}>Guardrail demo</a>
-        <a className="rounded-lg border border-white/10 px-3 py-1.5 font-mono text-xs" href={`https://monadvision.com/address/${MAINNET.factory}`} target="_blank" rel="noreferrer">mainnet factory {short(MAINNET.factory)}</a>
-      </nav>
+      <p className="mb-4 text-xs text-zinc-400">The original PolicyPilot contract on Monad testnet: a test-token budget for one executor. It is live, read-only, and every number is an RPC read.</p>
       {err && <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs text-red-300">RPC error: {err}</div>}
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Metric label="Budget used" value={<>{fmt(snap?.totalSpent)} <span className="text-sm text-zinc-500">/ {fmt(snap?.budget)}</span></>} sub="pUSD (test token)">
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-monad transition-all" style={{ width: `${Math.min(100, pct)}%` }} /></div>
           <div className="mt-1 font-mono text-xs tabular-nums text-zinc-400">{pct.toFixed(2)}%</div>
@@ -78,13 +73,13 @@ export default function Dashboard() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Sandbox snap={snap} allowedSet={allowedSet} pc={pc} />
-        <Card className="lg:col-span-2">
-          <div className="mb-3 flex items-center gap-2">
+        <Card className="min-w-0 lg:col-span-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <Activity className="h-4 w-4 text-monad" />
-            {(['payouts', 'audit'] as const).map(t => <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-3 py-1 text-sm ${tab === t ? 'bg-monad text-white' : 'border border-white/10 text-zinc-300'}`}>{t === 'payouts' ? 'Payouts' : 'Audit Log'}</button>)}
+            {(['payouts', 'audit'] as const).map(t => <button key={t} onClick={() => setTab(t)} className={`min-h-11 rounded-xl px-4 text-sm ${tab === t ? 'bg-monad text-white' : 'border border-white/10 text-zinc-300'}`}>{t === 'payouts' ? 'Payouts' : 'Audit Log'}</button>)}
             <span className="ml-auto text-xs text-zinc-500">polling every {POLL_MS / 1000}s</span>
           </div>
-          <div className="max-h-[420px] overflow-auto">
+          <div className="max-h-[420px] max-w-full overflow-auto">
             {!feed ? <div className="py-8 text-center text-sm text-zinc-500">Loading real on-chain history…</div> : tab === 'payouts' ? (
               <table className="w-full text-left text-sm" data-testid="payouts"><thead className="text-xs text-zinc-500"><tr><th className="py-2">Block</th><th>Recipient</th><th className="text-right">Amount</th><th className="text-right">Total spent</th><th /></tr></thead>
                 <tbody className="font-mono tabular-nums">{feed.executions.map(e => <tr key={e.id} className="border-t border-white/5"><td className="py-2">{e.blockNumber.toLocaleString()}</td><td><a className="hover:text-monad" href={explorerAddr(e.recipient)} target="_blank" rel="noreferrer">{short(e.recipient)}</a></td><td className="text-right">{fmt(e.amount)}</td><td className="text-right">{fmt(e.totalSpent)}</td><td className="text-right"><a href={explorerTx(e.txHash)} target="_blank" rel="noreferrer" className="inline-flex text-monad"><ExternalLink className="h-3.5 w-3.5" /></a></td></tr>)}
@@ -96,8 +91,8 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
-      <footer className="mt-8 text-xs text-zinc-500">All numbers are live reads of {short(DEPLOYMENT.policyPilot)} on Monad testnet. Nothing is mocked. Executor {snap ? short(snap.executor) : '…'} · admin {snap ? short(snap.admin) : '…'}.</footer>
-    </main>
+      <footer className="mt-6 break-words text-xs text-zinc-500">All numbers are live reads of {short(DEPLOYMENT.policyPilot)} on Monad testnet. Nothing is mocked. Executor {snap ? short(snap.executor) : '…'} · admin {snap ? short(snap.admin) : '…'}.</footer>
+    </div>
   );
 }
 
@@ -125,11 +120,11 @@ function Sandbox({ snap, allowedSet, pc }: { snap: PolicySnapshot | null; allowe
       <div className="mb-3 flex items-center gap-2"><FlaskConical className="h-4 w-4 text-monad" /><h2 className="font-medium text-zinc-50">Policy sandbox</h2></div>
       <p className="mb-3 text-xs text-zinc-400">Simulates <code className="font-mono">execute()</code> with a real <code className="font-mono">eth_call</code> from the on-chain executor. Nothing is sent.</p>
       <label className="text-xs text-zinc-400">Recipient</label>
-      <input data-testid="sb-recipient" value={recipient} onChange={e => setRecipient(e.target.value.trim())} placeholder="0x…" className="mb-2 mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-xs outline-none focus:border-monad" />
-      {allowedSet.size > 0 && <div className="mb-2 flex flex-wrap gap-1">{[...allowedSet].map(a => <button key={a} onClick={() => setRecipient(a)} className="rounded border border-white/10 px-2 py-0.5 font-mono text-[10px] text-zinc-400 hover:border-monad"><Wallet className="mr-1 inline h-3 w-3" />{short(a)}</button>)}</div>}
+      <input data-testid="sb-recipient" value={recipient} onChange={e => setRecipient(e.target.value.trim())} placeholder="0x…" className="mb-2 mt-1 min-h-11 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 py-2 font-mono text-xs outline-none focus:border-monad" />
+      {allowedSet.size > 0 && <div className="mb-2 flex flex-wrap gap-1">{[...allowedSet].map(a => <button key={a} onClick={() => setRecipient(a)} className="min-h-11 rounded-lg border border-white/10 px-2 font-mono text-[11px] text-zinc-400 hover:border-monad"><Wallet className="mr-1 inline h-3 w-3" />{short(a)}</button>)}</div>}
       <label className="text-xs text-zinc-400">Amount (pUSD)</label>
-      <input data-testid="sb-amount" value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" className="mb-3 mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono tabular-nums outline-none focus:border-monad" />
-      <button data-testid="sb-run" disabled={busy || !snap} onClick={run} className="w-full rounded-lg bg-monad py-2 font-medium text-white disabled:opacity-50">{busy ? 'Simulating…' : 'Check policy'}</button>
+      <input data-testid="sb-amount" value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" className="mb-3 mt-1 min-h-11 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 py-2 font-mono tabular-nums outline-none focus:border-monad" />
+      <button data-testid="sb-run" disabled={busy || !snap} onClick={run} className="min-h-12 w-full rounded-2xl bg-monad font-medium text-white transition active:scale-[0.98] disabled:opacity-50">{busy ? 'Simulating…' : 'Check policy'}</button>
       {res && (
         <div data-testid="sb-result" className={`mt-3 rounded-lg border p-3 text-sm ${ok ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-red-500/40 bg-red-500/10'}`}>
           <div className="flex items-center gap-2 font-semibold">{ok ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <XCircle className="h-4 w-4 text-red-400" />}{ok ? 'PASS' : 'FAIL'}{!res.chain.ok && <code className="font-mono text-red-300">{res.chain.error}</code>}</div>
