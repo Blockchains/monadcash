@@ -12,7 +12,7 @@ import { VaultAgent, agentVaultAbi, agentVaultFactoryAbi, ZERO_ADDRESS } from '.
 
 const HOME = os.homedir(); const E = process.env;
 const RPC = E.RPC || 'https://rpc.monad.xyz'; const CID = Number(E.CHAIN_ID || 143);
-const FACTORY = E.FACTORY || '0x8738B74778502ff3623A8319837A819d8dBdEeB7';
+const FACTORY = E.FACTORY || '0x0342d29055d77ba155c50233f550539E3029BA6a'; // v2 factory (1000 MON global cap); legacy v1: 0x8738B74778502ff3623A8319837A819d8dBdEeB7
 const STOP_AT = parseEther(E.STOP_AT || '1000'); const RESERVE = parseEther(E.OWNER_RESERVE || '5'); // never let the deployer drop below this
 const USER_HEADROOM = parseEther(E.USER_HEADROOM || '1'); // alpha global deposit cap kept free for real users const HOURS = Number(E.HOURS || 4); const INTERVAL = Number(E.INTERVAL_S || 240) * 1000;
 const HOURS = Number(E.HOURS || 4); const INTERVAL = Number(E.INTERVAL_S || 240) * 1000;
@@ -21,10 +21,13 @@ const KEYS = E.KEYS_FILE || path.join(HOME, `.policypilot/showcase-agents-${TAG}
 const PUB = E.PUBLIC_OUT || path.resolve(path.dirname(new URL(import.meta.url).pathname), `../web/public/showcase-agents-${TAG}.json`);
 const LEDGER = E.LEDGER || `/workspace/policypilot/evidence/showcase-ledger-${TAG}.jsonl`;
 const EXP = 'https://monadvision.com';
-const ownerKey = E.OWNER_KEY || Object.fromEntries(fs.readFileSync((E.OWNER_ENV || '~/.policypilot/mainnet-wallet.env').replace('~', HOME), 'utf8').split('\n').filter(l => l.includes('=')).map(l => l.split(/=(.*)/s).slice(0, 2).map(s => s.trim())))['MONAD_MAINNET_PRIVATE_KEY'];
+const AGENTS_ONLY = E.AGENTS_ONLY === '1'; // GitHub Actions mode: agent keys only, never the deployer key
+const CFG_FILE = E.CONFIG || path.resolve(path.dirname(new URL(import.meta.url).pathname), `showcase-config-${CID}.json`);
+const ownerKey = AGENTS_ONLY ? null : (E.OWNER_KEY || Object.fromEntries(fs.readFileSync((E.OWNER_ENV || '~/.policypilot/mainnet-wallet.env').replace('~', HOME), 'utf8').split('\n').filter(l => l.includes('=')).map(l => l.split(/=(.*)/s).slice(0, 2).map(s => s.trim())))['MONAD_MAINNET_PRIVATE_KEY']);
 const chain = { id: CID, name: 'Monad', nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 }, rpcUrls: { default: { http: [RPC] } } };
 const pc = createPublicClient({ chain, transport: http(RPC, { retryCount: 5, retryDelay: 800, timeout: 20_000 }) });
-const owner = privateKeyToAccount(ownerKey); const ow = createWalletClient({ account: owner, chain, transport: http(RPC, { retryCount: 3, timeout: 20_000 }) });
+const owner = AGENTS_ONLY ? { address: JSON.parse(fs.readFileSync(CFG_FILE, 'utf8')).owner } : privateKeyToAccount(ownerKey);
+const ow = AGENTS_ONLY ? null : createWalletClient({ account: owner, chain, transport: http(RPC, { retryCount: 3, timeout: 20_000 }) });
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const within = (p, ms, what) => Promise.race([p, new Promise((_, j) => setTimeout(() => j(new Error(`watchdog: ${what} took > ${ms / 1000}s`)), ms))]);
@@ -48,19 +51,26 @@ const rule = k => ({ target: R[k][0], selector: R[k][1], recipientWord: R[k][2] 
 
 const PERSONAS = [
   { id: 'dca', name: 'DCA bot', emoji: '📈', about: 'Buys a little USDC with MON on Uniswap and PancakeSwap every round, then periodically swaps it back to MON and unwraps.',
-    cap: '0.03', budget: '1', deposit: '0.6', gas: '1.2', rules: ['uni', 'pcs', 'unwrap'], caps: [[T.USDC, 5_000_000n], [T.WMON, parseEther('1')]], payees: false },
+    cap: '0.03', budget: '5', deposit: '0.9', gas: '1.0', rules: ['uni', 'pcs', 'unwrap'], caps: [[T.USDC, 5_000_000n], [T.WMON, parseEther('1')]], payees: false },
   { id: 'staker', name: 'Staker', emoji: '🥩', about: 'Stakes tiny amounts of MON into Kintsu (sMON), aPriori (aprMON) and Magma (gMON), wraps/unwraps WMON, and swaps a little on Kuru.',
-    cap: '0.03', budget: '1', deposit: '0.5', gas: '1.0', rules: ['kintsu', 'apriori', 'magma', 'wrap', 'unwrap', 'kuru'], caps: [], payees: false },
+    cap: '0.03', budget: '5', deposit: '0.9', gas: '1.0', rules: ['kintsu', 'apriori', 'magma', 'wrap', 'unwrap', 'kuru'], caps: [], payees: false },
   { id: 'payroll', name: 'Payroll', emoji: '💸', about: 'Pays small MON salaries to an allowlist of team-owned addresses.',
-    cap: '0.03', budget: '1', deposit: '0.5', gas: '0.6', rules: [], caps: [], payees: true },
+    cap: '0.03', budget: '5', deposit: '0.9', gas: '0.8', rules: [], caps: [], payees: true },
   { id: 'rogue', name: 'Rogue agent', emoji: '😈', about: 'Deliberately tries out-of-policy actions (over cap, strangers, draining tokens, paying itself, owner-only calls). Every attempt is sent on-chain and reverted by the vault.',
-    cap: '0.01', budget: '0.02', deposit: '0.05', gas: '0.6', rules: ['uni'], caps: [], payees: true },
+    cap: '0.01', budget: '0.02', deposit: '0.05', gas: '0.8', rules: ['uni'], caps: [], payees: true },
+  ...(E.LEGACY_DCA === '0' ? [] : [{ id: 'dca1', legacy: true, name: 'DCA bot (v1 vault)', emoji: '📉', about: 'The original DCA bot on the first (legacy) factory: same strategy, no owner top-ups.',
+    cap: '0.03', budget: '1', deposit: '0', gas: '0', rules: ['uni', 'pcs', 'unwrap'], caps: [], payees: false }]),
 ];
 
 // ---- state ----
-const st = fs.existsSync(KEYS) ? JSON.parse(fs.readFileSync(KEYS, 'utf8')) : { agents: {} };
-const save = () => { fs.mkdirSync(path.dirname(KEYS), { recursive: true }); fs.writeFileSync(KEYS, JSON.stringify(st, null, 1), { mode: 0o600 }); fs.chmodSync(KEYS, 0o600); };
-for (const p of PERSONAS) if (!st.agents[p.id]) { st.agents[p.id] = { key: generatePrivateKey() }; save(); }
+const st = !AGENTS_ONLY && fs.existsSync(KEYS) ? JSON.parse(fs.readFileSync(KEYS, 'utf8')) : { agents: {} };
+const save = () => { if (AGENTS_ONLY) return; fs.mkdirSync(path.dirname(KEYS), { recursive: true }); fs.writeFileSync(KEYS, JSON.stringify(st, null, 1), { mode: 0o600 }); fs.chmodSync(KEYS, 0o600); };
+if (AGENTS_ONLY) { // keys come only from env (encrypted Actions secrets); vault addresses from the committed public config
+  const cfg = JSON.parse(fs.readFileSync(CFG_FILE, 'utf8')); st.agents = {}; st.startedAt = cfg.startedAt;
+  for (const p of PERSONAS) { const k = E[`AGENT_KEY_${p.id.toUpperCase()}`]; const c = cfg.agents.find(x => x.id === p.id); if (k && c) st.agents[p.id] = { key: k, vault: c.vault }; }
+}
+for (const p of PERSONAS) if (!st.agents[p.id]) { if (AGENTS_ONLY) continue; st.agents[p.id] = { key: generatePrivateKey() }; save(); }
+if (AGENTS_ONLY) for (let i = PERSONAS.length - 1; i >= 0; i--) if (!st.agents[PERSONAS[i].id]) PERSONAS.splice(i, 1);
 const acct = id => privateKeyToAccount(st.agents[id].key);
 const wcOf = id => createWalletClient({ account: acct(id), chain, transport: http(RPC, { retryCount: 3, timeout: 20_000 }) });
 const ledger = []; if (fs.existsSync(LEDGER)) for (const l of fs.readFileSync(LEDGER, 'utf8').split('\n')) if (l) ledger.push(JSON.parse(l));
@@ -110,7 +120,7 @@ const rnd = (lo, hi) => parseEther((lo + Math.random() * (hi - lo)).toFixed(4));
 
 async function nextAction(p, round) {
   const v = st.agents[p.id].vault; const me = acct(p.id).address;
-  if (p.id === 'dca') {
+  if (p.id.startsWith('dca')) {
     const step = round % 5;
     if (step === 4) { const u = await tbal(T.USDC, v); if (u > 1000n) return swapCall(v, round % 10 === 4 ? UNI : PCS, T.USDC, T.WMON, u, `DCA bot takes profit: swaps ${Number(u) / 1e6} USDC → WMON`); }
     const w = await tbal(T.WMON, v); if (w > 0n) return { label: `DCA bot unwraps ${formatEther(w)} WMON → MON`, action: { kind: 'call', target: T.WMON, value: 0n, data: encodeFunctionData({ abi: wmonAbi, functionName: 'withdraw', args: [w] }), opts: { minOut: w } } };
@@ -159,7 +169,7 @@ async function act(p, round) {
 }
 
 async function maintain(p) {
-  const a = st.agents[p.id]; if (p.id === 'rogue') return;
+  const a = st.agents[p.id]; if (p.id === 'rogue' || p.legacy || AGENTS_ONLY) return;
   const [bal, spent, budget] = await Promise.all([pc.getBalance({ address: a.vault }), vread(a.vault, 'totalSpent'), vread(a.vault, 'budget')]);
   if (budget - spent < parseEther('0.1')) await ownerTx(`Owner raises ${p.name} budget by 0.5 MON`, p.id, a.vault, encodeFunctionData({ abi: agentVaultAbi, functionName: 'setBudget', args: [budget + parseEther('0.5')] }));
   if (bal < parseEther('0.12')) {
@@ -175,17 +185,18 @@ function publish(extra = {}) {
   const c = s => ledger.filter(x => x.actor === 'agent' && x.status === s).length;
   const per = Object.fromEntries(PERSONAS.map(p => [p.id, { allowed: ledger.filter(x => x.persona === p.id && x.status === 'allowed').length, blocked: ledger.filter(x => x.persona === p.id && x.status === 'blocked').length }]));
   const out = { label: 'PolicyPilot showcase agents (operated by the team)', note: 'These vaults and agent keys are run by the PolicyPilot team to demonstrate the product. They are not external users.', chainId: CID, explorer: EXP, factory: FACTORY, owner: owner.address, startedAt: st.startedAt, updatedAt: new Date().toISOString(),
-    totals: { allowed: c('allowed'), blocked: c('blocked'), ownerTxs: ledger.filter(x => x.actor === 'owner').length, monConsumed: extra.used != null ? formatEther(extra.used) : st.lastUsed },
+    totals: { allowed: c('allowed'), blocked: c('blocked'), ownerTxs: ledger.filter(x => x.actor === 'owner').length, monConsumed: AGENTS_ONLY ? undefined : (extra.used != null ? formatEther(extra.used) : st.lastUsed) },
     agents: PERSONAS.map(p => ({ id: p.id, name: p.name, emoji: p.emoji, about: p.about, vault: st.agents[p.id].vault, agent: acct(p.id).address, perActionCapMON: p.cap, ...per[p.id] })),
     recent: ledger.filter(x => x.tx).slice(-60).reverse().map(x => ({ ts: x.ts, persona: x.persona, actor: x.actor, label: x.label, status: x.status, reason: x.reason, tx: x.tx })), status: extra.status || 'running' };
   if (extra.used != null) { st.lastUsed = formatEther(extra.used); save(); }
   fs.writeFileSync(PUB, JSON.stringify(out, null, 1));
+  if (!AGENTS_ONLY) fs.writeFileSync(CFG_FILE, JSON.stringify({ note: 'Public config for the GitHub Actions showcase runner (no keys). Keys live only in encrypted Actions secrets AGENT_KEY_<ID>.', chainId: CID, factory: FACTORY, owner: owner.address, startedAt: st.startedAt, agents: PERSONAS.map(p => ({ id: p.id, name: p.name, vault: st.agents[p.id].vault, agent: acct(p.id).address, secret: `AGENT_KEY_${p.id.toUpperCase()}` })) }, null, 1));
 }
 
 async function recover() {
   log('recovering…');
   for (const p of PERSONAS) {
-    const a = st.agents[p.id]; if (!a.vault) continue;
+    const a = st.agents[p.id]; if (!a.vault || p.legacy) continue; // legacy vaults are left alone
     for (const [sym, tok] of Object.entries(T)) { const b = await tbal(tok, a.vault).catch(() => 0n); if (b > 0n) await ownerTx(`Owner pulls ${sym} out of ${p.name} vault`, p.id, a.vault, encodeFunctionData({ abi: agentVaultAbi, functionName: 'withdrawToken', args: [tok, owner.address, b] })).catch(e => log('withdrawToken failed', sym, e.message)); }
     if (await pc.getBalance({ address: a.vault }) > 0n) await ownerTx(`Owner pulls all MON out of ${p.name} vault (kill-switch)`, p.id, a.vault, encodeFunctionData({ abi: agentVaultAbi, functionName: 'emergencyWithdrawAll' })).catch(e => log('emergency failed', e.message));
     const w = wcOf(p.id); const g = await pc.getBalance({ address: w.account.address }); const gp = await pc.getGasPrice();
@@ -200,6 +211,22 @@ const cmd = process.argv[2] || 'run';
 if (cmd === 'status') { const { h, used } = await consumed(); console.log(JSON.stringify({ holdings: formatEther(h), used: formatEther(used), stopAt: formatEther(STOP_AT), vaults: PERSONAS.map(p => [p.id, st.agents[p.id].vault, acct(p.id).address]) }, null, 1)); process.exit(0); }
 if (cmd === 'recover') { await recover(); const { used } = await consumed(); publish({ used, status: 'stopped' }); log('final consumed', formatEther(used)); process.exit(0); }
 
+if (AGENTS_ONLY && (process.argv[2] === 'check' || !PERSONAS.length)) { // keyless health check (also what runs when secrets aren't configured yet)
+  const cfg = JSON.parse(fs.readFileSync(CFG_FILE, 'utf8'));
+  for (const a of cfg.agents) console.log(a.id.padEnd(8), 'vault', a.vault, formatEther(await pc.getBalance({ address: a.vault })), 'MON · agent gas', formatEther(await pc.getBalance({ address: a.agent })), 'MON · key secret', E[a.secret] ? 'present' : 'MISSING');
+  process.exit(0);
+}
+if (AGENTS_ONLY) {
+  // One action per invocation, rotating personas by run number. Per-run spend guard: refuse if gas is low, fail if a tx costs more than MAX_FEE.
+  const MAX_FEE = parseEther(E.MAX_FEE_MON || '0.15'); const MIN_GAS = parseEther(E.MIN_AGENT_GAS || '0.08');
+  const n = Number(E.RUN_NUMBER || Math.floor(Date.now() / 600e3)); const p = PERSONAS[n % PERSONAS.length]; const round = Math.floor(n / PERSONAS.length);
+  const gas = await pc.getBalance({ address: acct(p.id).address });
+  if (gas < MIN_GAS) { log(p.name, `skip: agent gas ${formatEther(gas)} < ${formatEther(MIN_GAS)} MON (top up the agent to resume)`); publish({ status: 'running (GitHub Actions)' }); process.exit(0); }
+  const r = await within(act(p, round), 240_000, 'act');
+  publish({ status: 'running (GitHub Actions)' });
+  if (r?.feeWei && r.feeWei > MAX_FEE) { log(`SPEND GUARD: fee ${formatEther(r.feeWei)} > ${formatEther(MAX_FEE)} MON`); process.exit(3); }
+  process.exit(0);
+}
 await setup();
 const deadline = Date.now() + HOURS * 3600e3; let round = st.round || 0; let stopReason = 'deadline';
 fs.writeFileSync(path.join(path.dirname(KEYS), `showcase-${TAG}.pid`), String(process.pid));
@@ -207,6 +234,7 @@ let stopFile = path.join(path.dirname(KEYS), `showcase-${TAG}.stop`);
 outer: while (Date.now() < deadline) {
   for (const p of PERSONAS) {
     if (fs.existsSync(stopFile)) { stopReason = 'stop file'; break outer; }
+    if (fs.existsSync(stopFile.replace('.stop', '.handoff'))) { log('HANDOFF: exiting without recovery (GitHub Actions takes over)'); st.stopReason = 'handoff to GitHub Actions'; save(); publish({ status: 'running (GitHub Actions)' }); process.exit(0); }
     const { used } = await consumed();
     const ob = await pc.getBalance({ address: owner.address });
     if (ob < RESERVE + parseEther('1')) { stopReason = `owner reserve: deployer balance ${formatEther(ob)} MON would approach the ${formatEther(RESERVE)} MON reserve`; break outer; }
