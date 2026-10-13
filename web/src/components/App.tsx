@@ -50,11 +50,14 @@ export default function App() {
     if (!pub || !net) return;
     try { setHist(await loadHistory(pub, net, BASE)); } catch (e) { console.warn(e); }
     try {
-      const n = Number(await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultCount' }));
-      const idx = [...Array(Math.min(n, 40)).keys()];
-      const addrs = await Promise.all(idx.map(i => pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'allVaults', args: [BigInt(i)] }) as Promise<Address>));
+      let n = 0; const addrs: Address[] = [];
+      for (const f of [net.factory, ...(net.legacy ?? [])]) {
+        const c = Number(await pub.readContract({ address: f, abi: factoryAbi, functionName: 'vaultCount' }).catch(() => 0n)); n += c;
+        const idx = [...Array(Math.min(c, 40)).keys()];
+        addrs.push(...await Promise.all(idx.map(i => pub.readContract({ address: f, abi: factoryAbi, functionName: 'allVaults', args: [BigInt(i)] }) as Promise<Address>)));
+      }
       const bals = await Promise.all(addrs.map(a => pub.getBalance({ address: a })));
-      setKpi({ vaults: n, tvl: bals.reduce((s, x) => s + x, 0n), note: n > 40 ? 'MON-in-vaults covers the first 40 vaults' : '' });
+      setKpi({ vaults: n, tvl: bals.reduce((s, x) => s + x, 0n), note: n > 80 ? 'MON-in-vaults covers the first 40 vaults per factory' : '' });
     } catch { setKpi(null); }
   }, [pub, net]);
   useEffect(() => { refreshHist(); const t = setInterval(refreshHist, 45000); return () => clearInterval(t); }, [refreshHist]);
@@ -62,7 +65,7 @@ export default function App() {
   const loadVaults = useCallback(async (acc = account) => {
     if (!pub || !net || !acc) return;
     try {
-      const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [acc] }) as Address[];
+      const list = (await Promise.all([...(net.legacy ?? []), net.factory].map(f => pub.readContract({ address: f, abi: factoryAbi, functionName: 'vaultsOf', args: [acc] }).catch(() => []) as Promise<Address[]>))).flat();
       const out: VaultState[] = []; for (const v of [...list].reverse()) out.push(await readVault(pub, net, v));
       setVaults(out);
     } catch (e: any) { toast(`Couldn't load your agents: ${e.shortMessage ?? e.message}`, 'bad'); }
@@ -404,7 +407,7 @@ function QuickAgent({ s, net, runAgent }: { s: VaultState; net: Net; runAgent: a
 }
 function useTeamVaults(net: Net) {
   const [team, setTeam] = useState<Record<string, string>>({});
-  useEffect(() => { if (net.id !== 143) return; fetch(`${BASE}/showcase-agents-143.json`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => { if (!j) return; const m: Record<string, string> = {}; for (const a of j.agents ?? []) m[String(a.vault).toLowerCase()] = `${a.emoji} ${a.name}`; setTeam(m); }).catch(() => {}); }, [net.id]);
+  useEffect(() => { if (net.id !== 143) return; fetch('https://raw.githubusercontent.com/Blockchains/policypilot-monad/main/web/public/showcase-agents-143.json', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).catch(() => null).then(j => j ?? fetch(`${BASE}/showcase-agents-143.json`).then(r => (r.ok ? r.json() : null))).then(j => { if (!j) return; const m: Record<string, string> = {}; for (const a of j.agents ?? []) m[String(a.vault).toLowerCase()] = `${a.emoji} ${a.name}`; setTeam(m); }).catch(() => {}); }, [net.id]);
   return team;
 }
 function Agents({ net, account, vaults, loadVaults, runAgent, ownerTx, setConnectOpen, setTab, toast }: any) {

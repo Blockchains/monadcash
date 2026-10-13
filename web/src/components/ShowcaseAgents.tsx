@@ -13,7 +13,9 @@ const ago = (t: string) => { const s = Math.max(0, (Date.now() - Date.parse(t)) 
 /** Team-operated demo agents. Kept visually and numerically separate from organic users. */
 export default function ShowcaseAgents({ net, pub, base, totalVaults, extraTeamVaults = 0 }: { net: Net; pub: PublicClient; base: string; totalVaults?: number; extraTeamVaults?: number }) {
   const [snap, setSnap] = useState<Snap | null>(null); const [live, setLive] = useState<Live>({}); const [err, setErr] = useState(false);
-  useEffect(() => { if (net.id !== 143) return; fetch(`${base}/showcase-agents-143.json`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(setSnap).catch(() => setErr(true)); }, [net.id, base]);
+  useEffect(() => { if (net.id !== 143) return; const RAW = 'https://raw.githubusercontent.com/Blockchains/policypilot-monad/main/web/public/showcase-agents-143.json'; // updated by the scheduled Actions runner
+    const get = (u: string) => fetch(u, { cache: 'no-store' }).then(r => (r.ok ? r.json() : Promise.reject(r.status)));
+    Promise.allSettled([get(RAW), get(`${base}/showcase-agents-143.json`)]).then(([a, b]) => { const xs = [a, b].filter(x => x.status === 'fulfilled').map(x => (x as PromiseFulfilledResult<Snap>).value); if (!xs.length) return setErr(true); setSnap(xs.sort((x, y) => Date.parse(y.updatedAt) - Date.parse(x.updatedAt))[0]); }); }, [net.id, base]);
   useEffect(() => {
     if (!snap) return; let stop = false;
     const tick = async () => {

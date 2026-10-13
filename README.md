@@ -41,7 +41,7 @@ These are new rules for new vaults. The deployed factory is unchanged, so no red
 
 ## Agent spending harness: live on Monad mainnet (alpha)
 
-> **Alpha · unaudited contract · only deposit what you're happy to lose.** The vault cap is 1 MON and the global cap is 10 MON.
+> **Alpha · unaudited contract · only deposit what you're happy to lose.** The vault cap is 1 MON and the global cap is 1000 MON (factory v2 `0x0342d29055d77ba155c50233f550539E3029BA6a`, Sourcify exact match). The first factory `0x8738…eEB7` (10 MON global cap) is kept as legacy and its vaults stay viewable.
 
 Site: https://blockchains.github.io/policypilot-monad/ ("Is this how easy it is to put a harness on agentic spending?"). Pick an agent, set the limits with sliders and approve dapp cards. One transaction creates a vault with every rule baked in. The agent key is generated and kept in your browser only.
 
@@ -88,3 +88,13 @@ The viewer reads state, execution history and the audit log from it when opened 
 - **Kuru** order-book DEX is live as a service: Router `0xd651346d7c789536ebf06dc72aE3C8502cd695CC`, MON-USDC market `0x065C9d28E428A0db40191a54d33d5b7c71a9C394` (source: https://docs.kuru.io/contracts/Contract-addresses). Both are ERC-1967 proxies with code on chain 143 (upgradeable by Kuru). Allowlisted selector: `anyToAnySwap` (0xffa5210a); output is credited to the caller (the vault), and the vault also enforces `minOut`. Fork test: `test_fork_kuru_mon_to_usdc` (docs/evidence/kuru-fork-test.txt). Real mainnet tx: see docs/evidence/kuru-mainnet-tx.json.
 - **PolicyPilot showcase agents (operated by the team)**: `runner/showcase-agents.mjs` (uses `@policypilot/agent-kit` `VaultAgent`) runs DCA bot / Staker / Payroll / Rogue agent vaults on mainnet from the team's box with a hard MON-consumed auto-stop and full recovery at the end. They are shown separately on the Activity tab and are never counted as users.
 - **Showcase spend policy**: total MON consumed is capped at 1000 MON (`STOP_AT`), and the runner stops before the deployer wallet drops below a 5 MON reserve (`OWNER_RESERVE`). Per-vault policy limits and allowlists are unchanged. The contract's alpha global deposit cap (10 MON across all vaults) still applies. The runner never tops up a team vault if that would leave less than 1 MON of that room for real users. The Launch screen shows the room left and blocks deposits that wouldn't fit.
+
+### Running the showcase agents without the box (GitHub Actions)
+
+`.github/workflows/showcase-agents.yml` runs every 10 minutes. Each run is one agent action, and the persona rotates by run number. It commits the snapshot (`web/public/showcase-agents-143.json`) and the ledger (`runner/ledger/showcase-143.jsonl`) with `[skip ci]`. The site reads the snapshot from raw.githubusercontent.com and falls back to the copy deployed with Pages.
+
+- **Keys:** only the agents' executor keys, stored as encrypted secrets `AGENT_KEY_DCA`, `AGENT_KEY_STAKER`, `AGENT_KEY_PAYROLL`, `AGENT_KEY_ROGUE` and `AGENT_KEY_DCA1`. Set them with `runner/set-actions-secrets.sh`, which needs `gh auth login`. The deployer/owner key is never used in CI, so CI cannot withdraw, change policy or top up a vault.
+- **Kill switch:** the repo variable `SHOWCASE_ENABLED` must be `true`. Remove it or set it to anything else to stop.
+- **Per-run guards:** a run is skipped if the agent's gas is below 0.08 MON. The job fails if a single transaction costs more than 0.15 MON. Every action is still checked by the vault on-chain.
+- **Funding:** the vaults were pre-funded near the 1 MON per-vault cap and the agent gas wallets hold about 4.4 MON in total. There are no owner top-ups in CI, so activity stops once the gas or vault MON runs out. That is roughly 1–2 days at the default rate.
+- **Handoff from the box runner:** run `touch ~/.policypilot/showcase-143v2.handoff`. The box runner then exits without recovering funds. After that, set `SHOWCASE_ENABLED=true`.
