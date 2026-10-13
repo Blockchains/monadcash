@@ -1,5 +1,5 @@
 'use client';
-import { createPublicClient, decodeErrorResult, decodeFunctionData, encodeFunctionData, formatEther, http, keccak256, parseAbi, toHex, type Abi, type Address, type Hex, type PublicClient } from 'viem';
+import { createPublicClient, decodeErrorResult, fallback, decodeFunctionData, encodeFunctionData, formatEther, http, keccak256, parseAbi, toHex, type Abi, type Address, type Hex, type PublicClient } from 'viem';
 import ABI from './vault-abi.json';
 import { KURU, LIVE, QUOTERS, SERVICES, TOKENS, type Service, type TokenSym } from './services';
 
@@ -7,9 +7,9 @@ export const factoryAbi = ABI.factory as Abi; export const vaultAbi = ABI.vault 
 const errAbi = [...(ABI.vault as any[]), ...(ABI.factory as any[])].filter((x, i, a) => x.type === 'error' && a.findIndex(y => y.type === 'error' && y.name === x.name) === i) as Abi;
 export const ZERO = '0x0000000000000000000000000000000000000000' as Address;
 
-export type Net = { id: 143 | 10143; key: 'mainnet' | 'testnet'; name: string; hex: Hex; rpc: string; exp: string; factory: Address; faucet?: string; publicRpc: string };
+export type Net = { id: 143 | 10143; key: 'mainnet' | 'testnet'; name: string; hex: Hex; rpc: string; exp: string; factory: Address; legacy?: Address[]; faucet?: string; publicRpc: string; rpcs?: string[] };
 export const NETS: Record<'mainnet' | 'testnet', Net> = {
-  mainnet: { id: 143, key: 'mainnet', name: 'Mainnet', hex: '0x8f', rpc: 'https://rpc.monad.xyz', publicRpc: 'https://rpc.monad.xyz', exp: 'https://monadvision.com', factory: '0x8738B74778502ff3623A8319837A819d8dBdEeB7' },
+  mainnet: { id: 143, key: 'mainnet', name: 'Mainnet', hex: '0x8f', rpc: 'https://rpc.monad.xyz', publicRpc: 'https://rpc.monad.xyz', exp: 'https://monadvision.com', factory: '0x0342d29055d77ba155c50233f550539E3029BA6a', legacy: ['0x8738B74778502ff3623A8319837A819d8dBdEeB7'], rpcs: ['https://rpc.monad.xyz', 'https://rpc1.monad.xyz', 'https://rpc3.monad.xyz', 'https://rpc-mainnet.monadinfra.com', 'https://rpc2.monad.xyz'] },
   testnet: { id: 10143, key: 'testnet', name: 'Testnet', hex: '0x279f', rpc: 'https://testnet-rpc.monad.xyz', publicRpc: 'https://testnet-rpc.monad.xyz', exp: 'https://testnet.monadexplorer.com', factory: '0x2E40E06C0B864caF87cCB00f31e6EE2d0689cDd7', faucet: 'https://faucet.monad.xyz' },
 };
 /** ?net=mainnet|testnet, plus ?rpc= & ?factory= overrides used for local fork testing. */
@@ -18,11 +18,12 @@ export function resolveNet(): Net {
   const q = new URLSearchParams(location.search);
   const key = (q.get('net') as 'mainnet' | 'testnet') || (localStorage.getItem('pp.netkey') as any) || 'mainnet';
   const n = { ...(NETS[key] ?? NETS.mainnet) };
-  if (q.get('rpc')) n.rpc = q.get('rpc')!; if (q.get('factory')) n.factory = q.get('factory') as Address;
+  if (q.get('rpc')) { n.rpc = q.get('rpc')!; n.rpcs = undefined; } if (q.get('factory')) n.factory = q.get('factory') as Address;
   return n;
 }
 export const chainOf = (n: Net) => ({ id: n.id, name: `Monad ${n.name}`, nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 }, rpcUrls: { default: { http: [n.rpc] } }, blockExplorers: { default: { name: 'Explorer', url: n.exp } } }) as const;
-export const pubOf = (n: Net) => createPublicClient({ chain: chainOf(n), transport: http(n.rpc, { batch: false, retryCount: 4, retryDelay: 500 }) }) as PublicClient;
+/** Public reads go through the official Monad RPC list (docs.monad.xyz) with automatic fallback. */
+export const pubOf = (n: Net) => createPublicClient({ chain: chainOf(n), transport: n.rpcs?.length ? fallback(n.rpcs.map(u => http(u, { batch: false, retryCount: 1, retryDelay: 300, timeout: 12_000 })), { rank: false, retryCount: 2 }) : http(n.rpc, { batch: false, retryCount: 4, retryDelay: 500 }) }) as PublicClient;
 export const services = (n: Net) => (n.id === 143 ? SERVICES : SERVICES.filter(s => s.id === 'pay').concat(SERVICES.filter(s => s.id !== 'pay').map(s => ({ ...s, status: 'soon' as const, why: s.why ?? 'Mainnet only: these are mainnet contracts.' }))));
 
 export const mon = (v: bigint | number | string, d = 4) => `${Number(formatEther(BigInt(v))).toLocaleString(undefined, { maximumFractionDigits: d })} MON`;

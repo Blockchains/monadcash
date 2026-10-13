@@ -60,3 +60,8 @@ export class VaultAgent {
     return { status: 'blocked', reason: sim.ok ? 'Reverted' : sim.error, args: sim.ok ? undefined : sim.args, hash, blockNumber: r.blockNumber, gasUsed: r.gasUsed, feeWei: fee, onchain: true };
   }
 }
+
+/** Monad mainnet AgentVaultFactory (v2, 1 MON per-vault cap, 1000 MON global cap, Sourcify exact match). */
+export const MAINNET_FACTORY = '0x0342d29055d77ba155c50233f550539E3029BA6a' as Address;
+/** First mainnet factory (10 MON global cap). Kept for reading existing vaults. */
+export const MAINNET_LEGACY_FACTORIES = ['0x8738B74778502ff3623A8319837A819d8dBdEeB7'] as Address[];

@@ -6,11 +6,23 @@
   "status": "ALPHA - unaudited. Only deposit what you're happy to lose.",
   "contracts": {
     "AgentVaultFactory": {
+      "address": "0x0342d29055d77ba155c50233f550539E3029BA6a",
+      "tx": "0x0faa9973944d81a0e513066d18e20103158ca7c0983b28a02590d957c1698cb0",
+      "block": 113090852,
+      "deployedAt": "2026-10-13T16:50Z",
+      "vaultCap": "1 MON",
+      "globalCap": "1000 MON",
+      "sourcify": "exact_match",
+      "sourcifyUrl": "https://repo.sourcify.dev/143/0x0342d29055d77ba155c50233f550539E3029BA6a",
+      "deployCostMON": "0.7156"
+    },
+    "LegacyAgentVaultFactory": {
       "address": "0x8738B74778502ff3623A8319837A819d8dBdEeB7",
       "tx": "0x5f510194a3cd4ea6d96da0e2c23a03d38b885d61d206fa5869f789f8a6f01e21",
       "vaultCap": "1 MON",
       "globalCap": "10 MON",
-      "sourcify": "exact_match"
+      "sourcify": "exact_match",
+      "status": "legacy (still readable; its vaults stay viewable in the app)"
     },
     "ShowcaseAgentVault": {
       "address": "0x379e0C3Ecba46d62dAdCf26dBecd0F26A2cdCA97",
@@ -22,5 +34,10 @@
     "steps": "frontend/showcase-143.json",
     "netMonSpent": "1.028184583035106325"
   },
-  "dapps": "frontend/dapps.json (verified official addresses only; Morpho/Kuru not yet verified, not enabled)"
+  "dapps": "web/src/lib/services.ts (verified official addresses only, each fork-tested; Kuru live since 2026-10-13)",
+  "showcaseAgents": {
+    "config": "runner/showcase-config-143.json",
+    "snapshot": "web/public/showcase-agents-143.json",
+    "note": "Team-operated demo agents, not users."
+  }
 }
