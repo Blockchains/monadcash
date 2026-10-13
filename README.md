@@ -12,6 +12,33 @@ Status: IMPLEMENTED + TESTED locally (Foundry, anvil) and DEPLOYED to Monad test
 Run: `forge test -vv`; `anvil &`; `cd executor && node e2e-anvil.mjs`.
 Deploy yourself: see [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
+## v3: one mobile-native app ("Love agents. Love control. PolicyPilot.")
+
+https://blockchains.github.io/policypilot-monad/ is now a single Next.js PWA (installable, safe-area aware, bottom tab bar on phones and tablets). Tabs:
+- **Launch**: the novice flow. Connect wallet → connect agent (create an in-browser agent key, or paste an external agent address such as an ElizaOS agent) → switch rules on/off (total budget, per-action cap, allowed services, payees, start paused) → **Let it go into the wild** (one `createVault` tx with every rule baked in, plus optional agent gas).
+- **Activity**: a live feed of real transactions (the mainnet showcase vault plus your own), with allowed/blocked filters, plain-English revert reasons, a spend chart, and quick "run your agent" / "😈 break it" actions.
+- **Agents**: your vaults, read from the factory: budget ring, a kill-switch toggle, deposit/withdraw, pull everything back, and withdraw tokens.
+- **Services**: the top Monad services, each either live or honestly marked "coming soon".
+- **Policy**: the original PolicyPilot dashboard (testnet).
+
+Wallets: EIP-6963 multi-wallet discovery (MetaMask, Rabby, Phantom, Backpack, OKX, Coinbase… whatever is injected), a legacy `window.ethereum` fallback, and official deep links that open the app in a mobile wallet's browser (MetaMask, Phantom, Coinbase, OKX, Backpack, Trust). **WalletConnect is not included**: it needs a Reown project ID, which means a third-party signup.
+
+Live services on mainnet. Each address comes from the protocol's own docs and passes a mainnet fork test (`forge test --fork-url https://rpc.monad.xyz --match-contract AgentVaultFork`):
+
+| Service | Contract | Official source | Fork test |
+|---|---|---|---|
+| Pay approved payees | vault `execute` | – | unit/fuzz/invariant |
+| Uniswap v3 swap | SwapRouter02 `0xfE31F71C1b106EAc32F1A19239c9a9A72ddfb900` | developers.uniswap.org (v3 Monad deployments) | `test_fork_uniswap_mon_to_usdc_and_back` |
+| PancakeSwap v3 swap | SmartRouter `0x21114915Ac6d5A2e156931e20B20b038dEd0Be7C` (QuoterV2 `0xB048…5997`) | developer.pancakeswap.finance/contracts/v3/addresses | `test_fork_pancake_mon_to_usdc_and_back` |
+| Kintsu liquid staking (sMON) | `0xA3227C5969757783154C60bF0bC1944180ed81B9` | docs.kintsu.xyz | `test_fork_kintsu_stake` |
+| aPriori liquid staking (aprMON) | `0x0c65A0BC65a5D819235B71F554D210D3F80E0852` | apriori-docs.gitbook.io (smart contract integration) | `test_fork_apriori_stake` |
+| Magma liquid staking (gMON) | `0x8498312A6B3CbD158bf0c93AbdCF29E6e4F55081` | docs.hydrogenlabs.xyz/magma | `test_fork_magma_stake` |
+| Wrapped MON | `0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A` | docs.monad.xyz | `test_fork_wmon_wrap_unwrap` |
+
+Coming soon, and not enabled: lending (Morpho is on Monad, but no vault is "listed" in Morpho's official API yet), USDC payouts (needs a new vault version, because ERC-20 `transfer` is blocked by design), perps (Kuru's official router address isn't verified), bridges (the output can't be forced back to the vault), NFTs (not verified).
+
+These are new rules for new vaults. The deployed factory is unchanged, so no redeploy was needed, and existing vaults keep their own rules.
+
 ## Agent spending harness: live on Monad mainnet (alpha)
 
 > **Alpha · unaudited contract · only deposit what you're happy to lose.** The vault cap is 1 MON and the global cap is 10 MON.

@@ -1,0 +1,34 @@
+Compiling 33 files with Solc 0.8.30
+Solc 0.8.30 finished in 918.69ms
+Compiler run successful!
+
+Ran 4 tests for test/AgentVaultDapps.t.sol:AgentVaultForkTest
+[PASS] test_fork_blocked_over_cap_and_unlisted() (gas: 163156)
+[PASS] test_fork_kintsu_stake() (gas: 479580)
+Logs:
+  sMON shares: 89502794671500638
+
+[PASS] test_fork_uniswap_mon_to_usdc_and_back() (gas: 958366)
+Logs:
+  USDC out (6dp) for 0.2 MON: 4954
+  WMON back (wei): 198771725410692418
+
+[PASS] test_fork_wmon_wrap_unwrap() (gas: 373236)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 8.92s (9.96s CPU time)
+
+Ran 3 tests for test/AgentVaultDapps.t.sol:AgentVaultForkV3Test
+[PASS] test_fork_apriori_stake() (gas: 401583)
+Logs:
+  aprMON shares: 91185126983781014
+
+[PASS] test_fork_magma_stake() (gas: 991552)
+Logs:
+  gMON shares: 90507806259487534
+
+[PASS] test_fork_pancake_mon_to_usdc_and_back() (gas: 1012122)
+Logs:
+  USDC out (6dp) for 0.2 MON: 4968
+
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 33.84s (39.67s CPU time)
+
+Ran 2 test suites in 34.67s (42.76s CPU time): 7 tests passed, 0 failed, 0 skipped (7 total tests)

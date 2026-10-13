@@ -204,3 +204,59 @@ contract AgentVaultForkTest is Test {
         v.executeCall("c2", USDC, 0, abi.encodeCall(IERC20.transfer, (agent, 1)), _o(address(0), 0, address(0), 0));
     }
 }
+
+interface IApriori { function deposit(uint256 assets, address receiver) external payable returns (uint256); }
+interface IMagma { function depositMON(address receiver, uint256 referralId) external payable; }
+
+/// v3 fork tests. Run: forge test --fork-url https://rpc.monad.xyz --match-contract AgentVaultForkV3Test -vv
+contract AgentVaultForkV3Test is Test {
+    address constant WMON = 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A; // docs.monad.xyz canonical
+    address constant USDC = 0x754704Bc059F8C67012fEd69BC8A327a5aafb603; // Circle docs
+    address constant PANCAKE = 0x21114915Ac6d5A2e156931e20B20b038dEd0Be7C; // PancakeSwap docs: SmartRouter (Monad)
+    address constant APRMON = 0x0c65A0BC65a5D819235B71F554D210D3F80E0852; // aPriori docs: aprMON
+    address constant GMON = 0x8498312A6B3CbD158bf0c93AbdCF29E6e4F55081; // Magma docs: gMON
+    AgentVaultFactory f; AgentVault v; address owner = address(0xA11CE); address agent = address(0xA6E7);
+    bool on;
+
+    function setUp() public {
+        if (block.chainid != 143) return;
+        on = true;
+        f = new AgentVaultFactory(1 ether, 5 ether);
+        vm.deal(owner, 5 ether);
+        CallRuleInit[] memory rules = new CallRuleInit[](3);
+        rules[0] = CallRuleInit(PANCAKE, ISwapRouter02.exactInputSingle.selector, 3);
+        rules[1] = CallRuleInit(APRMON, IApriori.deposit.selector, 1);
+        rules[2] = CallRuleInit(GMON, IMagma.depositMON.selector, 0);
+        TokenCapInit[] memory caps = new TokenCapInit[](2);
+        caps[0] = TokenCapInit(USDC, 1_000_000); caps[1] = TokenCapInit(WMON, 1 ether);
+        vm.prank(owner); v = f.createVault{value: 1 ether}(agent, 0.3 ether, 1 ether, new address[](0), rules, caps);
+    }
+    function _o(address at, uint256 aa, address out, uint256 m) internal pure returns (AgentVault.CallOpts memory) { return AgentVault.CallOpts(at, aa, out, m); }
+
+    function test_fork_pancake_mon_to_usdc_and_back() public {
+        if (!on) return;
+        ISwapRouter02.ExactInputSingleParams memory p = ISwapRouter02.ExactInputSingleParams(WMON, USDC, 500, address(v), 0.2 ether, 1, 0);
+        vm.prank(agent); v.executeCall("p1", PANCAKE, 0.2 ether, abi.encodeCall(ISwapRouter02.exactInputSingle, (p)), _o(address(0), 0, USDC, 1));
+        uint256 got = IERC20(USDC).balanceOf(address(v)); assertGt(got, 0); emit log_named_uint("USDC out (6dp) for 0.2 MON", got);
+        ISwapRouter02.ExactInputSingleParams memory back = ISwapRouter02.ExactInputSingleParams(USDC, WMON, 500, address(v), got, 1, 0);
+        vm.prank(agent); v.executeCall("p2", PANCAKE, 0, abi.encodeCall(ISwapRouter02.exactInputSingle, (back)), _o(USDC, got, WMON, 1));
+        assertEq(IERC20(USDC).allowance(address(v), PANCAKE), 0); assertGt(IERC20(WMON).balanceOf(address(v)), 0);
+        p.recipient = agent;
+        vm.prank(agent); vm.expectRevert(abi.encodeWithSelector(AgentVault.RecipientMustBeVault.selector, agent));
+        v.executeCall("p3", PANCAKE, 0.1 ether, abi.encodeCall(ISwapRouter02.exactInputSingle, (p)), _o(address(0), 0, USDC, 1));
+    }
+    function test_fork_apriori_stake() public {
+        if (!on) return;
+        vm.prank(agent); v.executeCall("a1", APRMON, 0.1 ether, abi.encodeCall(IApriori.deposit, (0.1 ether, address(v))), _o(address(0), 0, APRMON, 1));
+        uint256 s = IERC20(APRMON).balanceOf(address(v)); assertGt(s, 0); emit log_named_uint("aprMON shares", s);
+        vm.prank(agent); vm.expectRevert(abi.encodeWithSelector(AgentVault.RecipientMustBeVault.selector, agent));
+        v.executeCall("a2", APRMON, 0.1 ether, abi.encodeCall(IApriori.deposit, (0.1 ether, agent)), _o(address(0), 0, address(0), 0));
+    }
+    function test_fork_magma_stake() public {
+        if (!on) return;
+        vm.prank(agent); v.executeCall("m1", GMON, 0.1 ether, abi.encodeCall(IMagma.depositMON, (address(v), 0)), _o(address(0), 0, GMON, 1));
+        uint256 s = IERC20(GMON).balanceOf(address(v)); assertGt(s, 0); emit log_named_uint("gMON shares", s);
+        vm.prank(agent); vm.expectRevert(abi.encodeWithSelector(AgentVault.RecipientMustBeVault.selector, agent));
+        v.executeCall("m2", GMON, 0.1 ether, abi.encodeCall(IMagma.depositMON, (agent, 0)), _o(address(0), 0, address(0), 0));
+    }
+}
