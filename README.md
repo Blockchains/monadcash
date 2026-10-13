@@ -5,9 +5,9 @@
 **Demo video:** [watch](https://blockchains.github.io/policypilot-monad/demo.html) · [download MP4](https://blockchains.github.io/policypilot-monad/demo.mp4)
 Status: IMPLEMENTED + TESTED locally (Foundry, anvil) and DEPLOYED to Monad testnet (test token only; not mainnet).
 - `src/PolicyPilot.sol` non-upgradeable contract (OpenZeppelin v5.7.0 SafeERC20). `src/MockToken.sol` test-only.
-- `test/PolicyPilot.t.sol` 14 unit + 2 fuzz + 3 invariants (1 invariant suite).
+- `test/PolicyPilot.t.sol`: 17 tests in total, as reported by `forge test` (unit, fuzz and invariant tests across 2 suites).
 - `executor/` viem deterministic executor + `e2e-anvil.mjs` local demo (writes evidence JSON).
-- `frontend/index.html` static read-only viewer (RPC mode, or Envio indexer mode via `?indexer=`).
+- `frontend/index.html` static read-only demo dashboard: live state and budget gauge, event timeline, decoded on-chain rejections, read-only `eth_call` policy simulator, architecture, judge quick-start. Reads via RPC, or the Envio indexer via `?indexer=`.
 - `indexer/` Envio HyperIndex indexer for all PolicyPilot events (local).
 Run: `forge test -vv`; `anvil &`; `cd executor && node e2e-anvil.mjs`.
 Deploy yourself: see [`docs/DEPLOY.md`](docs/DEPLOY.md).

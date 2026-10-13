@@ -1,57 +1,321 @@
-<!doctype html><html><head><meta charset="utf-8"><title>PolicyPilot – read-only status (Monad testnet)</title>
-<style>body{font:14px system-ui;max-width:900px;margin:2rem auto}td,th{padding:2px 8px;text-align:left}input{width:420px}.ok{color:#080}.bad{color:#b00}</style></head>
-<body><h1>PolicyPilot (read-only)</h1><p>No wallet connection, no writes. Reads public state and receipts over JSON-RPC, or (optional) from an Envio HyperIndex GraphQL endpoint via <code>?indexer=&lt;url&gt;</code>. Default: live <b>Monad testnet</b> deployment (chain 10143). Test token only, no real value.</p>
-RPC <input id="rpc" value="https://testnet-rpc.monad.xyz/"><br>Contract <input id="addr" value="0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E"><br>Envio indexer GraphQL (optional) <input id="idx" placeholder="e.g. http://localhost:8080/v1/graphql"><button onclick="go()">Load</button>
-<p>Data source: <b id="src">…</b></p>
-<h2>State</h2><table id="t"></table>
-<h2>Executed events</h2><table id="ev"></table>
-<h2>Policy audit log (Envio indexer mode only)</h2><table id="log"></table>
-<h2>Demo transactions (incl. reverted rejections)</h2><table id="tx"></table>
-<p id="st"></p>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PolicyPilot – on-chain spending guardrails for automated executors (Monad testnet)</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+<meta name="description" content="Live read-only demo of PolicyPilot on Monad testnet: allowlist, per-request cap, budget, pause and replay protection enforced on-chain.">
+<style>
+:root{--bg:#0a0a12;--card:#141422;--line:#26263a;--txt:#e8e8f2;--mut:#9a9ab5;--acc:#8b5cf6;--acc2:#22d3ee;--ok:#22c55e;--bad:#f43f5e;--warn:#f59e0b}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(1200px 600px at 10% -10%,#2a1b55 0,transparent 60%),var(--bg);color:var(--txt);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em}
+.wrap{max-width:1120px;margin:0 auto;padding:0 18px}
+nav{position:sticky;top:0;z-index:5;background:rgba(10,10,18,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:16px;align-items:center;height:52px;overflow-x:auto;white-space:nowrap}
+nav b{margin-right:auto;font-size:16px}nav a{color:var(--mut);font-size:14px}
+.hero{padding:56px 0 28px}
+.hero h1{font-size:clamp(30px,5vw,52px);line-height:1.08;margin:0 0 14px;letter-spacing:-.02em}
+.hero h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.lead{font-size:clamp(16px,2vw,19px);color:var(--mut);max-width:760px;margin:0 0 18px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mut)}.dot.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}.dot.bad{background:var(--bad)}.dot.warn{background:var(--warn)}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.btn{display:inline-block;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-weight:600;cursor:pointer;font-size:14px}
+.btn.pri{background:linear-gradient(90deg,var(--acc),#6d28d9);border-color:transparent}.btn:hover{text-decoration:none;filter:brightness(1.15)}
+section{padding:34px 0;border-top:1px solid var(--line)}
+h2{font-size:24px;margin:0 0 6px}.sub{color:var(--mut);margin:0 0 18px}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:860px){.g4{grid-template-columns:1fr 1fr}.g2,.g3{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.kpi .l{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em}.kpi .v{font-size:24px;font-weight:700;margin-top:4px}
+.bar{height:14px;background:#0d0d18;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:10px 0 6px}
+.bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--acc2),var(--acc));transition:width .8s}
+.row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--mut);font-size:13px}
+.tl{list-style:none;margin:0;padding:0 0 0 18px;border-left:2px solid var(--line)}
+.tl li{position:relative;padding:0 0 16px 14px}.tl li:before{content:"";position:absolute;left:-25px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--acc)}
+.tl li.ex:before{background:var(--ok)}.tl li.pz:before{background:var(--warn)}
+.tl .t{font-weight:600}.tl .m{color:var(--mut);font-size:13px;word-break:break-all}
+.gr{border-left:3px solid var(--bad)}.gr h3{margin:0 0 4px;font-size:16px}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:6px;background:#2a1020;color:#fda4af;border:1px solid #5b1f33}
+.tag.ok{background:#0f2a1a;color:#86efac;border-color:#1f5b34}.tag.mut{background:#1b1b2b;color:var(--mut);border-color:var(--line)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:13px;margin-top:8px}.kv div:nth-child(odd){color:var(--mut)}.kv div{word-break:break-all}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;padding:9px 10px;border-radius:9px;border:1px solid var(--line);background:#0d0d18;color:var(--txt);font:inherit}
+.res{margin-top:14px;padding:14px;border-radius:12px;border:1px solid var(--line);background:#0d0d18;min-height:56px}
+.res.ok{border-color:var(--ok)}.res.bad{border-color:var(--bad)}
+.arch{width:100%;height:auto}
+.steps{counter-reset:s;list-style:none;padding:0;margin:0}.steps li{counter-increment:s;padding:10px 0 10px 44px;position:relative}
+.steps li:before{content:counter(s);position:absolute;left:0;top:8px;width:30px;height:30px;border-radius:50%;background:var(--acc);display:grid;place-items:center;font-weight:700}
+pre{background:#0d0d18;border:1px solid var(--line);border-radius:10px;padding:10px;overflow-x:auto;font-size:12.5px}
+.switch{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--mut)}.small{font-size:12.5px}
+footer{padding:30px 0 50px;color:var(--mut);font-size:13px;border-top:1px solid var(--line)}
+.skel{color:var(--mut)}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><b>🛡️ PolicyPilot</b><a href="#live">Live state</a><a href="#timeline">Timeline</a><a href="#guardrails">Guardrails</a><a href="#simulate">Try it</a><a href="#arch">Architecture</a><a href="#judges">Judges</a></div></nav>
+
+<header class="hero"><div class="wrap">
+  <h1>Give your bot a spending key<br><span>that cannot overspend.</span></h1>
+  <p class="lead">PolicyPilot is a policy contract on Monad. Allowlisted recipients, a per-request cap, a total budget, a pause switch and replay-proof request IDs are all enforced on-chain, so an automated executor (bot, AI agent, backend) can only spend inside the rules.</p>
+  <div class="badges">
+    <span class="badge"><span class="dot" id="b-live"></span><span id="b-live-t">Checking Monad testnet…</span></span>
+    <span class="badge"><span class="dot ok"></span><a href="https://sourcify.dev/#/lookup/0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E" id="b-src">Sourcify verified (exact match)</a></span>
+    <span class="badge"><span class="dot warn"></span>Unaudited · testnet only · test token</span>
+    <span class="badge"><span class="dot" id="b-src2"></span><span id="b-src2-t">Data: JSON-RPC</span></span>
+  </div>
+  <div class="cta">
+    <a class="btn pri" href="#simulate">Try a policy check →</a>
+    <a class="btn" href="https://github.com/Blockchains/policypilot-monad">GitHub repo</a>
+    <a class="btn" href="demo.html">▶ Videos</a>
+    <a class="btn" href="https://github.com/Blockchains/policypilot-monad/blob/main/docs/DEPLOY.md">DEPLOY.md</a>
+  </div>
+  <p class="small muted" style="margin-top:14px">Contract <a class="mono" id="addrLink" href="#">0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E</a> on Monad testnet (chain 10143). Read-only page: no wallet, no signing. All values below are read live from the chain or the Envio indexer.</p>
+</div></header>
+
+<main>
+<section id="live"><div class="wrap">
+  <h2>Live policy state</h2>
+  <p class="sub">Read from the contract (or Envio). Refreshes every 15 s. <span id="upd" class="small"></span></p>
+  <div class="grid g2">
+    <div class="card">
+      <div class="row"><span>Budget used</span><span id="pct">–</span></div>
+      <div class="bar"><div id="barf"></div></div>
+      <div class="row"><span id="spent">spent –</span><span id="budget">budget –</span></div>
+      <div class="grid g3" style="margin-top:14px">
+        <div class="kpi"><div class="l">Remaining</div><div class="v" id="k-rem">–</div></div>
+        <div class="kpi"><div class="l">Per-request cap</div><div class="v" id="k-cap">–</div></div>
+        <div class="kpi"><div class="l">Status</div><div class="v" id="k-pz">–</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="kv" id="roles"><div>Executor</div><div class="skel">loading…</div></div>
+      <div style="margin-top:14px" class="switch">
+        <label style="margin:0">Envio indexer GraphQL</label>
+        <input id="idx" placeholder="http://localhost:8080/v1/graphql (optional)" style="flex:1;min-width:200px">
+        <button class="btn" id="idxBtn">Use indexer</button>
+      </div>
+      <p class="small muted">Optional: point at your own <a href="https://github.com/Blockchains/policypilot-monad/tree/main/indexer">Envio HyperIndex</a> instance (runs locally, not hosted). If it's empty or can't be reached, the page reads from the chain directly.</p>
+      <details class="small"><summary>RPC / contract</summary>
+        <label>RPC</label><input id="rpc" value="https://testnet-rpc.monad.xyz/">
+        <label>Contract</label><input id="addr" value="0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E">
+        <button class="btn" style="margin-top:8px" id="reload">Reload</button>
+      </details>
+    </div>
+  </div>
+</div></section>
+
+<section id="timeline"><div class="wrap">
+  <h2>Policy timeline</h2>
+  <p class="sub" id="tlsub">Every policy event emitted by the contract, oldest first.</p>
+  <div class="card"><ul class="tl" id="tl"><li class="skel">loading…</li></ul></div>
+</div></section>
+
+<section id="guardrails"><div class="wrap">
+  <h2>Guardrails in action</h2>
+  <p class="sub">Five real transactions that were sent to the live contract and <b>reverted on-chain</b>. Each card shows the receipt status from the chain, the decoded calldata, and the revert reason, which we get by re-running the exact same calldata with <code>eth_call</code> at the block before the transaction.</p>
+  <div class="grid g2" id="grs"><div class="card skel">loading receipts…</div></div>
+</div></section>
+
+<section id="simulate"><div class="wrap">
+  <h2>Try a policy check</h2>
+  <p class="sub">Simulates <code>execute(requestId, recipient, amount)</code> with a read-only <code>eth_call</code> against the live contract: nothing is signed or sent. By default it calls as the configured executor, so you see exactly what the policy would do.</p>
+  <div class="grid g2">
+    <div class="card">
+      <label>Preset</label>
+      <select id="preset">
+        <option value="ok">✅ Allowed recipient, 10 mUSD, fresh requestId</option>
+        <option value="cap">❌ Over per-request cap (150 mUSD)</option>
+        <option value="budget">❌ Over remaining budget (60 mUSD)</option>
+        <option value="rcpt">❌ Recipient not allowlisted (0x…dEaD)</option>
+        <option value="replay">❌ Replay an already executed requestId</option>
+        <option value="notexec">❌ Called by someone other than the executor</option>
+      </select>
+      <label>Recipient</label><input id="s-r" class="mono">
+      <label>Amount (mUSD)</label><input id="s-a" inputmode="decimal">
+      <label>requestId (bytes32, or any text; text gets hashed with keccak256)</label><input id="s-id" class="mono">
+      <label>Call as (from)</label><input id="s-from" class="mono">
+      <button class="btn pri" style="margin-top:14px;width:100%" id="simBtn">Simulate (eth_call)</button>
+    </div>
+    <div class="card">
+      <div class="res" id="simres"><span class="muted">Pick a preset or enter values, then simulate.</span></div>
+      <p class="small muted">Pause isn't a preset because the contract isn't paused right now, so a real paused rejection is shown under Guardrails instead. Reads only; no gas is spent.</p>
+    </div>
+  </div>
+</div></section>
+
+<section id="arch"><div class="wrap">
+  <h2>Architecture</h2>
+  <p class="sub">The executor proposes. The contract decides. The indexer and this page only observe.</p>
+  <div class="card">
+  <svg class="arch" viewBox="0 0 960 300" role="img" aria-label="Architecture diagram">
+    <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#9a9ab5"/></marker></defs>
+    <g font-family="system-ui" font-size="14" fill="#e8e8f2">
+      <rect x="10" y="30" width="200" height="90" rx="12" fill="#1b1b2e" stroke="#8b5cf6"/><text x="110" y="65" text-anchor="middle" font-weight="700">Executor</text><text x="110" y="88" text-anchor="middle" fill="#9a9ab5" font-size="12">bot / AI agent / backend</text><text x="110" y="106" text-anchor="middle" fill="#9a9ab5" font-size="12">viem TS (executor/)</text>
+      <rect x="370" y="20" width="230" height="200" rx="12" fill="#1b1b2e" stroke="#22d3ee"/><text x="485" y="50" text-anchor="middle" font-weight="700">PolicyPilot.sol</text><text x="485" y="70" text-anchor="middle" fill="#9a9ab5" font-size="12">Monad testnet · 0x583f…7D4E</text>
+      <g font-size="12.5"><text x="390" y="100">✓ onlyExecutor</text><text x="390" y="120">✓ not paused</text><text x="390" y="140">✓ recipient allowlisted</text><text x="390" y="160">✓ amount ≤ per-request cap</text><text x="390" y="180">✓ totalSpent + amount ≤ budget</text><text x="390" y="200">✓ requestId never used</text></g>
+      <rect x="750" y="30" width="200" height="70" rx="12" fill="#1b1b2e" stroke="#22c55e"/><text x="850" y="62" text-anchor="middle" font-weight="700">Recipient</text><text x="850" y="82" text-anchor="middle" fill="#9a9ab5" font-size="12">ERC-20 SafeTransfer</text>
+      <rect x="750" y="140" width="200" height="70" rx="12" fill="#1b1b2e" stroke="#f43f5e"/><text x="850" y="172" text-anchor="middle" font-weight="700">Revert</text><text x="850" y="192" text-anchor="middle" fill="#9a9ab5" font-size="12">typed error, no funds move</text>
+      <rect x="10" y="200" width="200" height="80" rx="12" fill="#1b1b2e" stroke="#9a9ab5"/><text x="110" y="232" text-anchor="middle" font-weight="700">Admin</text><text x="110" y="254" text-anchor="middle" fill="#9a9ab5" font-size="12">sets allowlist, cap, budget, pause</text>
+      <rect x="370" y="245" width="230" height="50" rx="12" fill="#1b1b2e" stroke="#f59e0b"/><text x="485" y="275" text-anchor="middle" font-weight="700">Envio HyperIndex → GraphQL</text>
+      <rect x="750" y="235" width="200" height="60" rx="12" fill="#1b1b2e" stroke="#8b5cf6"/><text x="850" y="270" text-anchor="middle" font-weight="700">This dashboard</text>
+    </g>
+    <g stroke="#9a9ab5" stroke-width="2" fill="none" marker-end="url(#a)">
+      <path d="M210 75H365"/><path d="M210 240C290 240 300 190 365 190"/><path d="M600 70H745"/><path d="M600 170H745"/><path d="M485 220V242"/><path d="M600 270H745"/>
+    </g>
+    <g font-family="system-ui" font-size="12" fill="#9a9ab5"><text x="225" y="68">execute(id, to, amt)</text><text x="640" y="62">Executed event</text><text x="640" y="162">rejected</text><text x="640" y="262">events</text></g>
+  </svg>
+  </div>
+</div></section>
+
+<section id="judges"><div class="wrap">
+  <h2>Judge quick-start</h2>
+  <div class="grid g2">
+    <div class="card"><ol class="steps">
+      <li><b>Look:</b> this page reads live from Monad testnet. Check the <a href="#guardrails">reverted guardrail txs</a> on the explorer, then run a <a href="#simulate">policy check</a>.</li>
+      <li><b>Verify:</b> the contract is <a href="https://sourcify.dev/#/lookup/0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E">Sourcify-verified</a>. The source is in <a href="https://github.com/Blockchains/policypilot-monad/blob/main/src/PolicyPilot.sol">src/PolicyPilot.sol</a>.</li>
+      <li><b>Run:</b> clone the repo, then <code>forge test</code> (17 tests: unit, fuzz, invariant). Optionally run <code>cd indexer && npx envio dev</code> and open this page with <code>?indexer=http://localhost:8080/v1/graphql</code>.</li>
+    </ol></div>
+    <div class="card">
+<pre>git clone https://github.com/Blockchains/policypilot-monad
+cd policypilot-monad && forge test
+anvil & cd executor && npm ci && node e2e-anvil.mjs
+cd ../indexer && npm i && npx envio dev</pre>
+      <p class="small"><a href="https://github.com/Blockchains/policypilot-monad">Repo</a> · <a href="https://github.com/Blockchains/policypilot-monad/blob/main/docs/DEPLOY.md">DEPLOY.md</a> · <a href="https://github.com/Blockchains/policypilot-monad/blob/main/docs/threat-model.md">Threat model</a> · <a href="https://github.com/Blockchains/policypilot-monad/blob/main/docs/limitations.md">Limitations</a> · <a href="demo.html">Pitch + demo videos</a> · <a href="envio-demo.mp4">Envio video</a> · <a href="deployment.json">deployment.json</a></p>
+    </div>
+  </div>
+</div></section>
+</main>
+<footer><div class="wrap">PolicyPilot is a reference implementation built for Monad Metropolis. It runs on Monad <b>testnet</b> with a valueless test token (mUSD), is <b>unaudited</b>, and has no users. Nothing on this page is simulated or invented: values come from live RPC reads, receipts and <code>eth_call</code>, or from your Envio indexer if you set one.</div></footer>
+
 <script type="module">
-import { createPublicClient, http, parseAbi, decodeEventLog, formatUnits } from 'https://esm.sh/viem@2';
-const abi = parseAbi(['function admin() view returns (address)','function executor() view returns (address)','function asset() view returns (address)','function perRequestLimit() view returns (uint256)','function budget() view returns (uint256)','function totalSpent() view returns (uint256)','function remainingBudget() view returns (uint256)','function paused() view returns (bool)','event Executed(bytes32 indexed requestId, address indexed recipient, uint256 amount, uint256 totalSpent)']);
+import { createPublicClient, http, parseAbi, decodeEventLog, decodeFunctionData, decodeErrorResult, encodeFunctionData, formatUnits, parseUnits, keccak256, toHex, isHex, isAddress, getAddress } from 'https://esm.sh/viem@2.21.0';
+const $=id=>document.getElementById(id);
 const EXP='https://testnet.monadexplorer.com';
-const fmt=v=>typeof v==='bigint'&&v>10n**12n?`${formatUnits(v,18)} mUSD`:String(v);
-window.go = async () => {
-  const st=document.getElementById('st'); st.textContent='loading…';
-  try {
-  const c = createPublicClient({ transport: http(rpc.value) }); const address = addr.value; const t = document.getElementById('t'); t.innerHTML='';
-  let dep=null; try{ dep=await (await fetch('deployment.json')).json(); }catch{}
-  const ev=document.getElementById('ev'), tx=document.getElementById('tx'), lg=document.getElementById('log'); ev.innerHTML='<tr><th>requestId</th><th>recipient</th><th>amount</th><th>totalSpent</th><th>tx</th></tr>'; tx.innerHTML=''; lg.innerHTML='';
-  const idxUrl = idx.value || (dep && dep.indexerUrl) || '';
-  let indexed = false;
-  if (idxUrl) {
-    try {
-      const q = `query($a:String!){ PolicyState(where:{id:{_eq:$a}}){ budget perRequestLimit paused totalSpent executions lastBlock }
-        Execution(order_by:{blockNumber:asc}){ requestId recipient amount totalSpent blockNumber txHash }
-        PolicyEvent(order_by:[{blockNumber:asc},{logIndex:asc}]){ kind detail blockNumber txHash } }`;
-      const r = await fetch(idxUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({query:q,variables:{a:address.toLowerCase()}})});
-      const j = await r.json(); if (j.errors) throw new Error(j.errors[0].message);
-      const s = j.data.PolicyState[0]; if (!s) throw new Error('indexer has no state for this contract');
-      const B=x=>x==null?'n/a':fmt(BigInt(x));
-      const rem = s.budget!=null ? BigInt(s.budget)-BigInt(s.totalSpent) : null;
-      for (const [k,v] of [['budget',B(s.budget)],['perRequestLimit',B(s.perRequestLimit)],['totalSpent',B(s.totalSpent)],['remainingBudget',rem==null?'n/a':fmt(rem)],['paused',String(s.paused)],['executions',s.executions],['indexedUpToEventBlock',s.lastBlock]])
-        t.insertAdjacentHTML('beforeend', `<tr><td>${k}</td><td id="v-${k}">${v}</td></tr>`);
-      for (const e of j.data.Execution) ev.insertAdjacentHTML('beforeend', `<tr class="event"><td>${e.requestId.slice(0,12)}…</td><td>${e.recipient}</td><td>${B(e.amount)}</td><td>${B(e.totalSpent)}</td><td><a href="${EXP}/tx/${e.txHash}">tx</a></td></tr>`);
-      lg.innerHTML='<tr><th>block</th><th>event</th><th>detail</th><th>tx</th></tr>';
-      for (const e of j.data.PolicyEvent) lg.insertAdjacentHTML('beforeend', `<tr class="logrow"><td>${e.blockNumber}</td><td>${e.kind}</td><td>${e.detail}</td><td><a href="${EXP}/tx/${e.txHash}">${e.txHash.slice(0,12)}…</a></td></tr>`);
-      indexed = true; src.textContent = `Envio HyperIndex GraphQL (${idxUrl})`;
-    } catch (e) { src.textContent = `RPC fallback (indexer failed: ${e.message})`; t.innerHTML=''; ev.innerHTML='<tr><th>requestId</th><th>recipient</th><th>amount</th><th>totalSpent</th><th>tx</th></tr>'; lg.innerHTML=''; }
-  }
-  if (!indexed) {
-    if (!idxUrl) src.textContent = 'direct JSON-RPC';
-    for (const f of abi.filter(x=>x.type==='function').map(x=>x.name)) { const v = await c.readContract({ address, abi, functionName: f }); t.insertAdjacentHTML('beforeend', `<tr><td>${f}</td><td id="v-${f}">${fmt(v)}</td></tr>`); }
-  }
-  if (dep && dep.contracts.PolicyPilot.address.toLowerCase()===address.toLowerCase()) {
-    for (const d of dep.demoTxs) {
-      const r = await c.getTransactionReceipt({ hash: d.tx });
-      tx.insertAdjacentHTML('beforeend', `<tr><td>${d.label}</td><td class="${r.status==='success'?'ok':'bad'}">${r.status}</td><td>block ${r.blockNumber}</td><td><a href="${EXP}/tx/${d.tx}">${d.tx.slice(0,12)}…</a></td><td>${d.eth_call_preflight}</td></tr>`);
-      for (const l of r.logs) { if (l.address.toLowerCase()!==address.toLowerCase()) continue; try { const e=decodeEventLog({abi,data:l.data,topics:l.topics}); if(e.eventName==='Executed' && !indexed) ev.insertAdjacentHTML('beforeend', `<tr class="event"><td>${e.args.requestId.slice(0,12)}…</td><td>${e.args.recipient}</td><td>${fmt(e.args.amount)}</td><td>${fmt(e.args.totalSpent)}</td><td><a href="${EXP}/tx/${d.tx}">tx</a></td></tr>`);}catch{} }
-    }
-  }
-  st.innerHTML=`Loaded live from ${rpc.value}. <a href="${EXP}/address/${address}">Explorer</a>`;
-  } catch(e){ st.textContent='Error: '+e.message; }
-};
-const q=new URLSearchParams(location.search); if(q.get('rpc')) rpc.value=q.get('rpc'); if(q.get('addr')) addr.value=q.get('addr'); if(q.get('indexer')) idx.value=q.get('indexer'); go();
-</script></body></html>
+const abi=parseAbi([
+ 'function admin() view returns (address)','function executor() view returns (address)','function asset() view returns (address)',
+ 'function perRequestLimit() view returns (uint256)','function budget() view returns (uint256)','function totalSpent() view returns (uint256)',
+ 'function remainingBudget() view returns (uint256)','function paused() view returns (bool)',
+ 'function execute(bytes32 requestId, address recipient, uint256 amount)',
+ 'event Executed(bytes32 indexed requestId, address indexed recipient, uint256 amount, uint256 totalSpent)',
+ 'event RecipientSet(address indexed recipient, bool allowed)','event PerRequestLimitSet(uint256 limit)','event BudgetSet(uint256 budget)','event PausedSet(bool paused)',
+ 'event ExecutorSet(address indexed executor)','event AdminTransferred(address indexed previousAdmin, address indexed newAdmin)',
+ 'error NotAdmin()','error NotExecutor()','error Paused()','error ZeroAddress()','error ZeroAmount()','error RecipientNotAllowed(address recipient)',
+ 'error PerRequestLimitExceeded(uint256 amount, uint256 limit)','error BudgetExceeded(uint256 requested, uint256 remaining)','error RequestAlreadyExecuted(bytes32 requestId)']);
+const m=v=>`${Number(formatUnits(BigInt(v),18)).toLocaleString(undefined,{maximumFractionDigits:4})} mUSD`;
+const short=h=>h.slice(0,8)+'…'+h.slice(-6);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const q=new URLSearchParams(location.search);
+if(q.get('rpc')) $('rpc').value=q.get('rpc'); if(q.get('addr')) $('addr').value=q.get('addr'); if(q.get('indexer')) $('idx').value=q.get('indexer');
+let dep=null; try{dep=await (await fetch('deployment.json')).json()}catch{}
+if(!$('idx').value && dep?.indexerUrl) $('idx').value=dep.indexerUrl;
+let c, address, S={};
+const setup=()=>{c=createPublicClient({transport:http($('rpc').value)}); address=getAddress($('addr').value); $('addrLink').href=`${EXP}/address/${address}`; $('addrLink').textContent=address;};
+
+async function fromIndexer(url){
+  const qq=`query($a:String!){ PolicyState(where:{id:{_eq:$a}}){ budget perRequestLimit paused totalSpent executions lastBlock }
+   PolicyEvent(order_by:[{blockNumber:asc},{logIndex:asc}]){ kind detail blockNumber timestamp txHash } chain_metadata{ latest_processed_block } }`;
+  const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({query:qq,variables:{a:address.toLowerCase()}})});
+  const j=await r.json(); if(j.errors) throw new Error(j.errors[0].message); const s=j.data.PolicyState[0]; if(!s) throw new Error('no state for this contract');
+  return {budget:BigInt(s.budget??0),limit:BigInt(s.perRequestLimit??0),spent:BigInt(s.totalSpent),paused:!!s.paused,
+    events:j.data.PolicyEvent.map(e=>({kind:e.kind,detail:e.detail,block:BigInt(e.blockNumber),ts:e.timestamp,tx:e.txHash})),synced:j.data.chain_metadata?.[0]?.latest_processed_block};
+}
+async function fromRpc(){
+  const rd=f=>c.readContract({address,abi,functionName:f});
+  const [budget,limit,spent,paused,admin,executor,asset]=await Promise.all(['budget','perRequestLimit','totalSpent','paused','admin','executor','asset'].map(rd));
+  return {budget,limit,spent,paused,admin,executor,asset};
+}
+async function rpcEvents(){
+  // Monad RPC limits eth_getLogs to 100-block ranges, so read the known event txs from deployment.json receipts.
+  const txs=[...(dep?.deployTxs||[]),...(dep?.demoTxs||[])];
+  const rs=await Promise.all(txs.map(t=>c.getTransactionReceipt({hash:t.tx}).catch(()=>null)));
+  const out=[]; for(const r of rs){ if(!r) continue; for(const l of r.logs){ if(l.address.toLowerCase()!==address.toLowerCase()) continue;
+    try{const e=decodeEventLog({abi,data:l.data,topics:l.topics}); const a=e.args;
+      const detail=e.eventName==='Executed'?`${a.recipient} ${a.amount}`:e.eventName==='RecipientSet'?`${a.recipient} ${a.allowed}`:e.eventName==='BudgetSet'?`${a.budget}`:e.eventName==='PerRequestLimitSet'?`${a.limit}`:e.eventName==='PausedSet'?`${a.paused}`:e.eventName==='ExecutorSet'?`${a.executor}`:e.eventName==='AdminTransferred'?`${a.newAdmin}`:JSON.stringify(a,(k,v)=>typeof v==='bigint'?v.toString():v);
+      out.push({kind:e.eventName,detail,block:r.blockNumber,tx:r.transactionHash,li:l.logIndex});}catch{} } }
+  return out.sort((x,y)=>Number(x.block-y.block)||x.li-y.li);
+}
+function renderEvents(ev){
+  const lab={Executed:'💸 Executed',RecipientSet:'📇 Recipient allowlisted',BudgetSet:'🎯 Budget set',PerRequestLimitSet:'📏 Per-request cap set',PausedSet:'⏸ Pause switch',ExecutorSet:'🤖 Executor set',AdminTransferred:'🔑 Admin transferred'};
+  $('tl').innerHTML=ev.map(e=>{const [x,y]=e.detail.split(' '); let d='';
+    if(e.kind==='Executed') d=`${m(y)} → <span class="mono">${esc(x)}</span>`; else if(e.kind==='RecipientSet') d=`<span class="mono">${esc(x)}</span> = ${esc(y)}`;
+    else if(e.kind==='BudgetSet'||e.kind==='PerRequestLimitSet') d=m(x); else if(e.kind==='PausedSet') d=x==='true'?'paused':'unpaused'; else d=`<span class="mono">${esc(e.detail)}</span>`;
+    return `<li class="${e.kind==='Executed'?'ex':e.kind==='PausedSet'?'pz':''}"><div class="t">${lab[e.kind]||e.kind}</div><div class="m">${d} · block ${e.block} · <a href="${EXP}/tx/${e.tx}">${short(e.tx)}</a></div></li>`}).join('')||'<li>No events.</li>';
+}
+async function refresh(){
+  setup(); const url=$('idx').value.trim(); let st, ev, srcLabel;
+  const rpcSt=await fromRpc().catch(e=>{throw e}); S=rpcSt;
+  if(url){ try{ const x=await fromIndexer(url); st=x; ev=x.events; srcLabel=['ok',`Data: Envio indexer (synced to block ${x.synced??'?'})`]; }
+    catch(e){ srcLabel=['bad',`Indexer unreachable (${e.message}): using RPC`]; } }
+  if(!st){ st=rpcSt; ev=await rpcEvents(); srcLabel=srcLabel||['ok','Data: live JSON-RPC']; $('tlsub').textContent='Events decoded from the receipts of the deployment and demo transactions listed in deployment.json, via RPC.'; }
+  else $('tlsub').textContent='Every policy event, as indexed by Envio HyperIndex from Monad testnet.';
+  $('b-src2').className='dot '+srcLabel[0]; $('b-src2-t').textContent=srcLabel[1];
+  const pct=st.budget>0n?Number(st.spent*10000n/st.budget)/100:0;
+  $('barf').style.width=Math.min(pct,100)+'%'; $('pct').textContent=pct.toFixed(1)+'%';
+  $('spent').textContent='spent '+m(st.spent); $('budget').textContent='budget '+m(st.budget);
+  $('k-rem').textContent=m(st.budget>st.spent?st.budget-st.spent:0n); $('k-cap').textContent=m(st.limit);
+  $('k-pz').innerHTML=st.paused?'<span style="color:var(--warn)">Paused</span>':'<span style="color:var(--ok)">Active</span>';
+  $('roles').innerHTML=`<div>Executor</div><div class="mono"><a href="${EXP}/address/${rpcSt.executor}">${rpcSt.executor}</a></div><div>Admin</div><div class="mono">${rpcSt.admin}</div><div>Asset</div><div class="mono"><a href="${EXP}/address/${rpcSt.asset}">${rpcSt.asset}</a> (mUSD test token)</div><div>Allowlist</div><div class="mono">${(dep?.config?.allowedRecipients||[]).join('<br>')||'–'}</div>`;
+  renderEvents(ev);
+  $('upd').textContent='Updated '+new Date().toLocaleTimeString();
+}
+async function liveBadge(){ try{ const [id,bn]=await Promise.all([c.getChainId(),c.getBlockNumber()]); $('b-live').className='dot '+(id===10143?'ok':'warn'); $('b-live-t').textContent=`Monad testnet live · block ${bn.toLocaleString()}`; }catch(e){ $('b-live').className='dot bad'; $('b-live-t').textContent='RPC unreachable'; } }
+
+const reasonOf=e=>{ let x=e; while(x){ if(x.data&&typeof x.data==='string'&&x.data.startsWith('0x')&&x.data.length>=10){ try{const d=decodeErrorResult({abi,data:x.data}); return {name:d.errorName,args:d.args};}catch{} }
+  if(x.data?.errorName) return {name:x.data.errorName,args:x.data.args}; x=x.cause; } return {name:null,raw:(e.shortMessage||e.message||'').split('\n')[0]}; };
+const fmtReason=r=>{ if(!r.name) return esc(r.raw); const a=(r.args||[]).map(v=>typeof v==='bigint'?(v>10n**12n?m(v):v.toString()):esc(String(v))); return `<b>${r.name}</b>(${a.join(', ')})`; };
+const explain={RequestAlreadyExecuted:'Replay protection: this requestId has already been paid.',RecipientNotAllowed:'Recipient is not on the allowlist.',PerRequestLimitExceeded:'A single request can\u2019t be more than the per-request cap.',BudgetExceeded:'Paying this would take total spend over the budget.',Paused:'The admin has paused the policy, so every execution is blocked.',NotExecutor:'Only the configured executor key can call execute().',ZeroAmount:'Amount must be greater than 0.',ZeroAddress:'Recipient can\u2019t be the zero address.'};
+
+async function guardrails(){
+  const want=['replay_req_1','reject_recipient','reject_per_request_limit','reject_budget','reject_paused'];
+  const title={replay_req_1:'Replay blocked',reject_recipient:'Unknown recipient blocked',reject_per_request_limit:'Over-cap payout blocked',reject_budget:'Budget overrun blocked',reject_paused:'Paused: everything blocked'};
+  const items=(dep?.demoTxs||[]).filter(d=>want.includes(d.label)).sort((a,b)=>want.indexOf(a.label)-want.indexOf(b.label));
+  const cards=await Promise.all(items.map(async d=>{
+    const [tx,rc]=await Promise.all([c.getTransaction({hash:d.tx}),c.getTransactionReceipt({hash:d.tx})]);
+    let args='–'; try{const f=decodeFunctionData({abi,data:tx.input}); const [id,to,amt]=f.args; args=`execute(<span class="mono">${short(id)}</span>, <span class="mono">${short(to)}</span>, ${m(amt)})`;}catch{}
+    let reason, how;
+    try{ await c.call({account:tx.from,to:tx.to,data:tx.input,blockNumber:rc.blockNumber-1n}); reason={name:null,raw:'call at block-1 did not revert'}; how='eth_call replay at block '+(rc.blockNumber-1n); }
+    catch(e){ const r=reasonOf(e); if(r.name){reason=r; how=`decoded live: eth_call of the same calldata at block ${rc.blockNumber-1n}`;} else { reason={name:null,raw:d.eth_call_preflight}; how='RPC could not replay historical state; showing the revert reason recorded by eth_call preflight at send time (deployment.json)'; } }
+    return `<div class="card gr"><h3>${title[d.label]} <span class="tag">${rc.status==='reverted'?'reverted on-chain':esc(rc.status)}</span></h3>
+      <div class="kv"><div>Call</div><div>${args}</div><div>Revert</div><div>${fmtReason(reason)}</div><div>Why</div><div>${explain[reason.name]||''}</div>
+      <div>Tx</div><div><a href="${EXP}/tx/${d.tx}">${short(d.tx)}</a> · block ${rc.blockNumber} · gas ${rc.gasUsed}</div><div>Source</div><div class="muted small">${how}</div></div></div>`;
+  }));
+  $('grs').innerHTML=cards.join('')||'<div class="card">No demo txs found in deployment.json.</div>';
+}
+
+const reqId=s=>isHex(s)&&s.length===66?s:keccak256(toHex(s||''));
+function preset(){
+  const p=$('preset').value, al=dep?.config?.allowedRecipients||[], ex=S.executor||dep?.config?.executor;
+  const firstExec=(dep?.demoTxs||[]).find(d=>d.label==='valid_execute_1');
+  const fresh='judge-check-'+Math.random().toString(36).slice(2,8);
+  const v={ok:[al[0],'10',fresh,ex],cap:[al[0],'150',fresh,ex],budget:[al[1],'60',fresh,ex],rcpt:['0x000000000000000000000000000000000000dEaD','10',fresh,ex],replay:[al[0],'10','',ex],notexec:[al[0],'10',fresh,'0x000000000000000000000000000000000000bEEF']}[p];
+  $('s-r').value=v[0]; $('s-a').value=v[1]; $('s-id').value=v[2]; $('s-from').value=v[3];
+  if(p==='replay'&&firstExec){ $('s-id').value='(loading executed requestId…)'; c.getTransaction({hash:firstExec.tx}).then(t=>{ $('s-id').value=decodeFunctionData({abi,data:t.input}).args[0]; }); }
+}
+async function simulate(){
+  const box=$('simres'); box.className='res'; box.innerHTML='<span class="muted">Simulating…</span>';
+  try{
+    if(!isAddress($('s-r').value)) throw new Error('recipient is not a valid address'); if(!isAddress($('s-from').value)) throw new Error('"from" is not a valid address');
+    const id=reqId($('s-id').value.trim()), amt=parseUnits($('s-a').value||'0',18);
+    const data=encodeFunctionData({abi,functionName:'execute',args:[id,getAddress($('s-r').value),amt]});
+    const bn=await c.getBlockNumber();
+    try{ await c.call({account:getAddress($('s-from').value),to:address,data,blockNumber:bn});
+      box.className='res ok'; box.innerHTML=`<div style="font-size:20px;font-weight:700;color:var(--ok)">✅ Would pass</div><p>The policy allows this payout of ${m(amt)}. A real executor would now sign and send it.</p><div class="small muted">eth_call at block ${bn}; requestId <span class="mono">${short(id)}</span></div>`; }
+    catch(e){ const r=reasonOf(e); box.className='res bad'; box.innerHTML=`<div style="font-size:20px;font-weight:700;color:var(--bad)">⛔ Would revert</div><p>${fmtReason(r)}</p><p class="muted">${explain[r.name]||''}</p><div class="small muted">eth_call at block ${bn}; requestId <span class="mono">${short(id)}</span></div>`; }
+  }catch(e){ box.className='res bad'; box.textContent='Input error: '+e.message; }
+}
+$('preset').onchange=preset; $('simBtn').onclick=simulate; $('reload').onclick=()=>{refresh();guardrails();};
+$('idxBtn').onclick=()=>{ const u=new URL(location); $('idx').value.trim()?u.searchParams.set('indexer',$('idx').value.trim()):u.searchParams.delete('indexer'); history.replaceState(null,'',u); refresh(); };
+if(dep?.verification){ $('b-src').textContent=`Sourcify verified (${dep.verification.PolicyPilot})`; $('b-src').title='Per deployment.json: '+dep.verification.verifier; }
+setup(); liveBadge();
+await refresh().catch(e=>{$('upd').textContent='Error: '+e.message});
+preset(); guardrails().catch(e=>$('grs').innerHTML=`<div class="card">Error loading receipts: ${esc(e.message)}</div>`);
+setInterval(()=>{liveBadge(); refresh().catch(()=>{});},15000);
+window.__ready=true;
+</script>
+</body></html>
