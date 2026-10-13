@@ -1,4 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-:root{color-scheme:dark}
+:root { color-scheme: dark; }
+html, body { max-width: 100%; overflow-x: clip; overscroll-behavior-y: none; }
+body { font-feature-settings: "tnum" 0; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
+@keyframes sheet { from { transform: translateY(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes pop { from { transform: scale(.97); opacity: 0 } to { transform: none; opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+input[type=range] { touch-action: pan-y; }
