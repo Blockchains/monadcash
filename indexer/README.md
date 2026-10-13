@@ -58,3 +58,7 @@ set -a; . ./local-start.env; set +a; npx envio start
 (`local-start.env` only has local dev defaults, no secrets.)
 
 Evidence of a verified run: see `../docs/envio-indexer-check.txt`.
+
+## Mainnet factory
+
+This indexer covers the testnet PolicyPilot contract. The mainnet AgentVaultFactory is v2 `0x0342d29055d77ba155c50233f550539E3029BA6a` (legacy v1: `0x8738B74778502ff3623A8319837A819d8dBdEeB7`); see `deployments/monad-mainnet.json`. The web app reads mainnet vault state directly over RPC. It isn't indexed here yet.

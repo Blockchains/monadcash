@@ -1,0 +1,60 @@
+name: showcase-agents
+# PolicyPilot showcase agents (operated by the team). One agent action per run, rotating personas.
+# Uses ONLY the agents' executor keys (encrypted Actions secrets AGENT_KEY_<ID>). The deployer/owner key is never here,
+# so this job cannot withdraw, change policy or top up vaults; every action is still enforced by the vault on-chain.
+# Kill switch: repo variable SHOWCASE_ENABLED must be 'true'.
+on:
+  schedule: [{ cron: '*/10 * * * *' }]
+  workflow_dispatch:
+    inputs:
+      check_only: { description: 'Keyless health check only', type: boolean, default: true }
+permissions: { contents: write }
+concurrency: { group: showcase-agents, cancel-in-progress: false }
+jobs:
+  round:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.SHOWCASE_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      AGENTS_ONLY: '1'
+      CHAIN_ID: '143'
+      RPC: https://rpc.monad.xyz
+      CONFIG: runner/showcase-config-143.json
+      LEDGER: runner/ledger/showcase-143.jsonl
+      PUBLIC_OUT: web/public/showcase-agents-143.json
+      RUN_NUMBER: ${{ github.run_number }}
+      MAX_FEE_MON: '0.15'      # per-run spend guard: fail the job if one tx costs more than this
+      MIN_AGENT_GAS: '0.08'    # skip (no tx) when an agent's gas wallet is this low
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Build agent-kit
+        run: cd packages/agent-kit && npm ci && npm run build
+      - name: Install runner
+        run: cd runner && npm ci
+      - name: Health check (keyless)
+        run: node runner/showcase-agents.mjs check
+        env:
+          AGENT_KEY_DCA: ${{ secrets.AGENT_KEY_DCA }}
+          AGENT_KEY_STAKER: ${{ secrets.AGENT_KEY_STAKER }}
+          AGENT_KEY_PAYROLL: ${{ secrets.AGENT_KEY_PAYROLL }}
+          AGENT_KEY_ROGUE: ${{ secrets.AGENT_KEY_ROGUE }}
+          AGENT_KEY_DCA1: ${{ secrets.AGENT_KEY_DCA1 }}
+      - name: One agent round
+        if: ${{ vars.SHOWCASE_ENABLED == 'true' && !(github.event_name == 'workflow_dispatch' && inputs.check_only) }}
+        run: node runner/showcase-agents.mjs run
+        env:
+          AGENT_KEY_DCA: ${{ secrets.AGENT_KEY_DCA }}
+          AGENT_KEY_STAKER: ${{ secrets.AGENT_KEY_STAKER }}
+          AGENT_KEY_PAYROLL: ${{ secrets.AGENT_KEY_PAYROLL }}
+          AGENT_KEY_ROGUE: ${{ secrets.AGENT_KEY_ROGUE }}
+          AGENT_KEY_DCA1: ${{ secrets.AGENT_KEY_DCA1 }}
+      - name: Commit snapshot
+        if: ${{ vars.SHOWCASE_ENABLED == 'true' && !(github.event_name == 'workflow_dispatch' && inputs.check_only) }}
+        run: |
+          git config user.name "policypilot-showcase-bot"; git config user.email "showcase-bot@users.noreply.github.com"
+          git add web/public/showcase-agents-143.json runner/ledger/showcase-143.jsonl
+          git diff --cached --quiet && exit 0
+          git commit -m "showcase: agent round ${{ github.run_number }} [skip ci]"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done; exit 1
