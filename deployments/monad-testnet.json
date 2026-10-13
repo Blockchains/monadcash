@@ -1,0 +1,146 @@
+{
+  "network": "monad-testnet",
+  "chainId": 10143,
+  "rpc": "https://testnet-rpc.monad.xyz/",
+  "explorer": "https://testnet.monadexplorer.com",
+  "contracts": {
+    "MockToken": {
+      "address": "0xE2966C817267FC7E63362895Cf55C6cb2548b9E3",
+      "tx": "0x00748c976e021999010b6f1f1abe8edb3d07f7fb44b56cd9a54abbdd941935ad",
+      "block": 70561950
+    },
+    "PolicyPilot": {
+      "address": "0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E",
+      "tx": "0x7cefb14e4507381be84545c7a1f9f6a3210f07751fed127f54fe372565b708ca",
+      "block": 70561954
+    }
+  },
+  "config": {
+    "admin": "0x549D8c5D94f8ec4Ea488a0283f8EbF16b509b411",
+    "executor": "0x549D8c5D94f8ec4Ea488a0283f8EbF16b509b411",
+    "allowedRecipients": [
+      "0x77962b77c30762BAF6996eE8a517826d8eeD533b",
+      "0xE7E3E8B6237160fEFe1EE1408f76969BE8eA8895"
+    ],
+    "perRequestLimit": "100000000000000000000",
+    "budget": "250000000000000000000",
+    "funded": "1000000000000000000000",
+    "note": "Recipients are keyless addresses derived from keccak256('policypilot-recipient-N'); test token has no value."
+  },
+  "verification": {
+    "verifier": "sourcify (https://sourcify-api-monad.blockvision.org)",
+    "MockToken": "exact_match (runtime)",
+    "PolicyPilot": "exact_match (runtime)"
+  },
+  "deployTxs": [
+    {
+      "label": "deploy_MockToken",
+      "tx": "0x00748c976e021999010b6f1f1abe8edb3d07f7fb44b56cd9a54abbdd941935ad",
+      "block": 70561950,
+      "status": "success",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x00748c976e021999010b6f1f1abe8edb3d07f7fb44b56cd9a54abbdd941935ad"
+    },
+    {
+      "label": "deploy_PolicyPilot",
+      "tx": "0x7cefb14e4507381be84545c7a1f9f6a3210f07751fed127f54fe372565b708ca",
+      "block": 70561954,
+      "status": "success",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x7cefb14e4507381be84545c7a1f9f6a3210f07751fed127f54fe372565b708ca"
+    },
+    {
+      "label": "setRecipient_1",
+      "tx": "0x27a19f99c7fb9e259480cc9db040484cb058af3f66ab0cb0a5a05f1411c3594c",
+      "block": 70561958,
+      "status": "success",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x27a19f99c7fb9e259480cc9db040484cb058af3f66ab0cb0a5a05f1411c3594c"
+    },
+    {
+      "label": "setRecipient_2",
+      "tx": "0x888b15126e16c0f74b698a10347bf3c040f58b4cf661f9f11483b41890e2d06e",
+      "block": 70561961,
+      "status": "success",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x888b15126e16c0f74b698a10347bf3c040f58b4cf661f9f11483b41890e2d06e"
+    },
+    {
+      "label": "mint_1000_mUSD_to_PolicyPilot",
+      "tx": "0x0b7f82129def4e583bb3461789238410301e7d94a8101f0a4972f49ac04bd4fe",
+      "block": 70561965,
+      "status": "success",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x0b7f82129def4e583bb3461789238410301e7d94a8101f0a4972f49ac04bd4fe"
+    }
+  ],
+  "demoTxs": [
+    {
+      "label": "valid_execute_1",
+      "tx": "0x8e799909dd7155cac966ff15e14eb72d7cbaedc8bc8b58952f5392ed8b260305",
+      "block": 70562052,
+      "status": "success",
+      "eth_call_preflight": "ok",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x8e799909dd7155cac966ff15e14eb72d7cbaedc8bc8b58952f5392ed8b260305"
+    },
+    {
+      "label": "valid_execute_2",
+      "tx": "0x593705cc5d3bbcd6932cc37574e73bd97937ccbeca76bb151c00788ec6e451c3",
+      "block": 70562068,
+      "status": "success",
+      "eth_call_preflight": "ok",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x593705cc5d3bbcd6932cc37574e73bd97937ccbeca76bb151c00788ec6e451c3"
+    },
+    {
+      "label": "replay_req_1",
+      "tx": "0x618511db34273878d7b83bb8bd1af5b2062e7c94fe3a806db30a2efae7da52f9",
+      "block": 70562080,
+      "status": "reverted (sent on-chain with fixed gas limit 200000)",
+      "eth_call_preflight": "execution reverted: RequestAlreadyExecuted(0x5521a70e306e4cf143fc3b54739d4053a40cc9765dbc2f1d2c86a2ea55e5dfe0)",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x618511db34273878d7b83bb8bd1af5b2062e7c94fe3a806db30a2efae7da52f9"
+    },
+    {
+      "label": "reject_recipient",
+      "tx": "0x475a58183dc244e3eb5caddd2dbcd4085a54e7da54f738b82eeb24dff85aeb6a",
+      "block": 70562096,
+      "status": "reverted (sent on-chain with fixed gas limit 200000)",
+      "eth_call_preflight": "execution reverted: RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x475a58183dc244e3eb5caddd2dbcd4085a54e7da54f738b82eeb24dff85aeb6a"
+    },
+    {
+      "label": "reject_per_request_limit",
+      "tx": "0x540ff26d3148eb511c8967b17fe05df194502d9bfd142d6f55076e6def3601a4",
+      "block": 70562113,
+      "status": "reverted (sent on-chain with fixed gas limit 200000)",
+      "eth_call_preflight": "execution reverted: PerRequestLimitExceeded(150000000000000000000 [1.5e20], 100000000000000000000 [1e20])",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x540ff26d3148eb511c8967b17fe05df194502d9bfd142d6f55076e6def3601a4"
+    },
+    {
+      "label": "reject_budget",
+      "tx": "0xc61f401a6e45d60766c9772d85b00894fc5dbc824fca5e850f5c50ed63fdad59",
+      "block": 70562128,
+      "status": "reverted (sent on-chain with fixed gas limit 200000)",
+      "eth_call_preflight": "execution reverted: BudgetExceeded(60000000000000000000 [6e19], 50000000000000000000 [5e19])",
+      "explorer": "https://testnet.monadexplorer.com/tx/0xc61f401a6e45d60766c9772d85b00894fc5dbc824fca5e850f5c50ed63fdad59"
+    },
+    {
+      "label": "pause",
+      "tx": "0x195ac238401bf6fd8681fe6591bc976e037bd5850aa5331759b82750939fcfa7",
+      "block": 70562145,
+      "status": "success",
+      "eth_call_preflight": "ok",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x195ac238401bf6fd8681fe6591bc976e037bd5850aa5331759b82750939fcfa7"
+    },
+    {
+      "label": "reject_paused",
+      "tx": "0x1bbaf1dfb8badf94241c3e150293315d09831ae138fb14904b05b99c55023977",
+      "block": 70562161,
+      "status": "reverted (sent on-chain with fixed gas limit 200000)",
+      "eth_call_preflight": "execution reverted: Paused",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x1bbaf1dfb8badf94241c3e150293315d09831ae138fb14904b05b99c55023977"
+    },
+    {
+      "label": "unpause",
+      "tx": "0x919240de6de013e59d3038b7a6f9493e5e065bdf9d0c78debb16e4f666dffc26",
+      "block": 70562177,
+      "status": "success",
+      "eth_call_preflight": "ok",
+      "explorer": "https://testnet.monadexplorer.com/tx/0x919240de6de013e59d3038b7a6f9493e5e065bdf9d0c78debb16e4f666dffc26"
+    }
+  ]
+}

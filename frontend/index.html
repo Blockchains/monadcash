@@ -1,14 +1,32 @@
-<!doctype html><html><head><meta charset="utf-8"><title>PolicyPilot – read-only status</title>
-<style>body{font:14px system-ui;max-width:720px;margin:2rem auto}td{padding:2px 8px}input{width:420px}</style></head>
-<body><h1>PolicyPilot (read-only)</h1><p>No wallet connection, no writes. Reads public view functions over JSON-RPC.</p>
-RPC <input id="rpc" value="http://127.0.0.1:8545"><br>Contract <input id="addr" placeholder="0x..."><button onclick="go()">Load</button>
-<table id="t"></table>
+<!doctype html><html><head><meta charset="utf-8"><title>PolicyPilot – read-only status (Monad testnet)</title>
+<style>body{font:14px system-ui;max-width:900px;margin:2rem auto}td,th{padding:2px 8px;text-align:left}input{width:420px}.ok{color:#080}.bad{color:#b00}</style></head>
+<body><h1>PolicyPilot (read-only)</h1><p>No wallet connection, no writes. Reads public state and receipts over JSON-RPC. Default: live <b>Monad testnet</b> deployment (chain 10143). Test token only, no real value.</p>
+RPC <input id="rpc" value="https://testnet-rpc.monad.xyz/"><br>Contract <input id="addr" value="0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E"><button onclick="go()">Load</button>
+<h2>State</h2><table id="t"></table>
+<h2>Executed events</h2><table id="ev"></table>
+<h2>Demo transactions (incl. reverted rejections)</h2><table id="tx"></table>
+<p id="st"></p>
 <script type="module">
-import { createPublicClient, http, parseAbi } from 'https://esm.sh/viem@2';
-const abi = parseAbi(['function admin() view returns (address)','function executor() view returns (address)','function asset() view returns (address)','function perRequestLimit() view returns (uint256)','function budget() view returns (uint256)','function totalSpent() view returns (uint256)','function remainingBudget() view returns (uint256)','function paused() view returns (bool)']);
+import { createPublicClient, http, parseAbi, decodeEventLog, formatUnits } from 'https://esm.sh/viem@2';
+const abi = parseAbi(['function admin() view returns (address)','function executor() view returns (address)','function asset() view returns (address)','function perRequestLimit() view returns (uint256)','function budget() view returns (uint256)','function totalSpent() view returns (uint256)','function remainingBudget() view returns (uint256)','function paused() view returns (bool)','event Executed(bytes32 indexed requestId, address indexed recipient, uint256 amount, uint256 totalSpent)']);
+const EXP='https://testnet.monadexplorer.com';
+const fmt=v=>typeof v==='bigint'&&v>10n**12n?`${formatUnits(v,18)} mUSD`:String(v);
 window.go = async () => {
+  const st=document.getElementById('st'); st.textContent='loading…';
+  try {
   const c = createPublicClient({ transport: http(rpc.value) }); const address = addr.value; const t = document.getElementById('t'); t.innerHTML='';
-  for (const f of abi.map(x=>x.name)) { const v = await c.readContract({ address, abi, functionName: f }); t.insertAdjacentHTML('beforeend', `<tr><td>${f}</td><td>${v}</td></tr>`); }
+  for (const f of abi.filter(x=>x.type==='function').map(x=>x.name)) { const v = await c.readContract({ address, abi, functionName: f }); t.insertAdjacentHTML('beforeend', `<tr><td>${f}</td><td id="v-${f}">${fmt(v)}</td></tr>`); }
+  let dep=null; try{ dep=await (await fetch('deployment.json')).json(); }catch{}
+  const ev=document.getElementById('ev'), tx=document.getElementById('tx'); ev.innerHTML='<tr><th>requestId</th><th>recipient</th><th>amount</th><th>totalSpent</th><th>tx</th></tr>'; tx.innerHTML='';
+  if (dep && dep.contracts.PolicyPilot.address.toLowerCase()===address.toLowerCase()) {
+    for (const d of dep.demoTxs) {
+      const r = await c.getTransactionReceipt({ hash: d.tx });
+      tx.insertAdjacentHTML('beforeend', `<tr><td>${d.label}</td><td class="${r.status==='success'?'ok':'bad'}">${r.status}</td><td>block ${r.blockNumber}</td><td><a href="${EXP}/tx/${d.tx}">${d.tx.slice(0,12)}…</a></td><td>${d.eth_call_preflight}</td></tr>`);
+      for (const l of r.logs) { if (l.address.toLowerCase()!==address.toLowerCase()) continue; try { const e=decodeEventLog({abi,data:l.data,topics:l.topics}); if(e.eventName==='Executed') ev.insertAdjacentHTML('beforeend', `<tr class="event"><td>${e.args.requestId.slice(0,12)}…</td><td>${e.args.recipient}</td><td>${fmt(e.args.amount)}</td><td>${fmt(e.args.totalSpent)}</td><td><a href="${EXP}/tx/${d.tx}">tx</a></td></tr>`);}catch{} }
+    }
+  }
+  st.innerHTML=`Loaded live from ${rpc.value}. <a href="${EXP}/address/${address}">Explorer</a>`;
+  } catch(e){ st.textContent='Error: '+e.message; }
 };
-const q=new URLSearchParams(location.search); if(q.get('rpc')) rpc.value=q.get('rpc'); if(q.get('addr')){addr.value=q.get('addr'); go();}
+const q=new URLSearchParams(location.search); if(q.get('rpc')) rpc.value=q.get('rpc'); if(q.get('addr')) addr.value=q.get('addr'); go();
 </script></body></html>
