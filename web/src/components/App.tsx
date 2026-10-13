@@ -215,6 +215,9 @@ function Launch({ net, pub, account, wallet, need, send, toast, refreshHist, loa
   const allowed = live.filter(s => p.services.includes(s.id));
   const summary = `Your agent can spend ${p.capOn ? `at most ${p.cap.toFixed(3)} MON per action` : 'any amount per action'}${p.budgetOn ? ` and ${p.budget.toFixed(3)} MON in total` : ' (bounded only by the 1 MON vault cap)'}, only on ${allowed.length ? allowed.map(s => s.name).join(', ') : 'nothing yet'}. Every output comes back to the vault. You can pause it or pull everything back in one tap.`;
 
+  const [room, setRoom] = useState<bigint | null>(null);
+  useEffect(() => { let on = true; (async () => { try { const [gc, td] = await Promise.all([pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'globalCap' }), pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'totalDeposited' })]) as [bigint, bigint]; if (on) setRoom(gc > td ? gc - td : 0n); } catch { /* older factory */ } })(); return () => { on = false; }; }, [pub, net, block]);
+  const depWei = BigInt(Math.round(p.deposit * 1e6)) * 10n ** 12n; const overRoom = room != null && depWei > room;
   const launch = async () => {
     if (!(await need())) return; setBusy(true); setProg([]); setDoneVault(null);
     const add = (t: string) => { setProg(l => [...l, { t, s: 'run' }]); return { ok: (h?: string) => setProg(l => l.map((x, i) => (i === l.length - 1 ? { ...x, s: 'ok', h } : x))), err: (m: string) => setProg(l => l.map((x, i) => (i === l.length - 1 ? { ...x, s: 'err', t: `${x.t} – ${m}` } : x))) }; };
@@ -294,7 +297,8 @@ function Launch({ net, pub, account, wallet, need, send, toast, refreshHist, loa
       </Step>
 
       <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 lg:bottom-4">
-        <Btn kind="pri" data-testid="launch" disabled={busy || !extOk} onClick={launch} className="h-14 w-full rounded-3xl text-base">{busy ? 'Launching…' : <><Rocket className="h-5 w-5" />Let it go into the wild</>}</Btn>
+        {room != null && <p data-testid="capacity" className={`mb-2 text-xs ${overRoom ? 'text-amber-300' : 'text-zinc-400'}`}>Alpha safety cap: {mon(room, 3)} of deposit room left across all vaults.{overRoom ? ' Lower the deposit to fit (you can launch with 0 and top up later).' : ''}</p>}
+        <Btn kind="pri" data-testid="launch" disabled={busy || !extOk || overRoom} onClick={launch} className="h-14 w-full rounded-3xl text-base">{busy ? 'Launching…' : <><Rocket className="h-5 w-5" />Let it go into the wild</>}</Btn>
       </div>
       {prog.length > 0 && <Card data-testid="progress"><ol className="grid gap-2 text-sm">{prog.map((x, i) => <li key={i} className={`flex min-w-0 items-start gap-2 ${x.s === 'err' ? 'text-red-300' : x.s === 'ok' ? 'text-emerald-300' : 'text-zinc-300'}`}><span className="shrink-0">{x.s === 'ok' ? '✅' : x.s === 'err' ? '⛔' : '⏳'}</span><span className="min-w-0 break-words">{x.t}{x.h && <> · <a className="underline" href={`${net.exp}/tx/${x.h}`} target="_blank" rel="noreferrer">tx ↗</a></>}</span></li>)}</ol>
         {doneVault && <div className="mt-4 grid gap-2 sm:grid-cols-2" data-testid="launched"><Btn kind="pri" onClick={() => setTab('activity')}><Activity className="h-4 w-4" />Watch it live</Btn><Btn onClick={() => setTab('agents')}><Bot className="h-4 w-4" />Manage my agent</Btn></div>}

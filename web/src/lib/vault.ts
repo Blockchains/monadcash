@@ -4,7 +4,7 @@ import ABI from './vault-abi.json';
 import { KURU, LIVE, QUOTERS, SERVICES, TOKENS, type Service, type TokenSym } from './services';
 
 export const factoryAbi = ABI.factory as Abi; export const vaultAbi = ABI.vault as Abi;
-const errAbi = (ABI.vault as any[]).filter(x => x.type === 'error') as Abi;
+const errAbi = [...(ABI.vault as any[]), ...(ABI.factory as any[])].filter((x, i, a) => x.type === 'error' && a.findIndex(y => y.type === 'error' && y.name === x.name) === i) as Abi;
 export const ZERO = '0x0000000000000000000000000000000000000000' as Address;
 
 export type Net = { id: 143 | 10143; key: 'mainnet' | 'testnet'; name: string; hex: Hex; rpc: string; exp: string; factory: Address; faucet?: string; publicRpc: string };
@@ -46,7 +46,7 @@ const PLAIN: Record<string, (a: readonly any[]) => string> = {
   MinOutNotMet: a => `Slippage guard: got ${a[0]}, needed at least ${a[1]}.`,
   RequestAlreadyExecuted: () => 'Replay blocked: that request already ran.',
   Paused: () => 'The owner paused this agent.', NotExecutor: () => "This key isn't the vault's agent.", NotOwner: () => 'Only the vault owner can do that.',
-  VaultCapExceeded: a => `Vault cap: the balance would be ${mon(a[0])}, but the max is ${mon(a[1])}.`, GlobalCapExceeded: () => 'The alpha deposit cap for all vaults is reached.',
+  VaultCapExceeded: a => `Vault cap: the balance would be ${mon(a[0])}, but the max is ${mon(a[1])}.`, GlobalCapExceeded: a => `The alpha safety cap for all vaults together is ${mon(a[1] ?? 0n)}; this deposit would take it to ${mon(a[0] ?? 0n)}. Try a smaller deposit (or 0) and top up later.`,
   InsufficientBalance: a => `The vault only holds ${mon(a[1] ?? 0n)}.`, ForbiddenSelector: () => 'Approve/transfer functions can never be allowlisted.', ForbiddenTarget: () => "That address can't be a service target.",
   UserRejected: () => 'You cancelled in your wallet.',
 };

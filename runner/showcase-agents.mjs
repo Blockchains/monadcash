@@ -3,7 +3,7 @@
 // the policy on-chain; the runner just tries things. Spend tracking with a hard auto-stop, then recovery.
 //
 //   OWNER_ENV=~/.policypilot/mainnet-wallet.env  (MONAD_MAINNET_PRIVATE_KEY) — never logged
-//   RPC, FACTORY, CHAIN_ID, STOP_AT (MON consumed, default 9.2), HOURS (default 4), INTERVAL_S, BURST_ROUNDS
+//   RPC, FACTORY, CHAIN_ID, STOP_AT (total MON consumed, default 1000), OWNER_RESERVE (deployer never drops below, default 5), USER_HEADROOM (global-cap room left for users, default 1), HOURS, INTERVAL_S, BURST_ROUNDS
 //   node runner/showcase-agents.mjs [run|recover|status]
 import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path';
 import { createPublicClient, createWalletClient, http, parseEther, formatEther, encodeFunctionData, parseAbi, decodeEventLog } from 'viem';
@@ -13,7 +13,9 @@ import { VaultAgent, agentVaultAbi, agentVaultFactoryAbi, ZERO_ADDRESS } from '.
 const HOME = os.homedir(); const E = process.env;
 const RPC = E.RPC || 'https://rpc.monad.xyz'; const CID = Number(E.CHAIN_ID || 143);
 const FACTORY = E.FACTORY || '0x8738B74778502ff3623A8319837A819d8dBdEeB7';
-const STOP_AT = parseEther(E.STOP_AT || '9.2'); const HOURS = Number(E.HOURS || 4); const INTERVAL = Number(E.INTERVAL_S || 240) * 1000;
+const STOP_AT = parseEther(E.STOP_AT || '1000'); const RESERVE = parseEther(E.OWNER_RESERVE || '5'); // never let the deployer drop below this
+const USER_HEADROOM = parseEther(E.USER_HEADROOM || '1'); // alpha global deposit cap kept free for real users const HOURS = Number(E.HOURS || 4); const INTERVAL = Number(E.INTERVAL_S || 240) * 1000;
+const HOURS = Number(E.HOURS || 4); const INTERVAL = Number(E.INTERVAL_S || 240) * 1000;
 const BURST = Number(E.BURST_ROUNDS || 8); const TAG = E.TAG || String(CID);
 const KEYS = E.KEYS_FILE || path.join(HOME, `.policypilot/showcase-agents-${TAG}.json`);
 const PUB = E.PUBLIC_OUT || path.resolve(path.dirname(new URL(import.meta.url).pathname), `../web/public/showcase-agents-${TAG}.json`);
@@ -31,7 +33,7 @@ const within = (p, ms, what) => Promise.race([p, new Promise((_, j) => setTimeou
 const T = { WMON: '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A', USDC: '0x754704Bc059F8C67012fEd69BC8A327a5aafb603', sMON: '0xA3227C5969757783154C60bF0bC1944180ed81B9', aprMON: '0x0c65A0BC65a5D819235B71F554D210D3F80E0852', gMON: '0x8498312A6B3CbD158bf0c93AbdCF29E6e4F55081' };
 const UNI = '0xfE31F71C1b106EAc32F1A19239c9a9A72ddfb900', PCS = '0x21114915Ac6d5A2e156931e20B20b038dEd0Be7C';
 const QUOTER = { [UNI]: ['0x661e93cca42afacb172121ef892830ca3b70f08d', 3000], [PCS]: ['0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997', 500] };
-const R = { uni: [UNI, '0x04e45aaf', 3], pcs: [PCS, '0x04e45aaf', 3], kintsu: [T.sMON, '0x1c3477dd', 1], apriori: [T.aprMON, '0x6e553f65', 1], magma: [T.gMON, '0x5f3896d3', 0], wrap: [T.WMON, '0xd0e30db0', 255], unwrap: [T.WMON, '0x2e1a7d4d', 255] };
+const R = { kuru: ['0xd651346d7c789536ebf06dc72aE3C8502cd695CC', '0xffa5210a', 255], uni: [UNI, '0x04e45aaf', 3], pcs: [PCS, '0x04e45aaf', 3], kintsu: [T.sMON, '0x1c3477dd', 1], apriori: [T.aprMON, '0x6e553f65', 1], magma: [T.gMON, '0x5f3896d3', 0], wrap: [T.WMON, '0xd0e30db0', 255], unwrap: [T.WMON, '0x2e1a7d4d', 255] };
 const routerAbi = parseAbi(['function exactInputSingle((address tokenIn,address tokenOut,uint24 fee,address recipient,uint256 amountIn,uint256 amountOutMinimum,uint160 sqrtPriceLimitX96)) payable returns (uint256)']);
 const quoterAbi = parseAbi(['function quoteExactInputSingle((address tokenIn,address tokenOut,uint256 amountIn,uint24 fee,uint160 sqrtPriceLimitX96)) returns (uint256 amountOut,uint160,uint32,uint256)']);
 const erc20 = parseAbi(['function balanceOf(address) view returns (uint256)', 'function transfer(address,uint256) returns (bool)']);
@@ -39,13 +41,16 @@ const wmonAbi = parseAbi(['function deposit() payable', 'function withdraw(uint2
 const kintsuAbi = parseAbi(['function deposit(uint96 minShares,address receiver) payable returns (uint96)']);
 const aprAbi = parseAbi(['function deposit(uint256 assets,address receiver) payable returns (uint256)']);
 const magmaAbi = parseAbi(['function depositMON(address receiver,uint256 referralId) payable']);
+// Kuru: https://docs.kuru.io/contracts/Contract-addresses (fork-tested: test_fork_kuru_mon_to_usdc)
+const KURU = '0xd651346d7c789536ebf06dc72aE3C8502cd695CC', KURU_MKT = '0x065C9d28E428A0db40191a54d33d5b7c71a9C394';
+const kuruAbi = parseAbi(['function anyToAnySwap(address[] markets,bool[] isBuy,bool[] nativeSend,address debitToken,address creditToken,uint256 amount,uint256 minAmountOut) payable returns (uint256)']);
 const rule = k => ({ target: R[k][0], selector: R[k][1], recipientWord: R[k][2] });
 
 const PERSONAS = [
   { id: 'dca', name: 'DCA bot', emoji: '📈', about: 'Buys a little USDC with MON on Uniswap and PancakeSwap every round, then periodically swaps it back to MON and unwraps.',
     cap: '0.03', budget: '1', deposit: '0.6', gas: '1.2', rules: ['uni', 'pcs', 'unwrap'], caps: [[T.USDC, 5_000_000n], [T.WMON, parseEther('1')]], payees: false },
-  { id: 'staker', name: 'Staker', emoji: '🥩', about: 'Stakes tiny amounts of MON into Kintsu (sMON), aPriori (aprMON) and Magma (gMON), and wraps/unwraps WMON.',
-    cap: '0.03', budget: '1', deposit: '0.5', gas: '1.0', rules: ['kintsu', 'apriori', 'magma', 'wrap', 'unwrap'], caps: [], payees: false },
+  { id: 'staker', name: 'Staker', emoji: '🥩', about: 'Stakes tiny amounts of MON into Kintsu (sMON), aPriori (aprMON) and Magma (gMON), wraps/unwraps WMON, and swaps a little on Kuru.',
+    cap: '0.03', budget: '1', deposit: '0.5', gas: '1.0', rules: ['kintsu', 'apriori', 'magma', 'wrap', 'unwrap', 'kuru'], caps: [], payees: false },
   { id: 'payroll', name: 'Payroll', emoji: '💸', about: 'Pays small MON salaries to an allowlist of team-owned addresses.',
     cap: '0.03', budget: '1', deposit: '0.5', gas: '0.6', rules: [], caps: [], payees: true },
   { id: 'rogue', name: 'Rogue agent', emoji: '😈', about: 'Deliberately tries out-of-policy actions (over cap, strangers, draining tokens, paying itself, owner-only calls). Every attempt is sent on-chain and reverted by the vault.',
@@ -113,7 +118,9 @@ async function nextAction(p, round) {
     return swapCall(v, r, T.WMON, T.USDC, amt, `DCA bot buys USDC with ${formatEther(amt)} MON on ${r === UNI ? 'Uniswap v3' : 'PancakeSwap v3'}`);
   }
   if (p.id === 'staker') {
-    const amt = rnd(0.005, 0.012); const s = round % 5;
+    const amt = rnd(0.005, 0.012); const s = round % 6;
+    if (s === 5) { const a3 = rnd(0.008, 0.015); const sim = await pc.simulateContract({ account: v, address: KURU, abi: kuruAbi, functionName: 'anyToAnySwap', args: [[KURU_MKT], [false], [true], ZERO_ADDRESS, T.USDC, a3, 1n], value: a3 }); const minOut = (sim.result * 97n) / 100n;
+      return { label: `Staker swaps ${formatEther(a3)} MON → USDC on Kuru (order book)`, action: { kind: 'call', target: KURU, value: a3, data: encodeFunctionData({ abi: kuruAbi, functionName: 'anyToAnySwap', args: [[KURU_MKT], [false], [true], ZERO_ADDRESS, T.USDC, a3, minOut] }), opts: { outToken: T.USDC, minOut } } }; }
     if (s === 0) return { label: `Staker stakes ${formatEther(amt)} MON → sMON (Kintsu)`, action: { kind: 'call', target: T.sMON, value: amt, data: encodeFunctionData({ abi: kintsuAbi, functionName: 'deposit', args: [1n, v] }), opts: { outToken: T.sMON, minOut: 1n } } };
     if (s === 1) return { label: `Staker stakes ${formatEther(amt)} MON → aprMON (aPriori)`, action: { kind: 'call', target: T.aprMON, value: amt, data: encodeFunctionData({ abi: aprAbi, functionName: 'deposit', args: [amt, v] }), opts: { outToken: T.aprMON, minOut: 1n } } };
     if (s === 2) return { label: `Staker stakes ${formatEther(amt)} MON → gMON (Magma)`, action: { kind: 'call', target: T.gMON, value: amt, data: encodeFunctionData({ abi: magmaAbi, functionName: 'depositMON', args: [v, 0n] }), opts: { outToken: T.gMON, minOut: 1n } } };
@@ -155,7 +162,12 @@ async function maintain(p) {
   const a = st.agents[p.id]; if (p.id === 'rogue') return;
   const [bal, spent, budget] = await Promise.all([pc.getBalance({ address: a.vault }), vread(a.vault, 'totalSpent'), vread(a.vault, 'budget')]);
   if (budget - spent < parseEther('0.1')) await ownerTx(`Owner raises ${p.name} budget by 0.5 MON`, p.id, a.vault, encodeFunctionData({ abi: agentVaultAbi, functionName: 'setBudget', args: [budget + parseEther('0.5')] }));
-  if (bal < parseEther('0.12')) await ownerTx(`Owner tops up ${p.name} vault with 0.4 MON`, p.id, a.vault, encodeFunctionData({ abi: agentVaultAbi, functionName: 'deposit' }), parseEther('0.4'));
+  if (bal < parseEther('0.12')) {
+    const [gc, td] = await Promise.all([pc.readContract({ address: FACTORY, abi: agentVaultFactoryAbi, functionName: 'globalCap' }), pc.readContract({ address: FACTORY, abi: agentVaultFactoryAbi, functionName: 'totalDeposited' })]);
+    const room = gc - td - USER_HEADROOM; const amt = room >= parseEther('0.4') ? parseEther('0.4') : room >= parseEther('0.1') ? room : 0n;
+    if (amt > 0n) await ownerTx(`Owner tops up ${p.name} vault with ${formatEther(amt)} MON`, p.id, a.vault, encodeFunctionData({ abi: agentVaultAbi, functionName: 'deposit' }), amt);
+    else log(p.name, `no top-up: alpha global deposit cap nearly full (${formatEther(td)}/${formatEther(gc)} MON); keeping ${formatEther(USER_HEADROOM)} MON free for real users`);
+  }
   const g = await pc.getBalance({ address: acct(p.id).address }); if (g < parseEther('0.15')) await transfer(`Top up ${p.name} agent gas`, p.id, acct(p.id).address, parseEther('0.4'));
 }
 
@@ -196,6 +208,8 @@ outer: while (Date.now() < deadline) {
   for (const p of PERSONAS) {
     if (fs.existsSync(stopFile)) { stopReason = 'stop file'; break outer; }
     const { used } = await consumed();
+    const ob = await pc.getBalance({ address: owner.address });
+    if (ob < RESERVE + parseEther('1')) { stopReason = `owner reserve: deployer balance ${formatEther(ob)} MON would approach the ${formatEther(RESERVE)} MON reserve`; break outer; }
     if (used + parseEther('0.3') >= STOP_AT) { stopReason = `spend cap: ${formatEther(used)} MON consumed (stop at ${formatEther(STOP_AT)} incl. 0.3 MON reserve for recovery)`; break outer; }
     try { await within(maintain(p), 300_000, 'maintain'); await within(act(p, round), 300_000, 'act'); } catch (e) { log(p.name, 'error', e.shortMessage || e.message); rec({ persona: p.id, actor: 'runner', status: 'error', label: String(e.shortMessage || e.message).slice(0, 200) }); await sleep(5000); }
   }
