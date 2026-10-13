@@ -10,4 +10,5 @@ window.go = async () => {
   const c = createPublicClient({ transport: http(rpc.value) }); const address = addr.value; const t = document.getElementById('t'); t.innerHTML='';
   for (const f of abi.map(x=>x.name)) { const v = await c.readContract({ address, abi, functionName: f }); t.insertAdjacentHTML('beforeend', `<tr><td>${f}</td><td>${v}</td></tr>`); }
 };
+const q=new URLSearchParams(location.search); if(q.get('rpc')) rpc.value=q.get('rpc'); if(q.get('addr')){addr.value=q.get('addr'); go();}
 </script></body></html>
