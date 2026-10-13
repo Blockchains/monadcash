@@ -139,5 +139,6 @@ contract PolicyPilotInvariant is StdInvariant, Test {
         assertEq(pp.totalSpent(), h.ghostSpent()); assertEq(t.balanceOf(bob), pp.totalSpent());
         assertEq(t.balanceOf(address(pp)) + pp.totalSpent(), 1000e18);
     }
+    function invariant_RemainingExact() public view { assertEq(pp.remainingBudget(), pp.budget() - pp.totalSpent()); }
     function invariant_AtMost20Executions() public view { assertLe(h.calls(), 20); }
 }

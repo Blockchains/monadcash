@@ -18,3 +18,12 @@ jobs:
           anvil --silent &
           sleep 3
           cd executor && npm ci && OUT=/tmp/e2e.json node e2e-anvil.mjs && cat /tmp/e2e.json
+      - name: agent-kit unit tests against anvil
+        run: |
+          pkill anvil || true; anvil --silent &
+          sleep 3
+          cd packages/agent-kit && npm ci && npm test
+      - name: plugin-eliza type-check
+        run: cd packages/plugin-eliza && npm ci && npm run typecheck
+      - name: Next.js dashboard build (static export)
+        run: cd web && npm ci && npx tsc --noEmit && npx next build

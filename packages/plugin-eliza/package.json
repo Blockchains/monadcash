@@ -1,0 +1,6 @@
+{ "name": "@policypilot/plugin-eliza", "version": "0.1.0", "type": "module", "main": "dist/index.js", "types": "dist/index.d.ts",
+  "description": "ElizaOS plugin: policy-checked payments through PolicyPilot on Monad",
+  "scripts": { "build": "tsc -p .", "typecheck": "tsc -p . --noEmit" },
+  "dependencies": { "@policypilot/agent-kit": "file:../agent-kit" },
+  "peerDependencies": { "@elizaos/core": "^1.7.0", "viem": "^2.21.0" },
+  "devDependencies": { "@elizaos/core": "1.7.2", "viem": "2.21.0", "typescript": "5.6.3", "@types/node": "22.7.5" } }

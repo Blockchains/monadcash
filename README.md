@@ -5,7 +5,7 @@
 **Demo video:** [watch](https://blockchains.github.io/policypilot-monad/demo.html) · [download MP4](https://blockchains.github.io/policypilot-monad/demo.mp4)
 Status: IMPLEMENTED + TESTED locally (Foundry, anvil) and DEPLOYED to Monad testnet (test token only; not mainnet).
 - `src/PolicyPilot.sol` non-upgradeable contract (OpenZeppelin v5.7.0 SafeERC20). `src/MockToken.sol` test-only.
-- Tests: 49 in total, as reported by `forge test` (PolicyPilot, AgentVault unit/fuzz/invariant, dapp-call mocks). Mainnet fork tests (`AgentVaultForkTest`: WMON wrap/unwrap, Uniswap v3 MON→USDC→MON, Kintsu stake, blocked calls) run with `forge test --fork-url https://rpc.monad.xyz --match-contract AgentVaultForkTest`.
+- Tests: all pass under `forge test` (PolicyPilot, AgentVault unit/fuzz/invariant, dapp-call mocks). PolicyPilot invariants: `totalSpent <= budget`, `totalSpent == sum of transfers == recipient balance`, `remainingBudget == budget - totalSpent` (exact). Mainnet fork tests (`AgentVaultForkTest`: WMON wrap/unwrap, Uniswap v3 MON→USDC→MON, Kintsu stake, blocked calls) run with `forge test --fork-url https://rpc.monad.xyz --match-contract AgentVaultForkTest`.
 - `executor/` viem deterministic executor + `e2e-anvil.mjs` local demo (writes evidence JSON).
 - `frontend/index.html` static read-only demo dashboard: live state and budget gauge, event timeline, decoded on-chain rejections, read-only `eth_call` policy simulator, architecture, judge quick-start. Reads via RPC, or the Envio indexer via `?indexer=`.
 - `indexer/` Envio HyperIndex indexer for all PolicyPilot events (local).
@@ -23,6 +23,12 @@ Site: https://blockchains.github.io/policypilot-monad/ ("Is this how easy it is 
 - Policy: target+selector allowlist, recipient word must equal the vault, a per-action MON cap, a total budget, per-token caps, exact approvals reset to 0, minOut checks and pause. Approve/transfer/permit selectors are forbidden.
 - Dapps are verified official addresses only (`frontend/dapps.json`): WMON, Uniswap v3 SwapRouter02 and Kintsu sMON. Lending (Morpho) and perps (Kuru) are listed as not yet verified and are not enabled.
 - Testnet factory: `0x2E40E06C0B864caF87cCB00f31e6EE2d0689cDd7`. The older mUSD consumer app is at `agents-testnet.html`.
+
+## Dashboard (Next.js) and agent packages
+
+- `web/`: a Next.js App Router + TypeScript + Tailwind + lucide-react + viem dashboard, statically exported to the site root. It shows the live block, chain id, a copyable address, a Sourcify badge and the Envio/RPC mode; metric cards for budget progress, remaining (with a warning under 20%), cap, firewall Active/Paused and execution count; a policy sandbox (client precheck plus a real `eth_call` of `execute()` from the on-chain executor, giving PASS or the exact custom error); and a Payouts/Audit Log table with explorer links, polling every 8s. It reads from Envio when `NEXT_PUBLIC_ENVIO_URL` is set and falls back to RPC logs otherwise. The vault harness lives at `/harness.html`.
+- `packages/agent-kit`: `PolicyClient` with `checkPolicy(recipient, amount)` and `executeSafePayment(recipient, amount, {idempotencyKey})`, written against the real deployed ABI (`execute`, `paused`, `remainingBudget`, errors `Paused`, `RecipientNotAllowed`, `PerRequestLimitExceeded`, `BudgetExceeded`, `RequestAlreadyExecuted`, ...). It is tested against anvil (`npm test`).
+- `packages/plugin-eliza`: an ElizaOS (`@elizaos/core` 1.x) plugin with the `EXECUTE_POLICY_PAYMENT` action and the `POLICYPILOT_STATE` provider. Settings: `POLICYPILOT_ADDRESS`, `POLICYPILOT_RPC`, `POLICYPILOT_CHAIN_ID` and the secret `POLICYPILOT_EXECUTOR_KEY`.
 
 ## Live on Monad testnet (chain 10143)
 - **PolicyPilot:** [`0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E`](https://testnet.monadexplorer.com/address/0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E) (Sourcify verified, exact runtime match)
