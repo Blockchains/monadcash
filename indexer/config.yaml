@@ -1,0 +1,17 @@
+name: policypilot-indexer
+networks:
+  - id: 10143
+    start_block: 70561954
+    rpc_config:
+      url: https://testnet-rpc.monad.xyz/
+    contracts:
+      - name: PolicyPilot
+        address: 0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E
+        abi_file_path: abis/PolicyPilot.json
+        handler: src/EventHandlers.ts
+        events:
+          - event: Executed
+          - event: RecipientSet
+          - event: PerRequestLimitSet
+          - event: BudgetSet
+          - event: PausedSet

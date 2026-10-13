@@ -1,0 +1,3 @@
+type Execution { id: ID! requestId: String! recipient: String! amount: BigInt! totalSpent: BigInt! blockNumber: Int! txHash: String! }
+type Recipient { id: ID! allowed: Boolean! }
+type PolicyState { id: ID! budget: BigInt perRequestLimit: BigInt paused: Boolean totalSpent: BigInt! executions: Int! }
