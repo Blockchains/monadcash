@@ -13,7 +13,7 @@ jobs:
         with: { node-version: 22 }
       - name: Build Next.js dashboard (static export) and merge legacy pages
         run: |
-          cd web && npm ci && npx next build && cd ..
+          cd web && npm ci && npm run build && cd ..
           cp -rn frontend/. web/out/
       - uses: actions/upload-pages-artifact@v3
         with: { path: web/out }
