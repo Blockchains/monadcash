@@ -70,3 +70,4 @@ export class PolicyClient {
     return { status: 'executed', hash, requestId, blockNumber: r.blockNumber };
   }
 }
+export * from './vault.js';
