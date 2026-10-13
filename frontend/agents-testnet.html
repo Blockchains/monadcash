@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>My Monad Agents – PolicyPilot</title>
+<meta name="description" content="Create AI/bot agents on Monad testnet with their own on-chain spending guardrails: budget, per-payment cap, allowlist, pause.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="testbar">🧪 Monad <b>testnet</b> only · test token (mUSD) has no value · unaudited contracts · mainnet is blocked</div>
+<header class="top">
+  <a class="brand" href="./"><span class="logo">🛡️</span><span>My Monad Agents</span></a>
+  <div class="topr">
+    <button class="icon" id="themeBtn" title="Toggle dark/light" aria-label="Toggle theme">🌓</button>
+    <button class="btn pri" id="connectBtn">Connect wallet</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero" id="hero">
+    <h1>Agents that can pay.<br><span class="grad">But never overspend.</span></h1>
+    <p class="lead">Spin up a Monad agent with a wallet of its own. You set the budget, the cap per payment and who it can pay, and those rules are enforced by your own on-chain PolicyPilot contract. The agent can't break them, even if its key leaks.</p>
+    <div class="chips" id="netChips"><span class="chip"><span class="dot" id="netDot"></span><span id="netTxt">Checking Monad testnet…</span></span>
+      <a class="chip" href="https://testnet.monadexplorer.com/address/0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E" target="_blank" rel="noopener"><span class="dot ok"></span>Demo contract Sourcify-verified ↗</a>
+      <a class="chip" href="https://faucet.monad.xyz" target="_blank" rel="noopener">🚰 Get testnet MON ↗</a></div>
+  </section>
+
+  <section id="onboard" class="card onboard">
+    <h2>Get started in 3 steps</h2>
+    <ol class="ob">
+      <li id="ob1"><b>Connect a wallet</b><span>MetaMask or any browser wallet. We'll add Monad testnet for you.</span></li>
+      <li id="ob2"><b>Grab testnet MON</b><span>From the <a href="https://faucet.monad.xyz" target="_blank" rel="noopener">Monad faucet</a>. Creating an agent costs a few cents' worth of test gas.</span></li>
+      <li id="ob3"><b>Create your agent</b><span>Pick a name and limits. Your wallet deploys the guardrail contract, then you're done.</span></li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>Your agents</h2>
+      <div class="row gap"><button class="btn ghost" id="importBtn">Import by address</button><button class="btn pri" id="createBtn">＋ Create agent</button></div></div>
+    <div class="agents" id="agents"></div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>Explore</h2></div>
+    <div class="grid2">
+      <a class="card link" href="demo-agent.html"><div class="av">🤖</div><div><b>Demo agent (read-only)</b><p class="muted">Our public showcase agent: live state, a gallery of 5 real blocked transactions with decoded reasons, and a policy simulator.</p></div></a>
+      <a class="card link" href="https://github.com/Blockchains/policypilot-monad" target="_blank" rel="noopener"><div class="av">📦</div><div><b>Source &amp; docs</b><p class="muted">Foundry contracts, 17 tests, TypeScript executor, Envio indexer, DEPLOY.md.</p></div></a>
+    </div>
+  </section>
+  <footer class="muted small">PolicyPilot reference implementation for Monad Metropolis. Testnet only, unaudited. Agent keys live only in this browser (localStorage) and are meant for testnet use only. Nothing is sent to any server: the app talks straight to the Monad RPC and your wallet.</footer>
+</main>
+
+<!-- Modals -->
+<div class="modal" id="mCreate" hidden><div class="sheet">
+  <div class="sheethead"><h2 id="cTitle">Create agent</h2><button class="icon" data-close>✕</button></div>
+  <div class="steps"><span class="s on">1 Identity</span><span class="s">2 Limits</span><span class="s">3 Recipients</span><span class="s">4 Launch</span></div>
+  <div class="pane" data-p="1">
+    <label>Name</label><input id="fName" maxlength="32" placeholder="e.g. Grocery bot">
+    <label>Avatar</label><div class="avs" id="fAvs"></div>
+    <label>Who signs payments?</label>
+    <div class="seg" id="fExec"><button data-v="agent" class="on">🔑 Agent key <small>(recommended)</small></button><button data-v="wallet">👛 My wallet</button></div>
+    <p class="hint" id="execHint">A fresh key is generated in this browser and stored locally. It's testnet-only, and you can export or delete it. The contract caps whatever it can spend. You'll send it a small amount of MON for gas.</p>
+  </div>
+  <div class="pane" data-p="2" hidden>
+    <label>Total budget (mUSD)</label><input id="fBudget" type="number" min="1" value="100">
+    <label>Max per payment (mUSD)</label><input id="fCap" type="number" min="1" value="25">
+    <label>Gas top-up for agent key (MON)</label><input id="fGas" type="number" min="0" step="0.01" value="0.05">
+    <label class="chk"><input type="checkbox" id="fOwnToken"> Deploy my own test token (one extra signature). Off = use the shared mUSD test token.</label>
+    <p class="hint">The policy is funded with exactly the budget in test mUSD (minted free; it has no value).</p>
+  </div>
+  <div class="pane" data-p="3" hidden>
+    <label>Allowed recipients</label>
+    <div class="row gap"><input id="fRcpt" class="mono" placeholder="0x… address"><button class="btn" id="fAddR">Add</button></div>
+    <div id="fRList" class="rlist"></div>
+    <button class="btn ghost small" id="fSelf">＋ Add my own wallet</button>
+    <p class="hint">The agent can only ever pay these addresses. You can add more later.</p>
+  </div>
+  <div class="pane" data-p="4" hidden>
+    <div id="fSummary" class="summary"></div>
+    <ol class="prog" id="fProg"></ol>
+  </div>
+  <div class="sheetfoot"><button class="btn ghost" id="fBack">Back</button><button class="btn pri" id="fNext">Next</button></div>
+</div></div>
+
+<div class="modal" id="mPay" hidden><div class="sheet">
+  <div class="sheethead"><h2>Ask <span id="pName"></span> to pay</h2><button class="icon" data-close>✕</button></div>
+  <label>To</label><select id="pTo"></select>
+  <label>Or another address (to test the guardrails)</label><input id="pToX" class="mono" placeholder="optional 0x…">
+  <label>Amount (mUSD)</label><input id="pAmt" type="number" min="0" step="any" value="5">
+  <label>Memo / request ID</label><input id="pMemo" placeholder="e.g. invoice-42 (the same memo can't be paid twice)">
+  <div id="pRes" class="res" hidden></div>
+  <div class="sheetfoot"><button class="btn ghost" data-close>Cancel</button><button class="btn pri" id="pGo">Pay</button></div>
+</div></div>
+
+<div class="modal" id="mEdit" hidden><div class="sheet">
+  <div class="sheethead"><h2>Edit limits</h2><button class="icon" data-close>✕</button></div>
+  <label>Total budget (mUSD)</label><input id="eBudget" type="number" min="0">
+  <label>Max per payment (mUSD)</label><input id="eCap" type="number" min="0">
+  <label>Add recipient</label><input id="eRcpt" class="mono" placeholder="0x… (optional)">
+  <label>Top up agent gas (MON)</label><input id="eGas" type="number" min="0" step="0.01" placeholder="0">
+  <label>Top up policy funds (mint test mUSD)</label><input id="eFund" type="number" min="0" placeholder="0">
+  <p class="hint">Each change is one signature from your wallet (the admin).</p>
+  <div class="sheetfoot"><button class="btn ghost" data-close>Cancel</button><button class="btn pri" id="eGo">Save</button></div>
+</div></div>
+
+<div class="modal" id="mImport" hidden><div class="sheet">
+  <div class="sheethead"><h2>Import an agent</h2><button class="icon" data-close>✕</button></div>
+  <label>PolicyPilot contract address</label><input id="iAddr" class="mono" placeholder="0x…">
+  <label>Agent key (optional, to let it pay from this browser)</label><input id="iKey" class="mono" type="password" placeholder="0x… testnet-only key">
+  <div class="sheetfoot"><button class="btn ghost" data-close>Cancel</button><button class="btn pri" id="iGo">Import</button></div>
+</div></div>
+
+<div id="toasts"></div>
+<script type="module" src="agents-testnet.js"></script>
+</body></html>

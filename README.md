@@ -5,12 +5,24 @@
 **Demo video:** [watch](https://blockchains.github.io/policypilot-monad/demo.html) · [download MP4](https://blockchains.github.io/policypilot-monad/demo.mp4)
 Status: IMPLEMENTED + TESTED locally (Foundry, anvil) and DEPLOYED to Monad testnet (test token only; not mainnet).
 - `src/PolicyPilot.sol` non-upgradeable contract (OpenZeppelin v5.7.0 SafeERC20). `src/MockToken.sol` test-only.
-- `test/PolicyPilot.t.sol`: 17 tests in total, as reported by `forge test` (unit, fuzz and invariant tests across 2 suites).
+- Tests: 49 in total, as reported by `forge test` (PolicyPilot, AgentVault unit/fuzz/invariant, dapp-call mocks). Mainnet fork tests (`AgentVaultForkTest`: WMON wrap/unwrap, Uniswap v3 MON→USDC→MON, Kintsu stake, blocked calls) run with `forge test --fork-url https://rpc.monad.xyz --match-contract AgentVaultForkTest`.
 - `executor/` viem deterministic executor + `e2e-anvil.mjs` local demo (writes evidence JSON).
 - `frontend/index.html` static read-only demo dashboard: live state and budget gauge, event timeline, decoded on-chain rejections, read-only `eth_call` policy simulator, architecture, judge quick-start. Reads via RPC, or the Envio indexer via `?indexer=`.
 - `indexer/` Envio HyperIndex indexer for all PolicyPilot events (local).
 Run: `forge test -vv`; `anvil &`; `cd executor && node e2e-anvil.mjs`.
 Deploy yourself: see [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
+## Agent spending harness: live on Monad mainnet (alpha)
+
+> **Alpha · unaudited contract · only deposit what you're happy to lose.** The vault cap is 1 MON and the global cap is 10 MON.
+
+Site: https://blockchains.github.io/policypilot-monad/ ("Is this how easy it is to put a harness on agentic spending?"). Pick an agent, set the limits with sliders and approve dapp cards. One transaction creates a vault with every rule baked in. The agent key is generated and kept in your browser only.
+
+- `AgentVaultFactory` on mainnet: `0x8738B74778502ff3623A8319837A819d8dBdEeB7` (Sourcify exact match). The factory has no owner and no admin path to user funds.
+- Showcase vault: `0x379e0C3Ecba46d62dAdCf26dBecd0F26A2cdCA97` (Sourcify exact match). Every allowed and blocked action is in `frontend/showcase-143.json`, and the site's history timeline re-reads it live from chain.
+- Policy: target+selector allowlist, recipient word must equal the vault, a per-action MON cap, a total budget, per-token caps, exact approvals reset to 0, minOut checks and pause. Approve/transfer/permit selectors are forbidden.
+- Dapps are verified official addresses only (`frontend/dapps.json`): WMON, Uniswap v3 SwapRouter02 and Kintsu sMON. Lending (Morpho) and perps (Kuru) are listed as not yet verified and are not enabled.
+- Testnet factory: `0x2E40E06C0B864caF87cCB00f31e6EE2d0689cDd7`. The older mUSD consumer app is at `agents-testnet.html`.
 
 ## Live on Monad testnet (chain 10143)
 - **PolicyPilot:** [`0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E`](https://testnet.monadexplorer.com/address/0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E) (Sourcify verified, exact runtime match)

@@ -1,0 +1,24 @@
+{
+  "_note": "Curated registry. Only contracts whose addresses we verified from the protocol's official docs, cross-checked on-chain. Entries carry the call rules a vault owner approves. recipientWord = index of the ABI argument that must equal the vault (255 = none). Every entry was fork-tested against Monad mainnet (test/AgentVaultDapps.t.sol).",
+  "143": {
+    "tokens": {
+      "WMON": {"address": "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A", "decimals": 18, "source": "https://docs.monad.xyz/developer-essentials/network-information"},
+      "USDC": {"address": "0x754704Bc059F8C67012fEd69BC8A327a5aafb603", "decimals": 6, "source": "https://developers.circle.com/stablecoins/usdc-contract-addresses"},
+      "sMON": {"address": "0xA3227C5969757783154C60bF0bC1944180ed81B9", "decimals": 18, "source": "https://docs.kintsu.xyz/the-kintsu-protocol/official-contract-addresses"}
+    },
+    "dapps": [
+      {"id": "wmon", "name": "Wrapped MON", "category": "Wrap", "icon": "🎁", "blurb": "Wrap and unwrap MON 1:1 (canonical WMON).",
+       "address": "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A", "source": "https://docs.monad.xyz/developer-essentials/network-information",
+       "rules": [{"fn": "deposit()", "selector": "0xd0e30db0", "recipientWord": 255}, {"fn": "withdraw(uint256)", "selector": "0x2e1a7d4d", "recipientWord": 255}], "tokenCaps": []},
+      {"id": "uniswap", "name": "Uniswap v3", "category": "DEX swap", "icon": "🦄", "blurb": "Swap MON ⇄ USDC via SwapRouter02. Output must go back to the vault, and a minimum output is enforced.",
+       "address": "0xfE31F71C1b106EAc32F1A19239c9a9A72ddfb900", "source": "https://developers.uniswap.org/docs/protocols/v3/deployments/v3-monad-deployments",
+       "rules": [{"fn": "exactInputSingle((address,address,uint24,address,uint256,uint256,uint160))", "selector": "0x04e45aaf", "recipientWord": 3}],
+       "tokenCaps": [{"token": "USDC", "cap": "5000000"}, {"token": "WMON", "cap": "1000000000000000000"}]},
+      {"id": "kintsu", "name": "Kintsu", "category": "Liquid staking", "icon": "🥩", "blurb": "Stake MON for sMON. sMON is minted straight to the vault.",
+       "address": "0xA3227C5969757783154C60bF0bC1944180ed81B9", "source": "https://docs.kintsu.xyz/the-kintsu-protocol/official-contract-addresses",
+       "rules": [{"fn": "deposit(uint96,address)", "selector": "0x1c3477dd", "recipientWord": 1}], "tokenCaps": []}
+    ],
+    "notYetVerified": ["Lending (e.g. Morpho on Monad): no Monad address found in official docs we could read; not included", "Perps/orderbook (e.g. Kuru): official mainnet router address not verified; not included"]
+  },
+  "10143": { "tokens": {}, "dapps": [], "notYetVerified": ["Testnet: payouts only; mainnet dapps are not deployed on testnet"] }
+}
