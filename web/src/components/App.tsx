@@ -11,6 +11,7 @@ import { addLocal, buildAction, buildCreate, buildStarter, chainOf, decodeInput,
 import { TOKENS, type TokenSym } from '@/lib/services';
 import { buildSuper, matchSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
 import VaultReport from './VaultReport';
+import FastDispatch from './FastDispatch';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 type Tab = 'launch' | 'activity' | 'agents' | 'services' | 'policy';
@@ -147,7 +148,7 @@ export default function App() {
       </header>
 
       <main className="mx-auto min-w-0 max-w-6xl pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-4">
-        {tab === 'launch' && <Launch {...{ net, pub: pub!, account, wallet, need, send, toast, refreshHist, loadVaults, setTab, block, kpi, hist }} />}
+        {tab === 'launch' && <Launch {...{ net, pub: pub!, account, wallet, bal, vaults, need, send, runAgent, toast, refreshHist, loadVaults, setTab, block, kpi, hist }} />}
         {tab === 'activity' && <ActivityView {...{ net, pub, hist, kpi, block, vaults, account, runAgent, setTab, refresh: refreshHist }} />}
         {tab === 'agents' && <Agents {...{ net, pub: pub!, account, wallet, need, send, vaults, loadVaults, runAgent, ownerTx, setConnectOpen, setTab, toast, refreshHist }} />}
         {tab === 'services' && <ServicesView net={net} />}
@@ -206,7 +207,7 @@ function Step({ n, title, done, active, children, testid }: { n: number; title: 
     </Card>
   );
 }
-function Launch({ net, pub, account, wallet, need, send, toast, refreshHist, loadVaults, setTab, kpi, hist, block }: any) {
+function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, toast, refreshHist, loadVaults, setTab, kpi, hist, block }: any) {
   const live = services(net).filter(s => s.status === 'live');
   const [agentMode, setAgentMode] = useState<'new' | 'external'>('new');
   const [ext, setExt] = useState('');
@@ -257,6 +258,12 @@ function Launch({ net, pub, account, wallet, need, send, toast, refreshHist, loa
         </div>
       </section>
 
+      <FastDispatch net={net} pub={pub} account={account} wallet={wallet} bal={bal} vaults={vaults} need={need} send={send} runAgent={runAgent} loadVaults={loadVaults} refreshHist={refreshHist} toast={toast} />
+
+      <details data-testid="custom-rules" className="min-w-0 rounded-[2rem] border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+        <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-zinc-200">Custom agent and custom rules</summary>
+        <p className="mt-2 text-xs text-zinc-400">The full setup: your own agent key or an external agent, every limit as a slider, and each service switched on by hand.</p>
+        <div className="mt-4 grid gap-4">
       <Step n={1} title="Connect your wallet" done={!!account} active={step === 1} testid="step1">
         {account ? <p className="text-sm text-zinc-300">Connected as <span className="font-mono">{short(account)}</span>. You stay the owner, and only you can withdraw.</p>
           : <Btn kind="pri" className="w-full sm:w-auto" onClick={() => need()}><Wallet className="h-4 w-4" />Connect wallet</Btn>}
@@ -301,13 +308,15 @@ function Launch({ net, pub, account, wallet, need, send, toast, refreshHist, loa
         <p className="mt-3 rounded-2xl bg-monad/10 p-3 text-sm text-violet-100" data-testid="summary">{summary}</p>
       </Step>
 
-      <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 lg:bottom-4">
+      <div>
         {room != null && <p data-testid="capacity" className={`mb-2 text-xs ${overRoom ? 'text-amber-300' : 'text-zinc-400'}`}>Alpha safety cap: {mon(room, 3)} of deposit room left across all vaults.{overRoom ? ' Lower the deposit to fit (you can launch with 0 and top up later).' : ''}</p>}
         <Btn kind="pri" data-testid="launch" disabled={busy || !extOk || overRoom} onClick={launch} className="h-14 w-full rounded-3xl text-base">{busy ? 'Launching…' : <><Rocket className="h-5 w-5" />Let it go into the wild</>}</Btn>
       </div>
       {prog.length > 0 && <Card data-testid="progress"><ol className="grid gap-2 text-sm">{prog.map((x, i) => <li key={i} className={`flex min-w-0 items-start gap-2 ${x.s === 'err' ? 'text-red-300' : x.s === 'ok' ? 'text-emerald-300' : 'text-zinc-300'}`}><span className="shrink-0">{x.s === 'ok' ? '✅' : x.s === 'err' ? '⛔' : '⏳'}</span><span className="min-w-0 break-words">{x.t}{x.h && <> · <a className="underline" href={`${net.exp}/tx/${x.h}`} target="_blank" rel="noreferrer">tx ↗</a></>}</span></li>)}</ol>
         {doneVault && <div className="mt-4 grid gap-2 sm:grid-cols-2" data-testid="launched"><Btn kind="pri" onClick={() => setTab('activity')}><Activity className="h-4 w-4" />Watch it live</Btn><Btn onClick={() => setTab('agents')}><Bot className="h-4 w-4" />Manage my agent</Btn></div>}
       </Card>}
+        </div>
+      </details>
     </div>
   );
 }
