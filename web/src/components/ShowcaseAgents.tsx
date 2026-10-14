@@ -35,7 +35,7 @@ export default function ShowcaseAgents({ net, pub, base, totalVaults, extraTeamV
         <h2 className="min-w-0 flex-1 text-base font-semibold text-amber-100">{TEAM_LABEL}</h2>
         <Pill tone="zinc">{snap.status.startsWith('running') ? 'running' : 'stopped'}</Pill>
       </div>
-      <p className="text-xs text-amber-100/70">{snap.note} Real Monad mainnet transactions, one round over every team vault every ~2 minutes from GitHub Actions. Counts below exclude organic users.</p>
+      <p className="text-xs text-amber-100/70">{snap.note} Real Monad mainnet transactions, one round over every team vault every ~10 minutes from GitHub Actions. Counts below exclude organic users.</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[['Team agent txs (live nonce)', String(liveTx || '–')], ['✅ Allowed', String(snap.totals.allowed)], ['⛔ Blocked on-chain', String(snap.totals.blocked)], ['Organic (non-team) vaults', totalVaults != null ? String(Math.max(0, totalVaults - team)) : '–']].map(([k, v]) => (
           <Card key={k} className="p-3"><div className="font-mono text-lg tabular-nums text-white">{v}</div><div className="text-[11px] leading-tight text-zinc-400">{k}</div></Card>))}
