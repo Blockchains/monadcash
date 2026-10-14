@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T18:52:59.956Z",
+ "updatedAt": "2026-10-14T19:03:05.072Z",
  "totals": {
-  "allowed": 212,
-  "blocked": 71,
+  "allowed": 216,
+  "blocked": 72,
   "ownerTxs": 31,
   "skipped": 4
  },
@@ -26,7 +26,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 30,
+   "allowed": 31,
    "blocked": 0
   },
   {
@@ -38,7 +38,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 70,
+   "allowed": 71,
    "blocked": 0
   },
   {
@@ -50,7 +50,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 62,
+   "allowed": 63,
    "blocked": 0
   },
   {
@@ -63,7 +63,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 71
+   "blocked": 72
   },
   {
    "id": "dca1",
@@ -74,7 +74,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 50,
+   "allowed": 51,
    "blocked": 0
   },
   {
@@ -143,6 +143,47 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T19:03:05.070Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0179 MON on Uniswap v3",
+   "status": "allowed",
+   "tx": "0x6f872fd3aa8294d7663209669abe43352a71904dd8873488d332cadf4cfbc380"
+  },
+  {
+   "ts": "2026-10-14T19:03:03.906Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay a stranger (0x…dEaD)",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0x64eb20d6c349e90b8b0b0f7adba6def026901f936db26607bf211c87698dce4c"
+  },
+  {
+   "ts": "2026-10-14T19:03:03.323Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0057 MON to the team treasury",
+   "status": "allowed",
+   "tx": "0xd2f9c0e9fa8f81bfff4e2519d86af5c2882df44fb0cc1ab2ebb0b7750546cc19"
+  },
+  {
+   "ts": "2026-10-14T19:03:02.146Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0096 MON → sMON (Kintsu)",
+   "status": "allowed",
+   "tx": "0xb6274ddfa5b2004ced2b8a086900f64d5cf5d45e11f0423f2f21118fc0e15e9b"
+  },
+  {
+   "ts": "2026-10-14T19:03:01.523Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0133 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0x30711d3045bb51ac7fca33ef8122ca75c34a5baad6589995fde7fe13dd173452"
+  },
   {
    "ts": "2026-10-14T18:52:59.954Z",
    "persona": "dca1",
@@ -594,47 +635,6 @@
    "status": "blocked",
    "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
    "tx": "0x2b73267448227013f5d75a0b3e3c365ab060650eac5eea069d37b2f893e931eb"
-  },
-  {
-   "ts": "2026-10-14T17:18:12.886Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0131 MON to the Rogue agent agent",
-   "status": "allowed",
-   "tx": "0xc6dbec73495d81d2afea6f05ec4479666f20d0f022d4ed4ee4524e493b096321"
-  },
-  {
-   "ts": "2026-10-14T17:18:12.065Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker stakes 0.0067 MON → sMON (Kintsu)",
-   "status": "allowed",
-   "tx": "0xe97b8aad6e5cafbdb4c3ced7219e3c2f05b0ca12bcb0b42495e15663c5cc65d2"
-  },
-  {
-   "ts": "2026-10-14T17:18:10.951Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot takes profit: swaps 0.001082 USDC → WMON",
-   "status": "allowed",
-   "tx": "0x60fb9b5c9d0e1971b03151472fa44b896445a39d887008e68f31dcb3219fbd24"
-  },
-  {
-   "ts": "2026-10-14T17:16:15.552Z",
-   "persona": "dca1",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0112 MON on Uniswap v3",
-   "status": "allowed",
-   "tx": "0x337d2004a619fa0917690da656180a71ece0a97a22ba3263308b9052728c43b6"
-  },
-  {
-   "ts": "2026-10-14T17:16:14.289Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
-   "status": "blocked",
-   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
-   "tx": "0x5d8c6f46e260ea0588852dbb88fec8fe13866a44a5f57a4dacc8919205488056"
   }
  ],
  "status": "running (GitHub Actions)"
