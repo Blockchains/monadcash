@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T20:53:44.849Z",
+ "updatedAt": "2026-10-14T21:03:47.537Z",
  "totals": {
-  "allowed": 240,
-  "blocked": 83,
+  "allowed": 241,
+  "blocked": 84,
   "ownerTxs": 31,
   "skipped": 9
  },
@@ -42,7 +42,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 78,
+   "allowed": 79,
    "blocked": 0
   },
   {
@@ -71,7 +71,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 83
+   "blocked": 84
   },
   {
    "id": "dca1",
@@ -155,6 +155,23 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T21:03:47.468Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to raise its own budget (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0xef6dc74456baa785e750b3b3c827ee4d7ac194036cf045fcd34ceb7f85e9a460"
+  },
+  {
+   "ts": "2026-10-14T21:03:46.810Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0052 MON → gMON (Magma)",
+   "status": "allowed",
+   "tx": "0xa02ed2d0a62a2c4296c9a887b88b3ebe0da8e33c6bfec6777004ac8fa92d8a06"
+  },
   {
    "ts": "2026-10-14T20:53:44.802Z",
    "persona": "rogue",
@@ -634,23 +651,6 @@
    "label": "DCA bot buys USDC with 0.018 MON on Uniswap v3",
    "status": "allowed",
    "tx": "0x7131f0b67f7cc3c9f96151933efdfe16a06e6f53f969e7980cecda047f9d353d"
-  },
-  {
-   "ts": "2026-10-14T18:12:42.194Z",
-   "persona": "dca1",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0143 MON on Uniswap v3",
-   "status": "allowed",
-   "tx": "0xc204a33129367ee419dea6aa067c08e7db790acefcbeacd7d615aaca1250a8e4"
-  },
-  {
-   "ts": "2026-10-14T18:12:41.399Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
-   "tx": "0xfe62edb44329fde8c61dd3d0aaf6361185f83e9bb7ff9be21dcbada0a13a8238"
   }
  ],
  "status": "running (GitHub Actions)"
