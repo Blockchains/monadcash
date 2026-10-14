@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T21:13:49.535Z",
+ "updatedAt": "2026-10-14T21:23:52.264Z",
  "totals": {
-  "allowed": 242,
-  "blocked": 85,
+  "allowed": 243,
+  "blocked": 86,
   "ownerTxs": 31,
   "skipped": 9
  },
@@ -42,7 +42,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 80,
+   "allowed": 81,
    "blocked": 0
   },
   {
@@ -71,7 +71,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 85
+   "blocked": 86
   },
   {
    "id": "dca1",
@@ -155,6 +155,23 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T21:23:52.207Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay a stranger (0x…dEaD)",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0xf2d5946b4dbaf6fd653b6112e14b862df22e6876e28aa3f12f8617bceae40210"
+  },
+  {
+   "ts": "2026-10-14T21:23:51.106Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker unwraps 0.0172 WMON → MON",
+   "status": "allowed",
+   "tx": "0xce1e735c0efed45a8e10df73702017444823a65c6bc74d5dbc9a4f8fd95f3e5f"
+  },
   {
    "ts": "2026-10-14T21:13:49.488Z",
    "persona": "rogue",
@@ -635,23 +652,6 @@
    "label": "DCA bot buys USDC with 0.0111 MON on PancakeSwap v3",
    "status": "allowed",
    "tx": "0x20ac3cc26142e7ffdb965e0495a250f298b0c038dbbbcd0eeeefb760ea1531f5"
-  },
-  {
-   "ts": "2026-10-14T18:22:46.300Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
-   "status": "blocked",
-   "reason": "NotOwner",
-   "tx": "0xb937e0f5795d8305ba5e70fb1636d961603053bd5a51bc0941bc0f5ff8daae8a"
-  },
-  {
-   "ts": "2026-10-14T18:22:45.287Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0064 MON to the DCA bot agent",
-   "status": "allowed",
-   "tx": "0xb8556f35bca9bde0e2addef717bb524e5e8f66261b86677d993b7a85f0301fea"
   }
  ],
  "status": "running (GitHub Actions)"
