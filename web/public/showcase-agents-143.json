@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T21:23:52.264Z",
+ "updatedAt": "2026-10-14T21:33:55.321Z",
  "totals": {
-  "allowed": 243,
-  "blocked": 86,
+  "allowed": 244,
+  "blocked": 87,
   "ownerTxs": 31,
   "skipped": 9
  },
@@ -42,7 +42,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 81,
+   "allowed": 82,
    "blocked": 0
   },
   {
@@ -71,7 +71,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 86
+   "blocked": 87
   },
   {
    "id": "dca1",
@@ -155,6 +155,23 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T21:33:55.272Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
+   "tx": "0x87b91367e846e7a3de859a8b01e218a8b9b20c25aff06d16eb8d138f8387a46f"
+  },
+  {
+   "ts": "2026-10-14T21:33:54.158Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker swaps 0.0098 MON → USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0x8e47fcf983f9d606e2484442df7b756fb7cc81923c3a32c1bd9695473101790a"
+  },
   {
    "ts": "2026-10-14T21:23:52.207Z",
    "persona": "rogue",
@@ -636,22 +653,6 @@
    "label": "Staker wraps 0.0132 MON → WMON",
    "status": "allowed",
    "tx": "0x894963576d4264c64542aac539e53885a080cc71bbe4f1ba8441198e2733adea"
-  },
-  {
-   "ts": "2026-10-14T18:32:48.541Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0113 MON on PancakeSwap v3",
-   "status": "allowed",
-   "tx": "0x8f95491696a479d76c46cca337982ec76291af764645de452ae6e92429d1b938"
-  },
-  {
-   "ts": "2026-10-14T18:22:47.043Z",
-   "persona": "dca1",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0111 MON on PancakeSwap v3",
-   "status": "allowed",
-   "tx": "0x20ac3cc26142e7ffdb965e0495a250f298b0c038dbbbcd0eeeefb760ea1531f5"
   }
  ],
  "status": "running (GitHub Actions)"
