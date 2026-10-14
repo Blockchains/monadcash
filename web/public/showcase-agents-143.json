@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T22:14:04.970Z",
+ "updatedAt": "2026-10-14T22:24:07.235Z",
  "totals": {
-  "allowed": 248,
-  "blocked": 91,
+  "allowed": 249,
+  "blocked": 92,
   "ownerTxs": 31,
   "skipped": 9
  },
@@ -42,7 +42,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 86,
+   "allowed": 87,
    "blocked": 0
   },
   {
@@ -71,7 +71,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 91
+   "blocked": 92
   },
   {
    "id": "dca1",
@@ -155,6 +155,23 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T22:24:07.186Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
+   "tx": "0xfb80b5a49fec233c60ebed722f87d90e2f1796082cdf809224465426d91d045b"
+  },
+  {
+   "ts": "2026-10-14T22:24:06.451Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker unwraps 0.0215 WMON → MON",
+   "status": "allowed",
+   "tx": "0x6da0f28853f00110a6eebce8141fe4b7056cc84cd911108069fcf0bffbc93376"
+  },
   {
    "ts": "2026-10-14T22:14:04.924Z",
    "persona": "rogue",
@@ -639,22 +656,6 @@
    "status": "blocked",
    "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
    "tx": "0x46ecbf6c1952c6d43a819276722c3c07a7ec74cd7aa263174c95b7bb93e536bb"
-  },
-  {
-   "ts": "2026-10-14T18:52:57.930Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker swaps 0.0135 MON → USDC on Kuru (order book)",
-   "status": "allowed",
-   "tx": "0x4cc0f056cd7f90f9e8fb5c25217c56d88eab7c2cbd12aba08b8810260d2ea616"
-  },
-  {
-   "ts": "2026-10-14T18:52:57.238Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot unwraps 0.047768164195266294 WMON → MON",
-   "status": "allowed",
-   "tx": "0xe8d8268fc2d201acd45e5a58419487cef5150c378ced926119e8867b2c93d3f9"
   }
  ],
  "status": "running (GitHub Actions)"
