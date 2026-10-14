@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T17:02:15.866Z",
+ "updatedAt": "2026-10-14T17:04:14.620Z",
  "totals": {
-  "allowed": 138,
-  "blocked": 52,
+  "allowed": 142,
+  "blocked": 53,
   "ownerTxs": 31,
   "skipped": 4
  },
@@ -26,7 +26,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 11,
+   "allowed": 12,
    "blocked": 0
   },
   {
@@ -38,7 +38,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 51,
+   "allowed": 52,
    "blocked": 0
   },
   {
@@ -50,7 +50,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 45,
+   "allowed": 46,
    "blocked": 0
   },
   {
@@ -63,7 +63,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 52
+   "blocked": 53
   },
   {
    "id": "dca1",
@@ -74,7 +74,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 31,
+   "allowed": 32,
    "blocked": 0
   },
   {
@@ -143,6 +143,47 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T17:04:14.619Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0186 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0xe1adf87ebd4eb17390a01f98b8f7cce3d20f92e9f19cb1015ebdf26b648328b6"
+  },
+  {
+   "ts": "2026-10-14T17:04:13.393Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
+   "tx": "0x311639faf79741649464f6976e7874fbcee75759890e09b480b0c3536a581534"
+  },
+  {
+   "ts": "2026-10-14T17:04:12.769Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0159 MON to the DCA bot agent",
+   "status": "allowed",
+   "tx": "0xb16b4d7d4f72b027dc8944c7eddf3211f91f20abfa9553adf363c8aeec135e4c"
+  },
+  {
+   "ts": "2026-10-14T17:04:11.927Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker swaps 0.0098 MON → USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0xfa711e7cfdc4d9cd1a2de93c3c730279726074d58a21c16f66a6339f116ed728"
+  },
+  {
+   "ts": "2026-10-14T17:04:11.210Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0164 MON on Uniswap v3",
+   "status": "allowed",
+   "tx": "0xa12a6436cd9191f26a95988db04d76f7bcf97c6e19570309495d594177e15bba"
+  },
   {
    "ts": "2026-10-14T17:02:15.865Z",
    "persona": "dca1",
@@ -594,46 +635,6 @@
    "label": "DCA bot buys USDC with 0.0194 MON on Uniswap v3",
    "status": "allowed",
    "tx": "0x61911050b6fe41af4982e54f5c3f0b4b15c2c9c69ec0977446a616cbe8c206cd"
-  },
-  {
-   "ts": "2026-10-13T16:59:15.580Z",
-   "persona": "rogue",
-   "actor": "owner",
-   "label": "Fund Rogue agent agent gas",
-   "status": "owner",
-   "tx": "0x14dcab1290ac7b7f5f4515d12d39d2163d47d7e53f679df61aab1c8f6da8787a"
-  },
-  {
-   "ts": "2026-10-13T16:59:13.674Z",
-   "persona": "rogue",
-   "actor": "owner",
-   "label": "Create Rogue agent vault (policy + deposit, 1 tx)",
-   "status": "owner",
-   "tx": "0x78f58053e0e81eb6bc86b6d13a367bcf71f1d05740338cd106b90b90d47544a9"
-  },
-  {
-   "ts": "2026-10-13T16:59:11.931Z",
-   "persona": "payroll",
-   "actor": "owner",
-   "label": "Fund Payroll agent gas",
-   "status": "owner",
-   "tx": "0x56d10f5b0113213a6874ac0e5dd0fcfefb0e73e97887cb5a5a206bf5b284f24a"
-  },
-  {
-   "ts": "2026-10-13T16:59:10.412Z",
-   "persona": "payroll",
-   "actor": "owner",
-   "label": "Create Payroll vault (policy + deposit, 1 tx)",
-   "status": "owner",
-   "tx": "0x2920b4e3dc058ff0d8e99e22e1ae3a3708b8198d2eadd06712003e2cdd7b1290"
-  },
-  {
-   "ts": "2026-10-13T16:59:09.054Z",
-   "persona": "staker",
-   "actor": "owner",
-   "label": "Fund Staker agent gas",
-   "status": "owner",
-   "tx": "0x05dc823dd8baff938bc7fdd75ca351944ee73ebb7b14d36e0a2c64601b9208d4"
   }
  ],
  "status": "running (GitHub Actions)"
