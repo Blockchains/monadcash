@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T17:10:16.201Z",
+ "updatedAt": "2026-10-14T17:12:14.501Z",
  "totals": {
-  "allowed": 154,
-  "blocked": 56,
+  "allowed": 158,
+  "blocked": 57,
   "ownerTxs": 31,
   "skipped": 4
  },
@@ -26,7 +26,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 15,
+   "allowed": 16,
    "blocked": 0
   },
   {
@@ -38,7 +38,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 55,
+   "allowed": 56,
    "blocked": 0
   },
   {
@@ -50,7 +50,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 49,
+   "allowed": 50,
    "blocked": 0
   },
   {
@@ -63,7 +63,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 56
+   "blocked": 57
   },
   {
    "id": "dca1",
@@ -74,7 +74,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 35,
+   "allowed": 36,
    "blocked": 0
   },
   {
@@ -143,6 +143,47 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T17:12:14.500Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0103 MON on Uniswap v3",
+   "status": "allowed",
+   "tx": "0x1631957a8138db0fa1a046649fd0a112b824b0c02e9e533a542100fa4aa7c20a"
+  },
+  {
+   "ts": "2026-10-14T17:12:13.707Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
+   "tx": "0x660c58187b77d871e1a35fcbac22ea353aed9e35727dbb9b6020e8c289fb42e3"
+  },
+  {
+   "ts": "2026-10-14T17:12:13.080Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0192 MON to the team treasury",
+   "status": "allowed",
+   "tx": "0x2796377bd6d094a693c6938cea3901766f955674e9d966390f04fc0af04d01f1"
+  },
+  {
+   "ts": "2026-10-14T17:12:12.266Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker wraps 0.0229 MON → WMON",
+   "status": "allowed",
+   "tx": "0x36ccf059bf3de6e73a90574136a2f4257d7367f3393baac0ae6c5d9e1f29a7c9"
+  },
+  {
+   "ts": "2026-10-14T17:12:11.550Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0196 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0xac9ff891805a1ef72fe470acf7ab07bfd52d3a814abaaf54806a83e7eee9cf2b"
+  },
   {
    "ts": "2026-10-14T17:10:16.200Z",
    "persona": "dca1",
@@ -593,48 +634,6 @@
    "label": "DCA bot buys USDC with 0.0147 MON on Uniswap v3",
    "status": "allowed",
    "tx": "0x5b6016e8a28806280da981c59ca77de8cd51b71b2b556460b281c59bf0f5f8ff"
-  },
-  {
-   "ts": "2026-10-14T00:47:31.564Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay a stranger (0x…dEaD)",
-   "status": "blocked",
-   "reason": "NotExecutor",
-   "tx": "0x50d932287d98be712088f17cf06a2fb683cd29998ab27ea2a283536537749b69"
-  },
-  {
-   "ts": "2026-10-13T21:51:29.244Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0141 MON on PancakeSwap v3",
-   "status": "allowed",
-   "tx": "0x390648239a0318870d3eb378a8347b2ae5a7b92ad37138cab621ee65d6ca813b"
-  },
-  {
-   "ts": "2026-10-13T21:50:16.045Z",
-   "persona": "dca1",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0186 MON on Uniswap v3",
-   "status": "allowed",
-   "tx": "0x8e06f9d46e02c3c171b1902e8dc802c2c9ffc0a4373485212defdb880c48974d"
-  },
-  {
-   "ts": "2026-10-13T21:44:28.901Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
-   "tx": "0x6b532208762f64a87c8c384c760d5f353027759104130d33c340fc39cc8c53a3"
-  },
-  {
-   "ts": "2026-10-13T21:16:49.230Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0211 MON to the team treasury",
-   "status": "allowed",
-   "tx": "0xcc599f32ab6a7086342e68deb0c4af6e612b3ecdf5531cdb39f76c3447002202"
   }
  ],
  "status": "running (GitHub Actions)"
