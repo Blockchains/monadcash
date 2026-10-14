@@ -321,6 +321,17 @@ async function preflight(p, MIN_GAS) {
   if (rem < parseEther('0.001') && w === 0n && u < 100n) return `budget exhausted (${formatEther(spent)}/${formatEther(budget)} MON spent; owner must setBudget)`;
   return null;
 }
+/** Minimum spacing between rounds, enforced by the runner itself so the cadence holds whoever calls it (and so a
+ *  change merged to runner/showcase-loop.env applies to an already-running loop on its next round).
+ *  ROUND_SPACING_S env wins; otherwise INTERVAL_S_DEFAULT from runner/showcase-loop.env; 0 disables. */
+async function paceRound() {
+  let spacing = Number(E.ROUND_SPACING_S ?? NaN);
+  if (!Number.isFinite(spacing)) { const f = path.resolve(HERE, 'showcase-loop.env'); const m = fs.existsSync(f) ? /^INTERVAL_S_DEFAULT=(\d+)/m.exec(fs.readFileSync(f, 'utf8')) : null; spacing = m ? Number(m[1]) : 0; }
+  if (!(spacing > 0) || !fs.existsSync(PUB)) return;
+  const last = Date.parse(JSON.parse(fs.readFileSync(PUB, 'utf8')).updatedAt); if (!Number.isFinite(last)) return;
+  const wait = Math.min(spacing * 1000 - (Date.now() - last), spacing * 1000);
+  if (wait > 0) { log(`pacing: last round ${Math.round((Date.now() - last) / 1000)}s ago; waiting ${Math.ceil(wait / 1000)}s to keep ${spacing}s between rounds`); await sleep(wait); }
+}
 /** One round: every persona gets a turn, each isolated by try/catch so one failure never blocks the others. */
 async function runRound() {
   const MAX_FEE = parseEther(E.MAX_FEE_MON || '0.15'); const MIN_GAS = parseEther(E.MIN_AGENT_GAS || '0.08'); let guard = false;
@@ -350,6 +361,7 @@ if (AGENTS_ONLY && cmd === 'check') { // keyless health check (also what runs wh
 }
 if (AGENTS_ONLY) {
   if (!PERSONAS.some(p => hasKey(p.id))) { log('no AGENT_KEY_* secrets configured: nothing to run'); publish({ status: 'running (GitHub Actions)' }); process.exit(0); }
+  await paceRound();
   const guard = await within(runRound(), 1_500_000, 'round');
   if (guard) { log('SPEND GUARD tripped: stopping the loop'); process.exit(3); }
   process.exit(0);

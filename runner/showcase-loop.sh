@@ -18,7 +18,7 @@ echo "loop: ${DURATION_MIN} min, one round every $(interval)s${INTERVAL_S:+ (fix
 while :; do
   i=$((i + 1)); t0=$(date +%s)
   echo "::group::round $i ($(date -u +%H:%M:%SZ), $(( (end - t0) / 60 )) min left)"
-  node runner/showcase-agents.mjs run; rc=$?
+  ROUND_SPACING_S=$(interval) node runner/showcase-agents.mjs run; rc=$?   # the runner also paces itself to this spacing
   echo "::endgroup::"
   if [ "$COMMIT" = "1" ]; then bash runner/showcase-commit.sh "$i" || echo "::warning::commit/push of round $i failed (will retry next round)"; fi
   if [ "$rc" -eq 3 ]; then echo "::error::spend guard tripped: stopping the loop"; exit 3; fi
