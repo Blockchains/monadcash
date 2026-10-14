@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T22:04:02.140Z",
+ "updatedAt": "2026-10-14T22:14:04.970Z",
  "totals": {
-  "allowed": 247,
-  "blocked": 90,
+  "allowed": 248,
+  "blocked": 91,
   "ownerTxs": 31,
   "skipped": 9
  },
@@ -42,7 +42,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 85,
+   "allowed": 86,
    "blocked": 0
   },
   {
@@ -71,7 +71,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 90
+   "blocked": 91
   },
   {
    "id": "dca1",
@@ -155,6 +155,23 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T22:14:04.924Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to raise its own budget (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0x2d846964cd60a3c67b607208d41665c940e36a582bec658b12197255d2b594cd"
+  },
+  {
+   "ts": "2026-10-14T22:14:03.863Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker wraps 0.0215 MON → WMON",
+   "status": "allowed",
+   "tx": "0x7a9ddfe4a983a642054ffa1d516bc6ada336cd23c9f8aab91bf645e1bc609eb6"
+  },
   {
    "ts": "2026-10-14T22:04:02.094Z",
    "persona": "rogue",
@@ -638,23 +655,6 @@
    "label": "DCA bot unwraps 0.047768164195266294 WMON → MON",
    "status": "allowed",
    "tx": "0xe8d8268fc2d201acd45e5a58419487cef5150c378ced926119e8867b2c93d3f9"
-  },
-  {
-   "ts": "2026-10-14T18:42:55.894Z",
-   "persona": "dca1",
-   "actor": "agent",
-   "label": "DCA bot unwraps 0.042792684611449652 WMON → MON",
-   "status": "allowed",
-   "tx": "0x38ff55ad95cf8c4c41dffa7eed063b34d61c150ab302920529f6f1374f0e4865"
-  },
-  {
-   "ts": "2026-10-14T18:42:55.215Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to raise its own budget (owner-only)",
-   "status": "blocked",
-   "reason": "NotOwner",
-   "tx": "0x3759c3fdae719f6a347dd37e72d676035930b7e580dcd087cd7fdc9ca68d968a"
   }
  ],
  "status": "running (GitHub Actions)"
