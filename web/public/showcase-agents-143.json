@@ -9,12 +9,12 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T19:53:24.849Z",
+ "updatedAt": "2026-10-14T20:03:29.201Z",
  "totals": {
-  "allowed": 228,
-  "blocked": 77,
+  "allowed": 231,
+  "blocked": 78,
   "ownerTxs": 31,
-  "skipped": 6
+  "skipped": 7
  },
  "agents": [
   {
@@ -27,7 +27,11 @@
    "perActionCapMON": "0.03",
    "pending": false,
    "allowed": 36,
-   "blocked": 0
+   "blocked": 0,
+   "lastSkip": {
+    "ts": "2026-10-14T20:03:25.500Z",
+    "reason": "agent gas 0.077737986 MON < 0.08 MON (owner must top up the agent wallet)"
+   }
   },
   {
    "id": "staker",
@@ -38,7 +42,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 72,
+   "allowed": 73,
    "blocked": 0
   },
   {
@@ -50,7 +54,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 64,
+   "allowed": 65,
    "blocked": 0
   },
   {
@@ -63,7 +67,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 77
+   "blocked": 78
   },
   {
    "id": "dca1",
@@ -74,7 +78,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 56,
+   "allowed": 57,
    "blocked": 0
   },
   {
@@ -82,10 +86,10 @@
    "name": "Kuru market maker",
    "emoji": "📗",
    "about": "Two-sided flow on Kuru’s on-chain order book: sells a clip of MON for USDC, then buys MON back with the USDC (approval capped by the vault), round after round.",
-   "vault": null,
-   "agent": null,
+   "vault": "0x2C9EC710CA04771B885F3417FE2F9eA0E638Dcf6",
+   "agent": "0x8fdaB828628F211BC10E074Fa550430cf5048462",
    "perActionCapMON": "0.03",
-   "pending": true,
+   "pending": false,
    "allowed": 0,
    "blocked": 0,
    "lastSkip": {
@@ -98,10 +102,10 @@
    "name": "Wrap/unwrap rebalancer",
    "emoji": "⚖️",
    "about": "Keeps the vault near a 50/50 split of MON and WMON: wraps when WMON is short, unwraps when it is long. Only WMON.deposit/withdraw are allowlisted.",
-   "vault": null,
-   "agent": null,
+   "vault": "0x221313ad5dC798189875053deb61A8a2a5a692aE",
+   "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
-   "pending": true,
+   "pending": false,
    "allowed": 0,
    "blocked": 0,
    "lastSkip": {
@@ -114,10 +118,10 @@
    "name": "Tipper",
    "emoji": "🪙",
    "about": "Streams micro-tips (0.001–0.004 MON) to an allowlist of team addresses. A tiny per-action cap makes anything bigger impossible.",
-   "vault": null,
-   "agent": null,
+   "vault": "0xD8aFa3A2f9b71AE287a08CF7547526081EB543Ee",
+   "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
-   "pending": true,
+   "pending": false,
    "allowed": 0,
    "blocked": 0,
    "lastSkip": {
@@ -130,10 +134,10 @@
    "name": "Policy tester",
    "emoji": "🧪",
    "about": "Probes the exact edges of its policy: wraps exactly the cap (allowed), then cap + 1 wei (blocked), replays a used requestId (blocked), swaps on Uniswap with the output sent to itself (blocked), pays a stranger (blocked). Blocked attempts are broadcast so the revert is public.",
-   "vault": null,
-   "agent": null,
+   "vault": "0xC17350f1d9853D0b51135FD60F176A758705C5d6",
+   "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
-   "pending": true,
+   "pending": false,
    "allowed": 0,
    "blocked": 0,
    "lastSkip": {
@@ -143,6 +147,39 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T20:03:29.200Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0142 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0xff887ce48f85fc66cf8cfb89d8d0d5ca66e3aab4dbae0a226765b25122cef304"
+  },
+  {
+   "ts": "2026-10-14T20:03:28.411Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
+   "tx": "0x0908c70faeb7d5c92c3697199d67f61a7170fe443b8216f3f7d6a00bc9ce4b6a"
+  },
+  {
+   "ts": "2026-10-14T20:03:27.772Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0119 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0x9434c558049ff840e853312b689faffc8b5e3f76333e186c70b54effdfa0209d"
+  },
+  {
+   "ts": "2026-10-14T20:03:26.329Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0097 MON → gMON (Magma)",
+   "status": "allowed",
+   "tx": "0x85db6d8d03fd0d1b517a12fe1cb6ab700273c29455cccee0cb6b6e38af4c7ac6"
+  },
   {
    "ts": "2026-10-14T19:53:24.848Z",
    "persona": "dca1",
@@ -603,39 +640,6 @@
    "label": "DCA bot takes profit: swaps 0.002452 USDC → WMON",
    "status": "allowed",
    "tx": "0x405c5af8389355647a90a57f9b611ad96cf30cd9cdc8cdf875c06757c44710c5"
-  },
-  {
-   "ts": "2026-10-14T17:42:25.703Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
-   "tx": "0x41e153c0f3273fd979871fbfc27e8ed7c339ff0b6575d0bd3ed034ce42f2f2ed"
-  },
-  {
-   "ts": "2026-10-14T17:42:24.699Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0125 MON to the Staker agent",
-   "status": "allowed",
-   "tx": "0x38aa42961195899526f2f751fa9a22c6dbf17b49fd6a60195051816ec3b2d31e"
-  },
-  {
-   "ts": "2026-10-14T17:42:23.486Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker unwraps 0.0136 WMON → MON",
-   "status": "allowed",
-   "tx": "0xdee95366d69174cd9b9c5f8a96e54311d63cbf753eda7248cee5aa7a53d4547c"
-  },
-  {
-   "ts": "2026-10-14T17:42:22.410Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0185 MON on PancakeSwap v3",
-   "status": "allowed",
-   "tx": "0xa9ebfcc1e8005e5d07056ade30b5cac335bd829c7ef9edb71c6873fcd7c8c02a"
   }
  ],
  "status": "running (GitHub Actions)"
