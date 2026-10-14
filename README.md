@@ -114,3 +114,17 @@ Three curated templates, each created and funded in one factory transaction with
 - **Yield** — splits a deposit across Kintsu (sMON), aPriori (aprMON) and Magma (gMON). Receipt tokens stay in the vault.
 - **Best execution** — quotes Uniswap v3, PancakeSwap v3 and Kuru for the same MON→USDC size and routes to the best output, with the vault’s own minOut (−3%) guard. The same quote panel is on the manual “Best-price swap” button whenever a vault has two or more of those venues.
 - **Payments** — 0.01 MON per payment, owner plus any extra addresses you type, then a playbook that pays each approved payee.
+
+### Vault report and cash-out
+
+Every vault (yours, and the team vaults as a read-only view) opens a portfolio: a donut and allocation bar of what is inside, each asset’s amount and estimated MON value, and two sparklines (MON/USDC, and the vault’s estimated value). Prices are quoted on-chain from Uniswap v3, PancakeSwap v3 and Kuru for 0.1 MON and scaled to 1 MON — there is no paid price API. The lines are sampled every 20 seconds while the page is open and stored in this browser only. aprMON and gMON are valued with `convertToAssets`; sMON has no exchange-rate function on its contract, so it is shown 1:1 and labeled as such. A “how this vault works” strip lists the policy and the playbook or the allowlisted services.
+
+**Cash out / close** (owner only, real transactions, stops at the first failure):
+
+1. If the vault holds USDC, this browser can sign as the agent, a Uniswap or PancakeSwap rule is on, and the balance is within the vault’s USDC approval cap — swap USDC → WMON on the better quote (minOut = quote − 3%). Otherwise USDC is returned as USDC.
+2. If the vault holds WMON and the wrap rule is on — unwrap it to MON inside the vault. Otherwise WMON is returned as WMON.
+3. `withdrawToken` every remaining receipt (sMON, aprMON, gMON, and anything that could not be swapped) to the creator. The vault can stake into those protocols; it cannot unstake. Redeem the receipts in Kintsu, aPriori or Magma.
+4. `withdraw` the vault’s MON to the creator. This does not pause the vault.
+5. Optional: pause the agent afterwards (the “close” switch, on by default). A paused vault is resumed first if a swap or unwrap is needed, then paused again only when that switch is on.
+
+Team vaults show the same report with the cash-out button disabled. The flow never calls `emergencyWithdrawAll`.

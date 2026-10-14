@@ -1,5 +1,5 @@
 'use client';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createWalletClient, custom, formatEther, formatUnits, getAddress, http, isAddress, parseEther, type Address, type Hex, type PublicClient, type WalletClient } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { Activity, Bot, Check, ChevronRight, ExternalLink, KeyRound, LayoutGrid, Lock, Play, Rocket, ShieldCheck, Sparkles, Wallet, Gauge, Coins, Users, Zap } from 'lucide-react';
@@ -10,6 +10,7 @@ import { discoverWallets, deepLinks, INSTALL, isMobile, haptic, type Discovered,
 import { addLocal, buildAction, buildCreate, buildStarter, chainOf, decodeInput, erc20, factoryAbi, fetchTeamSnapshot, loadHistory, mon, plain, pubOf, quoteAll, readVault, reasonOf, resolveNet, services, short, STARTER, TEAM_LABEL, vaultAbi, vcall, type Quote, type Ev, type Net, type Policy, type TeamAgent, type TeamSnapshot, type VaultState } from '@/lib/vault';
 import { TOKENS, type TokenSym } from '@/lib/services';
 import { buildSuper, matchSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
+import VaultReport from './VaultReport';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 type Tab = 'launch' | 'activity' | 'agents' | 'services' | 'policy';
@@ -107,19 +108,19 @@ export default function App() {
 
   // ---------- agent actions ----------
   const agentWallet = (s: VaultState) => (s.key ? createWalletClient({ account: privateKeyToAccount(s.key as Hex), chain: chainOf(net!), transport: http(net!.rpc) }) : s.executor === account ? wallet : null);
-  const runAgent = async (s: VaultState, kind: string, amount: bigint, extra: { to?: Address } = {}): Promise<{ ok: boolean; msg: React.ReactNode }> => {
+  const runAgent = async (s: VaultState, kind: string, amount: bigint, extra: { to?: Address; venues?: ('uniswap' | 'pancake')[] } = {}): Promise<{ ok: boolean; msg: React.ReactNode; detail: string }> => {
     const a = await buildAction(pub!, kind, s.v, s.owner, s.executor, amount, s.cap, extra);
     try { await pub!.call({ account: s.executor, ...a.req }); }
     catch (e) {
-      const r = reasonOf(e); addLocal(net!, { label: `Blocked: ${a.label}`, kind: 'blocked', dapp: a.dapp, icon: a.icon, revertReason: r.name ? `${r.name}(${(r.args ?? []).map(String).join(', ')})` : r.raw, simulated: true, value: a.value });
-      refreshHist(); return { ok: false, msg: <>🛡️ <b>Blocked by the vault:</b> {plain(r)} Nothing was sent and no gas was spent.</> };
+      const r = reasonOf(e); const detail = plain(r); addLocal(net!, { label: `Blocked: ${a.label}`, kind: 'blocked', dapp: a.dapp, icon: a.icon, revertReason: r.name ? `${r.name}(${(r.args ?? []).map(String).join(', ')})` : r.raw, simulated: true, value: a.value });
+      refreshHist(); return { ok: false, detail, msg: <>🛡️ <b>Blocked by the vault:</b> {detail} Nothing was sent and no gas was spent.</> };
     }
     const w = agentWallet(s);
-    if (!w) return { ok: true, msg: <>✅ This passes the policy. Your agent {short(s.executor)} signs it with its own key (not in this browser).</> };
+    if (!w) return { ok: true, detail: 'Passes the policy. The agent key is not in this browser, so nothing was sent.', msg: <>✅ This passes the policy. Your agent {short(s.executor)} signs it with its own key (not in this browser).</> };
     const gas = ((await pub!.estimateGas({ account: w.account!, ...a.req })) * 13n) / 10n;
     const rc = await send(w, { ...a.req, gas }); addLocal(net!, { label: a.label, kind: 'allowed', tx: rc.transactionHash, from: w.account!.address });
     refreshHist(); loadVaults();
-    return { ok: true, msg: <>✅ <b>Done:</b> {a.label}. <a className="underline" href={`${net!.exp}/tx/${rc.transactionHash}`} target="_blank" rel="noreferrer">View tx ↗</a></> };
+    return { ok: true, detail: a.label, msg: <>✅ <b>Done:</b> {a.label}. <a className="underline" href={`${net!.exp}/tx/${rc.transactionHash}`} target="_blank" rel="noreferrer">View tx ↗</a></> };
   };
   const ownerTx = async (label: string, req: { to: Address; data: Hex; value?: bigint }) => {
     if (!(await need())) throw new Error('Connect your wallet first');
@@ -572,17 +573,6 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
     </div>
   );
 }
-function Stats({ s }: { s: VaultState }) {
-  const pct = s.budget > 0n ? Math.min(100, Number((s.spent * 1000n) / s.budget) / 10) : 0; const C = 2 * Math.PI * 40;
-  const toks = (Object.entries(s.toks) as [TokenSym, bigint][]).filter(([, b]) => b > 0n);
-  return (
-    <div className="mt-4 flex min-w-0 items-center gap-4">
-      <svg viewBox="0 0 100 100" className="h-24 w-24 shrink-0 -rotate-90"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="10" /><circle cx="50" cy="50" r="40" fill="none" stroke="#836EF9" strokeWidth="10" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - pct / 100)} className="transition-all duration-700" /></svg>
-      <dl className="grid min-w-0 flex-1 grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-xs"><dt className="text-zinc-400">Budget used</dt><dd className="truncate text-right font-mono tabular-nums">{pct.toFixed(0)}%</dd><dt className="text-zinc-400">In vault</dt><dd className="truncate text-right font-mono tabular-nums" data-testid="vault-bal">{mon(s.bal)}</dd><dt className="text-zinc-400">Spent</dt><dd className="truncate text-right font-mono tabular-nums">{mon(s.spent)}</dd><dt className="text-zinc-400">Per action</dt><dd className="truncate text-right font-mono tabular-nums">≤ {mon(s.cap)}</dd><dt className="text-zinc-400">Agent gas</dt><dd className="truncate text-right font-mono tabular-nums">{mon(s.agentBal)}</dd>
-        {toks.map(([k, b]) => <Fragment key={k}><dt className="text-zinc-400">{k}</dt><dd className="truncate text-right font-mono tabular-nums">{Number(formatUnits(b, TOKENS[k].decimals)).toFixed(6)}</dd></Fragment>)}</dl>
-    </div>
-  );
-}
 function OwnVault({ s, net, pub, account, runAgent, ownerTx, toast, teamName, template, reload }: { s: VaultState; net: Net; pub: PublicClient; account: Address; runAgent: any; ownerTx: any; toast: any; teamName: string | null; template?: SuperVault; reload: () => void }) {
   const [k, setK] = useState<string | null>(null); const [own, setOwn] = useState<{ s: VaultState; kind: string } | null>(null);
   const signer = signerOf(s, account); const toks = (Object.entries(s.toks) as [TokenSym, bigint][]).filter(([, b]) => b > 0n);
@@ -590,9 +580,9 @@ function OwnVault({ s, net, pub, account, runAgent, ownerTx, toast, teamName, te
   return (
     <Card data-testid="vault-card">
       <div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-monad/20 text-xl">{template ? template.emoji : <ShieldCheck className="h-5 w-5 text-violet-300" />}</span>
-        <div className="min-w-0 flex-1"><div className="truncate font-semibold text-white">{teamName ?? template?.name ?? `Vault ${short(s.v)}`}</div><a className="block truncate text-xs text-violet-300" href={`${net.exp}/address/${s.v}`} target="_blank" rel="noreferrer">{s.v} ↗</a>{template && <p className="mt-1 break-words text-xs text-zinc-400">{template.tagline}</p>}{teamName && <div className="mt-1"><Pill tone="zinc">{TEAM_LABEL}</Pill></div>}</div>
+        <div className="min-w-0 flex-1"><div className="break-words font-semibold text-white">{teamName ?? template?.name ?? `Vault ${short(s.v)}`}</div><a className="block truncate text-xs text-violet-300" href={`${net.exp}/address/${s.v}`} target="_blank" rel="noreferrer">{s.v} ↗</a>{template && <p className="mt-1 break-words text-xs text-zinc-400">{template.tagline}</p>}{teamName && <div className="mt-1"><Pill tone="zinc">{TEAM_LABEL}</Pill></div>}</div>
         <Pill tone={s.paused ? 'warn' : 'ok'}>{s.paused ? 'Paused' : 'Active'}</Pill></div>
-      <Stats s={s} />
+      <VaultReport key={s.v} s={s} net={net} pub={pub} account={account} template={template} runAgent={runAgent} ownerTx={ownerTx} reload={reload} canSign={signer !== null} isOwner readOnly={false} />
       <Switch testid="sw-pause-vault" on={!s.paused} onChange={async v => { try { await ownerTx(v ? 'Owner resumes the agent' : 'Owner pauses the agent', vcall(s.v, 'setPaused', [!v])); toast(v ? '▶️ Agent resumed' : '⏸ Agent paused', 'ok'); } catch (e) { toast(plain(reasonOf(e)), 'bad'); } }} label={s.paused ? 'Agent is paused' : 'Agent is live'} sub="Instant kill-switch, one signature" />
       {template && <Playbook s={s} template={template} pub={pub} runAgent={runAgent} canSign={signer !== null} reload={reload} />}
       <div className="mt-2 text-[11px] uppercase tracking-wider text-zinc-500">Agent actions · {signer === 'wallet' ? 'real, signed by your wallet' : signer === 'key' ? 'real, signed by the key in this browser' : 'simulate only'}</div>
@@ -677,7 +667,7 @@ function TeamVault({ a, s, net, pub, account, runAgent, owner }: { a: TeamAgent;
       {s === 'loading' && <div className="mt-3 text-sm text-zinc-500">Reading the vault…</div>}
       {s === 'error' && <div className="mt-3 text-sm text-red-300">Couldn’t read this vault right now.</div>}
       {st && <>
-        <Stats s={st} />
+        <VaultReport key={st.v} s={st} net={net} pub={pub} account={account} runAgent={runAgent} ownerTx={async () => { throw new Error('This team vault is read-only here.'); }} reload={() => {}} canSign={false} isOwner={false} readOnly />
         <div className="mt-3 text-[11px] uppercase tracking-wider text-zinc-500">Simulate what this agent may do</div>
         <p className="mt-1 text-xs text-zinc-400">The team’s agent keys live only in encrypted GitHub Actions secrets and never enter a browser. Buttons run the vault’s policy check as a free eth_call from the agent’s address and send nothing.{owner && account && owner.toLowerCase() === account.toLowerCase() ? ' You are the owner: this vault also appears under “Your vaults” with real owner actions.' : ''}</p>
         <div className="mt-2 flex flex-wrap gap-2">{actionsFor(st.rules).map(x => <Btn key={x.kind} kind="soft" className="px-3" onClick={() => setK(x.kind)}>{x.label}</Btn>)}<Btn kind="danger" className="px-3" onClick={() => setK('break')}>😈 Break it</Btn></div>

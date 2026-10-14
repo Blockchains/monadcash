@@ -1,5 +1,5 @@
 'use client';
-import { createPublicClient, decodeErrorResult, fallback, decodeFunctionData, encodeFunctionData, formatEther, http, keccak256, parseAbi, toHex, type Abi, type Address, type Hex, type PublicClient } from 'viem';
+import { createPublicClient, decodeErrorResult, fallback, decodeFunctionData, encodeFunctionData, formatEther, formatUnits, http, keccak256, parseAbi, toHex, type Abi, type Address, type Hex, type PublicClient } from 'viem';
 import ABI from './vault-abi.json';
 import { KURU, LIVE, QUOTERS, SERVICES, TOKENS, type Service, type TokenSym } from './services';
 
@@ -110,8 +110,38 @@ export async function quoteAll(pub: PublicClient, vault: Address, amount: bigint
   return (['uniswap', 'pancake', 'kuru'] as const).map((id, i) => ({ id, name: svc(id).name, icon: svc(id).icon, out: rs[i].status === 'fulfilled' ? (rs[i] as PromiseFulfilledResult<bigint>).value : null }));
 }
 
+/** Reference MON→USDC price: best of the live venue quotes for 0.1 MON, scaled to 1 MON (USDC has 6 decimals). */
+export async function monUsdcPrice(pub: PublicClient, vault: Address): Promise<{ usdcPerMon: bigint; venue: string; venues: { id: Quote['id']; name: string; icon: string; usdcPerMon: bigint | null }[] }> {
+  const quotes = await quoteAll(pub, vault, 10n ** 17n);
+  const shortName = { uniswap: 'Uniswap', pancake: 'Pancake', kuru: 'Kuru' } as const;
+  const venues = quotes.map(q => ({ id: q.id, name: shortName[q.id], icon: q.icon, usdcPerMon: q.out && q.out > 0n ? q.out * 10n : null }));
+  const ok = venues.filter(v => v.usdcPerMon && v.usdcPerMon > 0n);
+  const best = ok.reduce<(typeof ok)[number] | null>((a, b) => (!a || b.usdcPerMon! > a.usdcPerMon! ? b : a), null);
+  return { usdcPerMon: best?.usdcPerMon ?? 0n, venue: best?.name ?? '', venues };
+}
+
+/** USDC → WMON through an allowlisted v3 router. `usdcAmount` is raw 6-decimal units. minOut = best quote − 3%. */
+async function buildUsdcToWmon(pub: PublicClient, vault: Address, usdcAmount: bigint, venues: ('uniswap' | 'pancake')[]): Promise<AgentAction> {
+  if (usdcAmount <= 0n) throw new Error('No USDC to swap back.');
+  const list = venues.length ? venues : (['uniswap', 'pancake'] as const);
+  const quote = async (id: 'uniswap' | 'pancake') => {
+    const Q = QUOTERS[id];
+    const q = await pub.simulateContract({ address: Q.address, abi: quoterAbi, functionName: 'quoteExactInputSingle', args: [{ tokenIn: TOKENS.USDC.address, tokenOut: TOKENS.WMON.address, amountIn: usdcAmount, fee: Q.fee, sqrtPriceLimitX96: 0n }] });
+    return { id, out: q.result[0] as bigint, fee: Q.fee };
+  };
+  const rs = await Promise.all(list.map(id => quote(id).catch(() => null)));
+  const ok = rs.filter((x): x is { id: 'uniswap' | 'pancake'; out: bigint; fee: number } => !!x && x.out > 0n);
+  if (!ok.length) throw new Error('No venue could quote USDC → WMON right now.');
+  const best = ok.reduce((a, b) => (b.out > a.out ? b : a));
+  const minOut = (best.out * 97n) / 100n;
+  if (minOut === 0n) throw new Error('That USDC amount is too small to swap back safely.');
+  const data = encodeFunctionData({ abi: routerAbi, functionName: 'exactInputSingle', args: [{ tokenIn: TOKENS.USDC.address, tokenOut: TOKENS.WMON.address, fee: best.fee, recipient: vault, amountIn: usdcAmount, amountOutMinimum: minOut, sqrtPriceLimitX96: 0n }] });
+  const x = svc(best.id);
+  return { label: `Agent swaps ${formatUnits(usdcAmount, 6)} USDC → WMON on ${x.name}`, dapp: x.name, icon: x.icon, value: 0n, req: vcall(vault, 'executeCall', [rid('back'), x.address, 0n, data, { approveToken: TOKENS.USDC.address, approveAmount: usdcAmount, outToken: TOKENS.WMON.address, minOut }]) };
+}
+
 export type AgentAction = { label: string; dapp: string; icon: string; req: { to: Address; data: Hex }; value: bigint; quotes?: Quote[] };
-export async function buildAction(pub: PublicClient, kind: string, vault: Address, owner: Address, executor: Address, amount: bigint, cap: bigint, extra: { to?: Address } = {}): Promise<AgentAction> {
+export async function buildAction(pub: PublicClient, kind: string, vault: Address, owner: Address, executor: Address, amount: bigint, cap: bigint, extra: { to?: Address; venues?: ('uniswap' | 'pancake')[] } = {}): Promise<AgentAction> {
   const call = (s: string, value: bigint, data: Hex, out: { outToken: Address; minOut: bigint }, label: string) => {
     const x = svc(s); return { label, dapp: x.name, icon: x.icon, value, req: vcall(vault, 'executeCall', [rid(s), x.address, value, data, { ...NONE, ...out }]) };
   };
@@ -135,6 +165,7 @@ export async function buildAction(pub: PublicClient, kind: string, vault: Addres
       const a = best.id === 'kuru' ? await buildAction(pub, 'kuru', vault, owner, executor, amount, cap) : await swap(best.id);
       return { ...a, quotes, label: `Agent swaps ${formatEther(amount)} MON → USDC on ${best.name} (best of ${ok.length} venues)` };
     }
+    case 'usdctowmon': return buildUsdcToWmon(pub, vault, amount, extra.venues ?? ['uniswap', 'pancake']); // amount is USDC raw (6 decimals), not MON
     case 'kuru': {
       const args = [[KURU.monUsdc], [false], [true], ZERO, TOKENS.USDC.address, amount, 1n] as const;
       const sim = await pub.simulateContract({ account: vault, address: KURU.router, abi: kuruAbi, functionName: 'anyToAnySwap', args: args as any, value: amount }); // exact output, simulated from the vault
