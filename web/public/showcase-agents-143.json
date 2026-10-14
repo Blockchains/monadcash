@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T17:00:15.101Z",
+ "updatedAt": "2026-10-14T17:02:15.866Z",
  "totals": {
-  "allowed": 134,
-  "blocked": 51,
+  "allowed": 138,
+  "blocked": 52,
   "ownerTxs": 31,
   "skipped": 4
  },
@@ -26,7 +26,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 10,
+   "allowed": 11,
    "blocked": 0
   },
   {
@@ -38,7 +38,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 50,
+   "allowed": 51,
    "blocked": 0
   },
   {
@@ -50,7 +50,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 44,
+   "allowed": 45,
    "blocked": 0
   },
   {
@@ -63,7 +63,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 51
+   "blocked": 52
   },
   {
    "id": "dca1",
@@ -74,7 +74,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 30,
+   "allowed": 31,
    "blocked": 0
   },
   {
@@ -143,6 +143,47 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T17:02:15.865Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0129 MON on Uniswap v3",
+   "status": "allowed",
+   "tx": "0x8ef4d0d0c8dd1956a87cb13ed95122de2a5702d71dbcf43bc45e94b6160d68c2"
+  },
+  {
+   "ts": "2026-10-14T17:02:15.045Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
+   "tx": "0xa7891f6978c67077246c6719ff8012f716806040343b417ebd60482a5225a50e"
+  },
+  {
+   "ts": "2026-10-14T17:02:14.423Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0094 MON to the team treasury",
+   "status": "allowed",
+   "tx": "0x2bf4e241dc0d17e7fde84c9fe6d9900bc1f29ffe34a8755be1d6eadb7bcab4df"
+  },
+  {
+   "ts": "2026-10-14T17:02:13.150Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker unwraps 0.0156 WMON → MON",
+   "status": "allowed",
+   "tx": "0xf7d60e756aac8c7cf86848adec2761338540d1470793904a0cb725b1784dc8a1"
+  },
+  {
+   "ts": "2026-10-14T17:02:12.004Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0188 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0xcf9bd483aae240b6b4b244e37e62e3a08461a595e5da72b2a899a6bf329ccf0d"
+  },
   {
    "ts": "2026-10-14T17:00:15.100Z",
    "persona": "dca1",
@@ -593,46 +634,6 @@
    "label": "Fund Staker agent gas",
    "status": "owner",
    "tx": "0x05dc823dd8baff938bc7fdd75ca351944ee73ebb7b14d36e0a2c64601b9208d4"
-  },
-  {
-   "ts": "2026-10-13T16:59:07.141Z",
-   "persona": "staker",
-   "actor": "owner",
-   "label": "Create Staker vault (policy + deposit, 1 tx)",
-   "status": "owner",
-   "tx": "0xb0e83c4cdd4999546f16e625e2bb3c21454c47cfefc1e37d3c94ca1679ddd04e"
-  },
-  {
-   "ts": "2026-10-13T16:59:05.639Z",
-   "persona": "dca",
-   "actor": "owner",
-   "label": "Fund DCA bot agent gas",
-   "status": "owner",
-   "tx": "0x470922c042cb60f765ca2c86c47346189acb61a6ca790da5eeac7aa405624d2f"
-  },
-  {
-   "ts": "2026-10-13T16:59:03.719Z",
-   "persona": "dca",
-   "actor": "owner",
-   "label": "Create DCA bot vault (policy + deposit, 1 tx)",
-   "status": "owner",
-   "tx": "0xef498b384df44a9ce1cd3dfde64e0d68d225f102da8860b5d401b0dd419b5af9"
-  },
-  {
-   "ts": "2026-10-13T16:58:49.669Z",
-   "persona": "rogue",
-   "actor": "agent-sweep",
-   "label": "Return v1 rogue agent gas",
-   "status": "owner",
-   "tx": "0x2a2663dafb16f440c0ac970f730cbc899c0c125527b7aeff7ac88a56c820e0b1"
-  },
-  {
-   "ts": "2026-10-13T16:58:48.472Z",
-   "persona": "rogue",
-   "actor": "owner",
-   "label": "Owner pulls all MON out of v1 rogue vault",
-   "status": "owner",
-   "tx": "0xd3ce9ce5b517c6cf9522345db5e884067404bc69a3372ab3e6ab5df40128f040"
   }
  ],
  "status": "running (GitHub Actions)"
