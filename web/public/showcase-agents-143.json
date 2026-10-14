@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T16:50:15.865Z",
+ "updatedAt": "2026-10-14T16:52:14.494Z",
  "totals": {
-  "allowed": 114,
-  "blocked": 46,
+  "allowed": 118,
+  "blocked": 47,
   "ownerTxs": 31,
   "skipped": 4
  },
@@ -26,7 +26,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 5,
+   "allowed": 6,
    "blocked": 0
   },
   {
@@ -38,7 +38,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 45,
+   "allowed": 46,
    "blocked": 0
   },
   {
@@ -50,7 +50,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 39,
+   "allowed": 40,
    "blocked": 0
   },
   {
@@ -63,7 +63,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 46
+   "blocked": 47
   },
   {
    "id": "dca1",
@@ -74,7 +74,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 25,
+   "allowed": 26,
    "blocked": 0
   },
   {
@@ -143,6 +143,47 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T16:52:14.493Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.019 MON on Uniswap v3",
+   "status": "allowed",
+   "tx": "0x7791583274d8abebf3b89304efb7a8efb04f12fd88a0185e37dc198d83b45567"
+  },
+  {
+   "ts": "2026-10-14T16:52:13.258Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0x2caa3c1e43140e94c6865623eb1bc299455a130dc86a426779c6e707f704121a"
+  },
+  {
+   "ts": "2026-10-14T16:52:12.169Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0239 MON to the team treasury",
+   "status": "allowed",
+   "tx": "0xf789ce3dcce2cc8916bd58f624df6b7b5685b839b34307a2d269c52ddc9734a7"
+  },
+  {
+   "ts": "2026-10-14T16:52:11.336Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker swaps 0.0129 MON → USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0x01d9dee8113d65500dccc2836f05625466487751c37a8849d4c13903225f752b"
+  },
+  {
+   "ts": "2026-10-14T16:52:10.604Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0176 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0xf83613db43e28b660b23bd31b7fcd42664347219896512d6aece3ff1bfda4b6f"
+  },
   {
    "ts": "2026-10-14T16:50:15.863Z",
    "persona": "dca1",
@@ -592,48 +633,6 @@
    "label": "Staker stakes 0.01 MON → gMON (Magma)",
    "status": "allowed",
    "tx": "0x322aab7921ad562d58b9ae02a776fae74db92e9a8a1df07bde73f4ca6199638d"
-  },
-  {
-   "ts": "2026-10-13T16:37:17.052Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0x777a8aF96f8bfBf9A8879C5228996A1b38eF6e20)",
-   "tx": "0x2c71e0a67dfd2cdb627ee3bba7d92c4054eeea39f4fd1bbf82d6949c5f3bcf6e"
-  },
-  {
-   "ts": "2026-10-13T16:37:13.852Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0174 MON to the Rogue agent agent",
-   "status": "allowed",
-   "tx": "0x132d03628beb4179731f2a7caa06f3465814b50def8236e277513833d9765a49"
-  },
-  {
-   "ts": "2026-10-13T16:37:09.662Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker stakes 0.0107 MON → aprMON (aPriori)",
-   "status": "allowed",
-   "tx": "0x6267067c0d5defc0b9071ada0c332607238feb9e7c094702c16e85527185e276"
-  },
-  {
-   "ts": "2026-10-13T16:35:00.215Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
-   "status": "blocked",
-   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
-   "tx": "0xc5215539b7e5d521cf1c9812887363648cd832fda2c78f057cc53c7f6c6ea4a4"
-  },
-  {
-   "ts": "2026-10-13T16:34:56.512Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0218 MON to the Staker agent",
-   "status": "allowed",
-   "tx": "0x740a798a422aafaa44fbf7a72f4773db0da80ffba4611b41d1578a976db25642"
   }
  ],
  "status": "running (GitHub Actions)"
