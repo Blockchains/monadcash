@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T22:24:07.235Z",
+ "updatedAt": "2026-10-14T22:34:09.845Z",
  "totals": {
-  "allowed": 249,
-  "blocked": 92,
+  "allowed": 250,
+  "blocked": 93,
   "ownerTxs": 31,
   "skipped": 9
  },
@@ -42,7 +42,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 87,
+   "allowed": 88,
    "blocked": 0
   },
   {
@@ -71,7 +71,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 92
+   "blocked": 93
   },
   {
    "id": "dca1",
@@ -155,6 +155,23 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T22:34:09.771Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay a stranger (0x…dEaD)",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0xe0f448d5b2c9dba05d3d3295fd55f91b9bf310f5225383ea3c6b6d463c5bbe8b"
+  },
+  {
+   "ts": "2026-10-14T22:34:08.685Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker swaps 0.0112 MON → USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0xa655c8d79068dc9b0cdbd6b4683dc973754ede22ee157d9cc0e9bf529dec7f53"
+  },
   {
    "ts": "2026-10-14T22:24:07.186Z",
    "persona": "rogue",
@@ -639,23 +656,6 @@
    "label": "DCA bot buys USDC with 0.0133 MON on PancakeSwap v3",
    "status": "allowed",
    "tx": "0x30711d3045bb51ac7fca33ef8122ca75c34a5baad6589995fde7fe13dd173452"
-  },
-  {
-   "ts": "2026-10-14T18:52:59.954Z",
-   "persona": "dca1",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0127 MON on PancakeSwap v3",
-   "status": "allowed",
-   "tx": "0x65cd25d977ae07bf8b82ca2cca54c3cc538962d97022f7d44f6803542db7ebb2"
-  },
-  {
-   "ts": "2026-10-14T18:52:58.790Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
-   "tx": "0x46ecbf6c1952c6d43a819276722c3c07a7ec74cd7aa263174c95b7bb93e536bb"
   }
  ],
  "status": "running (GitHub Actions)"
