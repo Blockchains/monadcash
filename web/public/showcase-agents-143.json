@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T16:52:14.494Z",
+ "updatedAt": "2026-10-14T16:54:14.357Z",
  "totals": {
-  "allowed": 118,
-  "blocked": 47,
+  "allowed": 122,
+  "blocked": 48,
   "ownerTxs": 31,
   "skipped": 4
  },
@@ -26,7 +26,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 6,
+   "allowed": 7,
    "blocked": 0
   },
   {
@@ -38,7 +38,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 46,
+   "allowed": 47,
    "blocked": 0
   },
   {
@@ -50,7 +50,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 40,
+   "allowed": 41,
    "blocked": 0
   },
   {
@@ -63,7 +63,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 47
+   "blocked": 48
   },
   {
    "id": "dca1",
@@ -74,7 +74,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 26,
+   "allowed": 27,
    "blocked": 0
   },
   {
@@ -143,6 +143,47 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T16:54:14.356Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0125 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0x9361b2da40860c3630e8296c39adbbba4172d04b37ad5084facea2619d8a7bae"
+  },
+  {
+   "ts": "2026-10-14T16:54:13.508Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to stake via Kintsu (not on its allowlist)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0xA3227C5969757783154C60bF0bC1944180ed81B9, 0x1c3477dd)",
+   "tx": "0xb2dfd9a7f9e05d719433cce485a307b761280a8c13baf4c6c9cd783b3a38461d"
+  },
+  {
+   "ts": "2026-10-14T16:54:12.854Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0137 MON to the DCA bot agent",
+   "status": "allowed",
+   "tx": "0xb2c1292bdc41dd0164c669df9c26e8ed7eae3c926e649aed867ca1ebe0efeaef"
+  },
+  {
+   "ts": "2026-10-14T16:54:11.576Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0079 MON → sMON (Kintsu)",
+   "status": "allowed",
+   "tx": "0xa728b820063f9658d3073a756381afe4f80f0bc6f754c29fa7bf0d3088806cd8"
+  },
+  {
+   "ts": "2026-10-14T16:54:10.872Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0147 MON on Uniswap v3",
+   "status": "allowed",
+   "tx": "0x42d5883455dc77965c06c962dcb1beeed1c945cbfc55428d2db5fbe5b2abb79f"
+  },
   {
    "ts": "2026-10-14T16:52:14.493Z",
    "persona": "dca1",
@@ -592,47 +633,6 @@
    "status": "blocked",
    "reason": "CallNotAllowed(0xA3227C5969757783154C60bF0bC1944180ed81B9, 0x1c3477dd)",
    "tx": "0xf5c7e99dc535f2786593d36b1f4f4088c3aff31f92fdd36a7be429a0c6b4dffb"
-  },
-  {
-   "ts": "2026-10-13T16:41:45.781Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0061 MON to the DCA bot agent",
-   "status": "allowed",
-   "tx": "0xfa07c8943f09d0f38326f474e648787f631180262f56e429db78fda947d18e59"
-  },
-  {
-   "ts": "2026-10-13T16:41:42.268Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker wraps 0.0224 MON → WMON",
-   "status": "allowed",
-   "tx": "0xca5c963c3b1cbb3410dfe62fc8ae9e635dfbf5c0c5393a22ad3a9235564f37e5"
-  },
-  {
-   "ts": "2026-10-13T16:39:33.480Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
-   "status": "blocked",
-   "reason": "NotOwner",
-   "tx": "0x6c4e8ad80063ff6ad8caaca1b67583f07037dc310420d0eb25efd09dd8879c34"
-  },
-  {
-   "ts": "2026-10-13T16:39:29.940Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0055 MON to the team treasury",
-   "status": "allowed",
-   "tx": "0x1d0d8a7f6a60dcaf192ffd96a76435f1e436175c109c9740e28f63537ce0167e"
-  },
-  {
-   "ts": "2026-10-13T16:39:26.272Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker stakes 0.01 MON → gMON (Magma)",
-   "status": "allowed",
-   "tx": "0x322aab7921ad562d58b9ae02a776fae74db92e9a8a1df07bde73f4ca6199638d"
   }
  ],
  "status": "running (GitHub Actions)"
