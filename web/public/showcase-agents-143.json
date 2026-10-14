@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T21:43:57.626Z",
+ "updatedAt": "2026-10-14T21:54:00.060Z",
  "totals": {
-  "allowed": 245,
-  "blocked": 88,
+  "allowed": 246,
+  "blocked": 89,
   "ownerTxs": 31,
   "skipped": 9
  },
@@ -42,7 +42,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 83,
+   "allowed": 84,
    "blocked": 0
   },
   {
@@ -71,7 +71,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 88
+   "blocked": 89
   },
   {
    "id": "dca1",
@@ -155,6 +155,23 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T21:54:00.016Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0xa2d7b4d6cfa8564d02e673a51c8b6a82b107150d34b39f711a30d0270f88ff2a"
+  },
+  {
+   "ts": "2026-10-14T21:53:59.371Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0061 MON → aprMON (aPriori)",
+   "status": "allowed",
+   "tx": "0xfa0e782786f86af5360e31e8bea7e4b4c71eaade1d46360d1324318be40bf5d9"
+  },
   {
    "ts": "2026-10-14T21:43:57.581Z",
    "persona": "rogue",
@@ -637,22 +654,6 @@
    "label": "Staker unwraps 0.0132 WMON → MON",
    "status": "allowed",
    "tx": "0x56ab1b1abb728d91b6ecbdc284875317751db003a11861c23a04b8eae6038026"
-  },
-  {
-   "ts": "2026-10-14T18:42:52.801Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot takes profit: swaps 0.00114 USDC → WMON",
-   "status": "allowed",
-   "tx": "0x7a95621e925cd897ccedd020006db8963364d1b74ee63e9dcca4a8fe9f309312"
-  },
-  {
-   "ts": "2026-10-14T18:32:50.960Z",
-   "persona": "dca1",
-   "actor": "agent",
-   "label": "DCA bot takes profit: swaps 0.001023 USDC → WMON",
-   "status": "allowed",
-   "tx": "0xc4b50f094e1d4a2e85d46ad1b6765c1041d5201306953c9b6885ff8b5c1fdb2b"
   }
  ],
  "status": "running (GitHub Actions)"
