@@ -2,13 +2,14 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createWalletClient, custom, formatEther, formatUnits, getAddress, http, isAddress, parseEther, type Address, type Hex, type PublicClient, type WalletClient } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { Activity, Bot, Check, ChevronRight, ExternalLink, KeyRound, LayoutGrid, Lock, Rocket, ShieldCheck, Sparkles, Wallet, Gauge, Coins, Users, Zap } from 'lucide-react';
+import { Activity, Bot, Check, ChevronRight, ExternalLink, KeyRound, LayoutGrid, Lock, Play, Rocket, ShieldCheck, Sparkles, Wallet, Gauge, Coins, Users, Zap } from 'lucide-react';
 import { Btn, Card, Pill, Sheet, Slider, Switch, useToasts } from './ui';
 import PolicyDashboard from './Dashboard';
 import ShowcaseAgents from './ShowcaseAgents';
 import { discoverWallets, deepLinks, INSTALL, isMobile, haptic, type Discovered, type Eip1193 } from '@/lib/wallets';
-import { addLocal, buildAction, buildCreate, buildStarter, chainOf, decodeInput, factoryAbi, fetchTeamSnapshot, loadHistory, mon, plain, pubOf, readVault, reasonOf, resolveNet, services, short, STARTER, TEAM_LABEL, vaultAbi, vcall, type Ev, type Net, type Policy, type TeamAgent, type TeamSnapshot, type VaultState } from '@/lib/vault';
+import { addLocal, buildAction, buildCreate, buildStarter, chainOf, decodeInput, erc20, factoryAbi, fetchTeamSnapshot, loadHistory, mon, plain, pubOf, quoteAll, readVault, reasonOf, resolveNet, services, short, STARTER, TEAM_LABEL, vaultAbi, vcall, type Quote, type Ev, type Net, type Policy, type TeamAgent, type TeamSnapshot, type VaultState } from '@/lib/vault';
 import { TOKENS, type TokenSym } from '@/lib/services';
+import { buildSuper, matchSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 type Tab = 'launch' | 'activity' | 'agents' | 'services' | 'policy';
@@ -376,11 +377,18 @@ function Chart({ events }: { events: Ev[] }) {
 // ---------------- Agents: vault picker (your vaults + team vaults) ----------------
 const ACTIONS: { kind: string; label: string; svc: string; amt: string }[] = [
   { kind: 'payto', label: '💸 Pay an address', svc: 'pay', amt: '0.005' }, { kind: 'wmon', label: '🎁 Wrap', svc: 'wmon', amt: '0.01' }, { kind: 'unwrap', label: '🎁 Unwrap', svc: 'wmon', amt: '0.01' },
-  { kind: 'kuru', label: '📗 Kuru swap', svc: 'kuru', amt: '0.01' }, { kind: 'uniswap', label: '🦄 Uniswap swap', svc: 'uniswap', amt: '0.01' }, { kind: 'pancake', label: '🥞 PancakeSwap swap', svc: 'pancake', amt: '0.01' },
+  { kind: 'bestswap', label: '🎯 Best-price swap', svc: 'bestswap', amt: '0.01' }, { kind: 'kuru', label: '📗 Kuru swap', svc: 'kuru', amt: '0.01' }, { kind: 'uniswap', label: '🦄 Uniswap swap', svc: 'uniswap', amt: '0.01' }, { kind: 'pancake', label: '🥞 PancakeSwap swap', svc: 'pancake', amt: '0.01' },
   { kind: 'kintsu', label: '🥩 Kintsu', svc: 'kintsu', amt: '0.01' }, { kind: 'apriori', label: '⚡ aPriori', svc: 'apriori', amt: '0.01' }, { kind: 'magma', label: '🌋 Magma', svc: 'magma', amt: '0.01' },
 ];
 const ATTACKS = [['x-cap', 'Spend 2× the cap'], ['x-stranger', 'Pay a stranger'], ['x-drain', 'Move USDC out with transfer()'], ['x-self', 'Swap but send output to itself'], ['x-withdraw', 'Withdraw the vault']] as const;
+/** Services a vault's buttons should show: its rules, plus best-price swap when at least two swap venues are on. */
+const actionsFor = (rules: string[]) => ACTIONS.filter(a => rules.includes(a.svc) || (a.svc === 'bestswap' && ['uniswap', 'pancake', 'kuru'].filter(x => rules.includes(x)).length >= 2));
 /** How the connected browser can sign for this vault's agent: with a browser-held key, with the connected wallet (it IS the executor), or not at all (simulate only). */
+const superOf = (s: VaultState): SuperVault | undefined => {
+  const hit = matchSuper(s.rules); if (hit) return hit;
+  try { const id = localStorage.getItem(`pp.super.${s.v.toLowerCase()}`); const t = SUPER_VAULTS.find(x => x.id === id); if (t && t.services.every(sv => s.rules.includes(sv))) return t; } catch { /* private mode */ }
+  return undefined;
+};
 const signerOf = (s: VaultState, account: Address | null): 'key' | 'wallet' | null => (s.key ? 'key' : account && s.executor.toLowerCase() === account.toLowerCase() ? 'wallet' : null);
 
 function ActionSheet({ s, kind, onClose, runAgent, net, pub, account, ownerTx, readOnly }: { s: VaultState; kind: string | null; onClose: () => void; runAgent: any; net: Net; pub: PublicClient; account: Address | null; ownerTx?: any; readOnly?: boolean }) {
@@ -388,6 +396,12 @@ function ActionSheet({ s, kind, onClose, runAgent, net, pub, account, ownerTx, r
   const [res, setRes] = useState<{ ok: boolean; msg: React.ReactNode } | null>(null); const [busy, setBusy] = useState(false); const [step, setStep] = useState('');
   useEffect(() => { setRes(null); setStep(''); setAmt(kind === 'unwrap' && s.toks.WMON ? formatEther(s.toks.WMON) : a?.amt ?? '0.01'); setTo(account ?? ''); }, [kind]); // eslint-disable-line
   const live = signerOf(s, account) !== null && !readOnly;
+  const [quotes, setQuotes] = useState<Quote[] | null>(null);
+  useEffect(() => { // best-price swap: show the live quotes from all three venues before sending
+    if (kind !== 'bestswap') { setQuotes(null); return; } let on = true; setQuotes(null);
+    const t = setTimeout(() => { let wei = 0n; try { wei = parseEther(amt || '0'); } catch { return; } if (wei === 0n) return; quoteAll(pub, s.v, wei).then(q => on && setQuotes(q)).catch(() => {}); }, 300);
+    return () => { on = false; clearTimeout(t); };
+  }, [kind, amt, pub, s.v]);
   const go = async () => {
     setBusy(true); setRes(null);
     try {
@@ -410,6 +424,9 @@ function ActionSheet({ s, kind, onClose, runAgent, net, pub, account, ownerTx, r
         </div>}
       {(kind === 'uniswap' || kind === 'pancake') && <p className="mt-2 text-xs text-zinc-400">Live quote from the official QuoterV2; minOut = quote − 3%. USDC comes back to the vault.</p>}
       {kind === 'kuru' && <p className="mt-2 text-xs text-zinc-400">Quoted on Kuru’s on-chain order book (MON-USDC market); minOut = quote − 3%. USDC comes back to the vault.</p>}
+      {kind === 'bestswap' && <div className="mt-2 rounded-2xl border border-white/10 bg-black/30 p-3 text-xs" data-testid="quotes"><div className="mb-1 text-zinc-400">Live quotes for {amt || '0'} MON → USDC{quotes ? '' : ' (fetching…)'}</div>
+        {quotes && (() => { const best = quotes.filter(q => q.out).reduce<Quote | null>((a, b) => (!a || (b.out! > a.out!) ? b : a), null); return quotes.map(q => <div key={q.id} className={`flex min-w-0 items-center gap-2 py-1 ${best?.id === q.id ? 'text-emerald-200' : 'text-zinc-300'}`}><span>{q.icon}</span><span className="min-w-0 flex-1 truncate">{q.name}</span><span className="font-mono tabular-nums">{q.out === null ? 'n/a' : `${Number(formatUnits(q.out, 6)).toFixed(6)} USDC`}</span>{best?.id === q.id && <Pill tone="ok">best</Pill>}</div>); })()}
+        <div className="mt-1 text-zinc-500">The swap is sent to the best venue; the vault enforces minOut = best quote − 3%.</div></div>}
       <p className="mt-2 text-xs text-zinc-400">{live ? (signerOf(s, account) === 'wallet' ? 'Your wallet is this vault’s agent: this sends a real transaction through the vault’s policy.' : 'Signed by the agent key stored in this browser: a real transaction through the vault’s policy.') : 'Read-only here: the agent key never enters the browser, so this runs the policy check as a free eth_call and sends nothing.'}</p>
       <Btn kind={kind === 'break' ? 'danger' : 'pri'} data-testid="go" disabled={busy} onClick={go} className="mt-4 w-full">{busy ? (step || 'Working…') : kind === 'break' ? 'Attack!' : live ? 'Send' : 'Simulate'}</Btn>
       {res && <div data-testid="result" data-ok={res.ok ? '1' : '0'} className={`mt-3 break-words rounded-2xl border p-3 text-sm ${res.ok ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100' : 'border-red-500/40 bg-red-500/10 text-red-100'}`}>{res.msg}</div>}
@@ -422,7 +439,7 @@ function QuickAgent({ s, net, runAgent, pub, account }: { s: VaultState; net: Ne
     <Card data-testid="quick-agent">
       <div className="flex min-w-0 items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-monad/20"><Bot className="h-5 w-5 text-violet-300" /></span><div className="min-w-0 flex-1"><div className="truncate font-medium text-white">Your agent {short(s.executor)}</div><div className="truncate text-xs text-zinc-400">{mon(s.spent)} of {mon(s.budget)} used · {s.paused ? 'paused' : 'active'}</div></div><Pill tone={s.paused ? 'warn' : 'ok'}>{s.paused ? 'Paused' : 'Live'}</Pill></div>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400 transition-all" style={{ width: `${pct}%` }} /></div>
-      <div className="mt-3 flex flex-wrap gap-2">{ACTIONS.filter(a => s.rules.includes(a.svc)).map(a => <Btn key={a.kind} kind="soft" data-testid={`qa-${a.kind}`} onClick={() => setK(a.kind)} className="px-3">{a.label}</Btn>)}<Btn kind="danger" data-testid="qa-break" onClick={() => setK('break')} className="px-3">😈 Break it</Btn></div>
+      <div className="mt-3 flex flex-wrap gap-2">{actionsFor(s.rules).map(a => <Btn key={a.kind} kind="soft" data-testid={`qa-${a.kind}`} onClick={() => setK(a.kind)} className="px-3">{a.label}</Btn>)}<Btn kind="danger" data-testid="qa-break" onClick={() => setK('break')} className="px-3">😈 Break it</Btn></div>
       <ActionSheet s={s} kind={k} onClose={() => setK(null)} runAgent={runAgent} net={net} pub={pub} account={account} />
     </Card>
   );
@@ -447,6 +464,9 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
   const [sel, setSel] = useState<string | null>(null);
   const [teamState, setTeamState] = useState<Record<string, VaultState | 'loading' | 'error'>>({});
   const [starting, setStarting] = useState(false);
+  const [superOpen, setSuperOpen] = useState<SuperVault | null>(null);
+  const [superPayees, setSuperPayees] = useState('');
+  const [superBusy, setSuperBusy] = useState(false);
   const selOwn = own.find(s => s.v.toLowerCase() === sel?.toLowerCase());
   const selTeam = !selOwn ? teamAgents.find(a => a.vault!.toLowerCase() === sel?.toLowerCase()) : undefined;
   const detailRef = useRef<HTMLDivElement>(null);
@@ -474,6 +494,26 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
     } catch (e) { toast(plain(reasonOf(e)), 'bad'); }
     setStarting(false);
   };
+  const createSuper = async (t: SuperVault) => {
+    if (!(await need())) return; setSuperBusy(true);
+    try {
+      const extras = superPayees.split(/[\s,]+/).filter(Boolean).map(a => { if (!isAddress(a)) throw new Error(`Bad payee address ${a}`); return getAddress(a); });
+      let dep = parseEther(String(t.deposit)); let shortDeposit = false;
+      try { const [gc, td] = await Promise.all([pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'globalCap' }), pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'totalDeposited' })]) as [bigint, bigint]; const room = gc > td ? gc - td : 0n; if (dep > room) { dep = room > parseEther('0.020001') ? room - parseEther('0.000001') : 0n; shortDeposit = true; } } catch { /* older factory */ }
+      const c = buildSuper(t, account, t.payees ? extras : [], Number(formatEther(dep)));
+      await pub.call({ account, to: net.factory, data: c.data, value: c.value });
+      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value });
+      addLocal(net, { label: `${t.name} created${dep > 0n ? ` + ${formatEther(dep)} MON deposited` : ''} (1 tx)`, kind: 'owner', tx: rc.transactionHash, from: account });
+      const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [account] }) as Address[]; const v = list[list.length - 1];
+      localStorage.setItem(`pp.super.${v.toLowerCase()}`, t.id);
+      if (extras.length) localStorage.setItem(`pp.payees.${v.toLowerCase()}`, JSON.stringify(extras));
+      haptic([10, 40, 10] as any);
+      toast(<>{t.emoji} <b>{t.name}</b> is live. Run its playbook below. <a className="underline" href={`${net.exp}/tx/${rc.transactionHash}`} target="_blank" rel="noreferrer">tx ↗</a></>, 'ok');
+      if (shortDeposit) toast(dep === 0n ? 'The alpha deposit cap is full, so the vault was created empty. Deposit from the Owner section before running the playbook.' : `Deposit was reduced to ${formatEther(dep)} MON to fit the alpha cap.`, 'info');
+      setSuperOpen(null); setSuperPayees(''); await loadVaults(); pick(v); refreshHist();
+    } catch (e) { toast(plain(reasonOf(e)), 'bad'); }
+    setSuperBusy(false);
+  };
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem),minmax(0,1fr)] lg:items-start">
@@ -485,7 +525,7 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
           {account && !vaults && <div className="text-sm text-zinc-500">Loading your vaults from both factories…</div>}
           {account && vaults && !own.length && <p className="mb-2 text-sm text-zinc-400">No vaults for this wallet on Monad {net.name} yet.</p>}
           <div className="grid gap-2">
-            {own.map(s => <Row key={s.v} testid="own-vault" onClick={() => pick(s.v)} active={sel?.toLowerCase() === s.v.toLowerCase()} icon={<ShieldCheck className="h-5 w-5 text-violet-300" />} title={<>{teamName(s.v) ?? `Vault ${short(s.v)}`}</>} sub={<>{mon(s.bal)} · agent {signerOf(s, account) === 'wallet' ? 'your wallet' : signerOf(s, account) === 'key' ? 'key in this browser' : short(s.executor)}</>} right={<Pill tone={s.paused ? 'warn' : 'ok'}>{s.paused ? 'Paused' : 'Live'}</Pill>} />)}
+            {own.map(s => { const sup = superOf(s); return <Row key={s.v} testid="own-vault" onClick={() => pick(s.v)} active={sel?.toLowerCase() === s.v.toLowerCase()} icon={sup ? sup.emoji : <ShieldCheck className="h-5 w-5 text-violet-300" />} title={<>{teamName(s.v) ?? (sup ? sup.name : `Vault ${short(s.v)}`)}</>} sub={<>{mon(s.bal)} · agent {signerOf(s, account) === 'wallet' ? 'your wallet' : signerOf(s, account) === 'key' ? 'key in this browser' : short(s.executor)}</>} right={<Pill tone={s.paused ? 'warn' : 'ok'}>{s.paused ? 'Paused' : 'Live'}</Pill>} />; })}
           </div>
           {account && <button data-testid="starter" disabled={starting} onClick={starter} className="mt-2 flex min-h-14 w-full min-w-0 items-center gap-3 rounded-2xl border border-dashed border-monad/50 bg-monad/5 px-3 py-2 text-left transition hover:bg-monad/10 active:scale-[0.99] disabled:opacity-60">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-monad/20"><Zap className="h-5 w-5 text-violet-200" /></span>
@@ -493,6 +533,17 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
           </button>}
           {net.id === 143 && <button onClick={() => setTab('launch')} className="mt-1 min-h-11 px-1 text-left text-xs text-violet-300">Want a separate agent key and custom rules? Use Launch →</button>}
         </div>
+        {net.id === 143 && <div data-testid="super-vaults">
+          <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-wider text-zinc-500"><Sparkles className="h-3.5 w-3.5" />Super vaults</div>
+          <div className="grid gap-2">
+            {SUPER_VAULTS.map(t => (
+              <button key={t.id} data-testid={`super-${t.id}`} disabled={superBusy} onClick={() => { haptic(); setSuperPayees(''); setSuperOpen(t); }} className="flex min-h-14 w-full min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-3 py-2 text-left transition hover:border-monad/50 active:scale-[0.99] disabled:opacity-60">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/5 text-lg">{t.emoji}</span>
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-zinc-50">{t.name}</span><span className="block truncate text-xs text-zinc-400">{t.tagline}</span></span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-zinc-600" />
+              </button>))}
+          </div>
+        </div>}
         <div>
           <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-wider text-zinc-500"><Users className="h-3.5 w-3.5" /><span className="min-w-0 truncate">{TEAM_LABEL}</span></div>
           {net.id !== 143 && <p className="text-xs text-zinc-500">Team vaults live on mainnet only.</p>}
@@ -505,9 +556,19 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
       </Card>
       <div ref={detailRef} className="min-w-0 scroll-mt-20">
         {!sel && <Card className="grid place-items-center gap-3 py-10 text-center"><ShieldCheck className="h-8 w-8 text-violet-300" /><p className="text-zinc-300">Pick a vault on the left{own.length ? '' : ', or create a starter vault'}.</p></Card>}
-        {selOwn && <OwnVault s={selOwn} net={net} pub={pub} account={account} runAgent={runAgent} ownerTx={ownerTx} toast={toast} teamName={teamName(selOwn.v)} />}
+        {selOwn && <OwnVault s={selOwn} net={net} pub={pub} account={account} runAgent={runAgent} ownerTx={ownerTx} toast={toast} teamName={teamName(selOwn.v)} template={superOf(selOwn)} reload={() => loadVaults()} />}
         {selTeam && <TeamVault a={selTeam} s={teamState[selTeam.vault!]} net={net} pub={pub} account={account} runAgent={runAgent} owner={snap?.owner} />}
       </div>
+      <Sheet open={!!superOpen} onClose={() => !superBusy && setSuperOpen(null)} title={superOpen ? `${superOpen.emoji} ${superOpen.name}` : ''}>
+        {superOpen && <div className="grid gap-3" data-testid="super-sheet">
+          <p className="text-sm text-zinc-300">{superOpen.tagline}</p>
+          <ul className="grid gap-1 text-sm text-zinc-200">{superOpen.value.map(v => <li key={v} className="flex min-w-0 gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" /><span className="min-w-0 break-words">{v}</span></li>)}</ul>
+          <p className="text-xs text-zinc-400">One transaction: your wallet becomes the agent. Limits: {superOpen.cap} MON per action, {superOpen.budget} MON total, {superOpen.deposit} MON deposited now (max 1 MON per vault).</p>
+          <ol className="grid gap-1 text-xs text-zinc-400">{superOpen.playbook.map((st, i) => <li key={i}>{i + 1}. {st.label}</li>)}</ol>
+          {superOpen.payees && <label className="grid gap-1 text-sm text-zinc-300">Extra payees (you are included)<textarea data-testid="super-payees" value={superPayees} onChange={e => setSuperPayees(e.target.value)} placeholder="0x…, 0x…" rows={2} className="w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 py-2 font-mono text-xs outline-none focus:border-monad" /></label>}
+          <Btn kind="pri" data-testid="super-create" disabled={superBusy} onClick={() => createSuper(superOpen)} className="w-full">{superBusy ? 'Creating…' : <>Create + deposit {superOpen.deposit} MON</>}</Btn>
+        </div>}
+      </Sheet>
     </div>
   );
 }
@@ -522,17 +583,18 @@ function Stats({ s }: { s: VaultState }) {
     </div>
   );
 }
-function OwnVault({ s, net, pub, account, runAgent, ownerTx, toast, teamName }: { s: VaultState; net: Net; pub: PublicClient; account: Address; runAgent: any; ownerTx: any; toast: any; teamName: string | null }) {
+function OwnVault({ s, net, pub, account, runAgent, ownerTx, toast, teamName, template, reload }: { s: VaultState; net: Net; pub: PublicClient; account: Address; runAgent: any; ownerTx: any; toast: any; teamName: string | null; template?: SuperVault; reload: () => void }) {
   const [k, setK] = useState<string | null>(null); const [own, setOwn] = useState<{ s: VaultState; kind: string } | null>(null);
   const signer = signerOf(s, account); const toks = (Object.entries(s.toks) as [TokenSym, bigint][]).filter(([, b]) => b > 0n);
-  const acts = ACTIONS.filter(a => s.rules.includes(a.svc));
+  const acts = actionsFor(s.rules);
   return (
     <Card data-testid="vault-card">
-      <div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-monad/20"><ShieldCheck className="h-5 w-5 text-violet-300" /></span>
-        <div className="min-w-0 flex-1"><div className="truncate font-semibold text-white">{teamName ?? `Vault ${short(s.v)}`}</div><a className="block truncate text-xs text-violet-300" href={`${net.exp}/address/${s.v}`} target="_blank" rel="noreferrer">{s.v} ↗</a>{teamName && <div className="mt-1"><Pill tone="zinc">{TEAM_LABEL}</Pill></div>}</div>
+      <div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-monad/20 text-xl">{template ? template.emoji : <ShieldCheck className="h-5 w-5 text-violet-300" />}</span>
+        <div className="min-w-0 flex-1"><div className="truncate font-semibold text-white">{teamName ?? template?.name ?? `Vault ${short(s.v)}`}</div><a className="block truncate text-xs text-violet-300" href={`${net.exp}/address/${s.v}`} target="_blank" rel="noreferrer">{s.v} ↗</a>{template && <p className="mt-1 break-words text-xs text-zinc-400">{template.tagline}</p>}{teamName && <div className="mt-1"><Pill tone="zinc">{TEAM_LABEL}</Pill></div>}</div>
         <Pill tone={s.paused ? 'warn' : 'ok'}>{s.paused ? 'Paused' : 'Active'}</Pill></div>
       <Stats s={s} />
       <Switch testid="sw-pause-vault" on={!s.paused} onChange={async v => { try { await ownerTx(v ? 'Owner resumes the agent' : 'Owner pauses the agent', vcall(s.v, 'setPaused', [!v])); toast(v ? '▶️ Agent resumed' : '⏸ Agent paused', 'ok'); } catch (e) { toast(plain(reasonOf(e)), 'bad'); } }} label={s.paused ? 'Agent is paused' : 'Agent is live'} sub="Instant kill-switch, one signature" />
+      {template && <Playbook s={s} template={template} pub={pub} runAgent={runAgent} canSign={signer !== null} reload={reload} />}
       <div className="mt-2 text-[11px] uppercase tracking-wider text-zinc-500">Agent actions · {signer === 'wallet' ? 'real, signed by your wallet' : signer === 'key' ? 'real, signed by the key in this browser' : 'simulate only'}</div>
       <p className="mt-1 break-words text-xs text-zinc-400">{signer === 'wallet' ? <>Your wallet <span className="font-mono">{short(s.executor)}</span> is this vault’s agent. Every button sends a real transaction that the vault checks against your policy first.</> : signer === 'key' ? <>Agent key <span className="font-mono">{short(s.executor)}</span> is stored in this browser. Buttons send real transactions through the vault’s policy.</> : <>Agent <span className="font-mono">{short(s.executor)}</span> signs elsewhere, so buttons here run a free policy check (eth_call) and send nothing. To act from this wallet, make it the agent below (owner signature).</>}</p>
       <div className="mt-2 flex flex-wrap gap-2">{acts.map(a => <Btn key={a.kind} kind="soft" className="px-3" data-testid={`act-${a.kind}`} onClick={() => setK(a.kind)}>{a.label}</Btn>)}<Btn kind="danger" className="px-3" data-testid="break" onClick={() => setK('break')}>😈 Break it</Btn></div>
@@ -548,6 +610,55 @@ function OwnVault({ s, net, pub, account, runAgent, ownerTx, toast, teamName }: 
       <ActionSheet s={s} kind={k} onClose={() => setK(null)} runAgent={runAgent} net={net} pub={pub} account={account} ownerTx={ownerTx} />
       <OwnerSheet x={own} onClose={() => setOwn(null)} ownerTx={ownerTx} account={account} />
     </Card>
+  );
+}
+function Playbook({ s, template, pub, runAgent, canSign, reload }: { s: VaultState; template: SuperVault; pub: PublicClient; runAgent: any; canSign: boolean; reload: () => void }) {
+  const [lines, setLines] = useState<{ ok: boolean; text: string; msg?: React.ReactNode }[]>([]); const [busy, setBusy] = useState(false); const [done, setDone] = useState(false);
+  const run = async () => {
+    if (!canSign) return; setBusy(true); setDone(false); setLines([]);
+    const push = (ok: boolean, text: string, msg?: React.ReactNode) => setLines(l => [...l, { ok, text, msg }]);
+    let stopped = false;
+    const step = async (kind: string, amount: bigint, label: string, extra?: { to?: Address }) => {
+      const r = await runAgent(s, kind, amount, extra ?? {});
+      push(r.ok, label, r.ok ? undefined : r.msg); if (!r.ok) stopped = true;
+    };
+    try {
+      for (const st of template.playbook) {
+        if (stopped) break;
+        if (st.kind === 'pay-each') {
+          let stored: string[] = []; try { stored = JSON.parse(localStorage.getItem(`pp.payees.${s.v.toLowerCase()}`) || '[]'); } catch { /* none */ }
+          const allowed: Address[] = [];
+          for (const raw of [s.owner, ...stored]) { if (!isAddress(raw)) continue; const a = getAddress(raw); if (allowed.some(x => x.toLowerCase() === a.toLowerCase())) continue; if (await pub.readContract({ address: s.v, abi: vaultAbi, functionName: 'allowedRecipient', args: [a] })) allowed.push(a); }
+          if (!allowed.length) { push(false, 'No approved payees on this vault.'); stopped = true; break; }
+          for (const to of allowed) {
+            const amt = parseEther(st.amount); const bal = await pub.getBalance({ address: s.v });
+            if (bal < amt) { push(false, `Stopped: vault holds ${mon(bal)}, and the next payment is ${st.amount} MON.`); stopped = true; break; }
+            await step('payto', amt, `Paid ${st.amount} MON to ${short(to)}`, { to }); if (stopped) break;
+          }
+          continue;
+        }
+        let amount: bigint;
+        if (st.amount === 'wmon-all') {
+          amount = await pub.readContract({ address: TOKENS.WMON.address, abi: erc20, functionName: 'balanceOf', args: [s.v] }).catch(() => 0n) as bigint;
+          if (amount === 0n) { push(true, 'No WMON to unwrap — skipped.'); continue; }
+        } else {
+          amount = parseEther(st.amount); const bal = await pub.getBalance({ address: s.v });
+          if (bal < amount) { push(false, `Stopped: vault holds ${mon(bal)}, and “${st.label}” needs ${st.amount} MON. Deposit more, then run again.`); stopped = true; break; }
+        }
+        await step(st.kind, amount, st.label);
+      }
+      if (!stopped) { push(true, 'Playbook finished. Receipts stay in the vault until you withdraw them.'); setDone(true); }
+    } catch (e) { push(false, plain(reasonOf(e))); }
+    setBusy(false); reload();
+  };
+  return (
+    <div className="mt-3 rounded-2xl border border-monad/30 bg-monad/5 p-3" data-testid="playbook">
+      <div className="text-[11px] uppercase tracking-wider text-violet-200">Playbook · {template.name}</div>
+      <ol className="mt-1 grid gap-0.5 text-xs text-zinc-300">{template.playbook.map((st, i) => <li key={i} className="break-words">{i + 1}. {st.label}</li>)}</ol>
+      <Btn kind="pri" data-testid="playbook-run" disabled={busy || !canSign} onClick={run} className="mt-2 w-full"><Play className="h-4 w-4" />{busy ? 'Running…' : done ? 'Run playbook again' : 'Run playbook'}</Btn>
+      {!canSign && <p className="mt-1 text-xs text-zinc-400">This browser can’t sign for the agent, so the playbook stays off. Make your wallet the agent below to run it for real.</p>}
+      {lines.length > 0 && <ol data-testid="playbook-log" className="mt-2 grid gap-1 text-xs">{lines.map((l, i) => <li key={i} className={`break-words ${l.ok ? 'text-emerald-200' : 'text-red-200'}`}>{l.ok ? '✅' : '⛔'} {l.text}{l.msg && <div className="pl-4 text-zinc-300">{l.msg}</div>}</li>)}</ol>}
+    </div>
   );
 }
 function TeamVault({ a, s, net, pub, account, runAgent, owner }: { a: TeamAgent; s?: VaultState | 'loading' | 'error'; net: Net; pub: PublicClient; account: Address | null; runAgent: any; owner?: Address }) {
@@ -569,7 +680,7 @@ function TeamVault({ a, s, net, pub, account, runAgent, owner }: { a: TeamAgent;
         <Stats s={st} />
         <div className="mt-3 text-[11px] uppercase tracking-wider text-zinc-500">Simulate what this agent may do</div>
         <p className="mt-1 text-xs text-zinc-400">The team’s agent keys live only in encrypted GitHub Actions secrets and never enter a browser. Buttons run the vault’s policy check as a free eth_call from the agent’s address and send nothing.{owner && account && owner.toLowerCase() === account.toLowerCase() ? ' You are the owner: this vault also appears under “Your vaults” with real owner actions.' : ''}</p>
-        <div className="mt-2 flex flex-wrap gap-2">{ACTIONS.filter(x => st.rules.includes(x.svc)).map(x => <Btn key={x.kind} kind="soft" className="px-3" onClick={() => setK(x.kind)}>{x.label}</Btn>)}<Btn kind="danger" className="px-3" onClick={() => setK('break')}>😈 Break it</Btn></div>
+        <div className="mt-2 flex flex-wrap gap-2">{actionsFor(st.rules).map(x => <Btn key={x.kind} kind="soft" className="px-3" onClick={() => setK(x.kind)}>{x.label}</Btn>)}<Btn kind="danger" className="px-3" onClick={() => setK('break')}>😈 Break it</Btn></div>
         <ActionSheet s={st} kind={k} onClose={() => setK(null)} runAgent={runAgent} net={net} pub={pub} account={account} readOnly />
       </>}
     </Card>
