@@ -79,7 +79,7 @@ export default function Dashboard({ embedded = false }: { embedded?: boolean }) 
             {(['payouts', 'audit'] as const).map(t => <button key={t} onClick={() => setTab(t)} className={`min-h-11 rounded-xl px-4 text-sm ${tab === t ? 'bg-monad text-white' : 'border border-white/10 text-zinc-300'}`}>{t === 'payouts' ? 'Payouts' : 'Audit Log'}</button>)}
             <span className="ml-auto text-xs text-zinc-500">polling every {POLL_MS / 1000}s</span>
           </div>
-          <div className="max-h-[420px] max-w-full overflow-auto">
+          <div className="max-h-[420px] min-w-0 max-w-full overflow-auto">
             {!feed ? <div className="py-8 text-center text-sm text-zinc-500">Loading real on-chain history…</div> : tab === 'payouts' ? (
               <table className="w-full text-left text-sm" data-testid="payouts"><thead className="text-xs text-zinc-500"><tr><th className="py-2">Block</th><th>Recipient</th><th className="text-right">Amount</th><th className="text-right">Total spent</th><th /></tr></thead>
                 <tbody className="font-mono tabular-nums">{feed.executions.map(e => <tr key={e.id} className="border-t border-white/5"><td className="py-2">{e.blockNumber.toLocaleString()}</td><td><a className="hover:text-monad" href={explorerAddr(e.recipient)} target="_blank" rel="noreferrer">{short(e.recipient)}</a></td><td className="text-right">{fmt(e.amount)}</td><td className="text-right">{fmt(e.totalSpent)}</td><td className="text-right"><a href={explorerTx(e.txHash)} target="_blank" rel="noreferrer" className="inline-flex text-monad"><ExternalLink className="h-3.5 w-3.5" /></a></td></tr>)}

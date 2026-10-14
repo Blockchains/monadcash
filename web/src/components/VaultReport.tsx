@@ -65,7 +65,7 @@ function Spark({ samples, color, testid, label }: { samples: Sample[]; color: st
   const area = samples.length > 1 ? `${d}L${X(samples.length - 1).toFixed(1)},${h} L${X(0).toFixed(1)},${h} Z` : '';
   const gid = `sg-${testid}`;
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-16 w-full" role="img" aria-label={label} data-testid={testid}>
+    <svg viewBox={`0 0 ${w} ${h}`} className="block h-16 w-full min-w-0 max-w-full" role="img" aria-label={label} data-testid={testid}>
       <defs>
         <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0" stopColor={color} stopOpacity="0.45" />
@@ -223,16 +223,16 @@ export default function VaultReport({ s, net, pub, account, template, runAgent, 
   };
 
   return (
-    <div className="mt-4 min-w-0" data-testid="vault-report">
-      <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/15 via-white/[0.03] to-emerald-400/10 p-4">
+    <div className="mt-4 min-w-0 max-w-full" data-testid="vault-report">
+      <div className="min-w-0 max-w-full rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/15 via-white/[0.03] to-emerald-400/10 p-4">
         <div className="flex min-w-0 items-center gap-3">
           <Donut parts={parts} />
           <div className="min-w-0 flex-1">
             <div className="text-[11px] uppercase tracking-wider text-zinc-400">Estimated value</div>
-            <div className="font-mono text-2xl font-semibold tabular-nums text-white" data-testid="nav-mon">{book ? `${fmtMon(book.navMon)} MON` : '…'}</div>
+            <div className="break-words font-mono text-2xl font-semibold tabular-nums text-white" data-testid="nav-mon">{book ? `${fmtMon(book.navMon)} MON` : '…'}</div>
             <div className="mt-0.5 font-mono text-sm tabular-nums text-emerald-200/90" data-testid="nav-usdc">{usd === null ? (mainnet ? 'USDC price loading' : 'Mainnet prices only') : `≈ ${fmtAmt(usd, 6)} USDC`}</div>
             <div className="mt-0.5"><Delta samples={navSeries} /></div>
-            <div className="mt-1 text-[11px] text-zinc-500" data-testid="vault-bal">{mon(liveBal)} native{book?.venue ? ` · priced on ${book.venue}` : ''}</div>
+            <div className="mt-1 break-words text-[11px] text-zinc-500" data-testid="vault-bal">{mon(liveBal)} native{book?.venue ? ` · priced on ${book.venue}` : ''}</div>
           </div>
         </div>
         {book?.hasPar && <p className="mt-2 break-words text-[11px] text-amber-200/80" data-testid="par-note">sMON is counted at par: Kintsu’s contract does not expose an exchange rate. aprMON and gMON use convertToAssets.</p>}
@@ -251,10 +251,10 @@ export default function VaultReport({ s, net, pub, account, template, runAgent, 
           </div>
         )}
         {mainnet && (
-          <div className="mt-3 rounded-2xl bg-black/30 p-3">
-            <div className="flex min-w-0 items-baseline gap-2">
+          <div className="mt-3 min-w-0 max-w-full rounded-2xl bg-black/30 p-3">
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
               <span className="text-[11px] uppercase tracking-wider text-zinc-500">MON / USDC</span>
-              <span className="min-w-0 flex-1 truncate font-mono text-sm tabular-nums text-white" data-testid="price-now">{book?.usdcPerMon ? `${fmtAmt(book.usdcPerMon, 6)} USDC` : '—'}</span>
+              <span className="font-mono text-sm tabular-nums text-white" data-testid="price-now">{book?.usdcPerMon ? `${fmtAmt(book.usdcPerMon, 6)} USDC` : '—'}</span>
               <Delta samples={pxSeries} />
             </div>
             <Spark samples={pxSeries} color="#34D399" testid="price-chart" label="MON priced in USDC, sampled in this browser" />
@@ -274,9 +274,9 @@ export default function VaultReport({ s, net, pub, account, template, runAgent, 
       </div>
 
       <div className="mt-3">
-        <div className="mb-1 flex items-center justify-between text-[11px] text-zinc-500"><span>Budget</span><span className="font-mono tabular-nums">{s.budget > 0n ? `${Math.min(100, Number((s.spent * 1000n) / s.budget) / 10).toFixed(0)}%` : '0%'} · {mon(s.spent)} / {mon(s.budget)}</span></div>
+        <div className="mb-1 flex min-w-0 flex-wrap items-center justify-between gap-x-2 text-[11px] text-zinc-500"><span>Budget</span><span className="min-w-0 break-words text-right font-mono tabular-nums">{s.budget > 0n ? `${Math.min(100, Number((s.spent * 1000n) / s.budget) / 10).toFixed(0)}%` : '0%'} · {mon(s.spent)} / {mon(s.budget)}</span></div>
         <div className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400 transition-all" style={{ width: `${s.budget > 0n ? Math.min(100, Number((s.spent * 1000n) / s.budget) / 10) : 0}%` }} /></div>
-        <div className="mt-1 text-[11px] text-zinc-500">Per action ≤ {mon(s.cap)} · agent gas {mon(s.agentBal)}</div>
+        <div className="mt-1 break-words text-[11px] text-zinc-500">Per action ≤ {mon(s.cap)} · agent gas {mon(s.agentBal)}</div>
       </div>
 
       <div className="mt-4">

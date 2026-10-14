@@ -3,6 +3,13 @@
 @tailwind utilities;
 :root { color-scheme: dark; }
 html, body { max-width: 100%; overflow-x: clip; overscroll-behavior-y: none; }
+/* A bare `grid` uses one auto track, and that track's minimum is the
+   widest nowrap child. The team label is ~360px, which is wider than a
+   phone's content box, so every row in the card painted past the right edge.
+   Explicit grid-cols-* utilities still win because they live in a later layer. */
+@layer base {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+}
 body { font-feature-settings: "tnum" 0; }
 .tabular-nums { font-variant-numeric: tabular-nums; }
 @keyframes sheet { from { transform: translateY(24px); opacity: 0 } to { transform: none; opacity: 1 } }
