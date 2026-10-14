@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T19:13:08.898Z",
+ "updatedAt": "2026-10-14T19:23:12.481Z",
  "totals": {
-  "allowed": 218,
-  "blocked": 73,
+  "allowed": 220,
+  "blocked": 74,
   "ownerTxs": 31,
   "skipped": 6
  },
@@ -26,7 +26,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 32,
+   "allowed": 33,
    "blocked": 0
   },
   {
@@ -71,7 +71,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 73
+   "blocked": 74
   },
   {
    "id": "dca1",
@@ -82,7 +82,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 52,
+   "allowed": 53,
    "blocked": 0
   },
   {
@@ -151,6 +151,31 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T19:23:12.480Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot takes profit: swaps 0.001087 USDC → WMON",
+   "status": "allowed",
+   "tx": "0x027a24bada4f44fc38a84baa9c4bfd21d5a6fc15b294f635fd2447614f0dbbf5"
+  },
+  {
+   "ts": "2026-10-14T19:23:11.336Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
+   "tx": "0x0d9e0bd585dbf127c1e876d4843cb7acf9f67a4ae9d3236ef530b21b6d812d9e"
+  },
+  {
+   "ts": "2026-10-14T19:23:10.659Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0157 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0x32c9342c10257a5174356641c9fd4a2b96316f8d6d26c87e4dbcd955fe5c7247"
+  },
   {
    "ts": "2026-10-14T19:13:08.897Z",
    "persona": "dca1",
@@ -618,31 +643,6 @@
    "label": "DCA bot buys USDC with 0.0131 MON on PancakeSwap v3",
    "status": "allowed",
    "tx": "0x9a9bcfd0a8bb823201c013c77af0504b7d1711947c670b1320880095fd043cc7"
-  },
-  {
-   "ts": "2026-10-14T17:20:13.987Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
-   "status": "blocked",
-   "reason": "NotOwner",
-   "tx": "0xdb5ec9d519d426e5b42af9a38623e8561a4f1b455f351f26fba86cd5cd6e273d"
-  },
-  {
-   "ts": "2026-10-14T17:20:13.365Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0116 MON to the DCA bot (v1 vault) agent",
-   "status": "allowed",
-   "tx": "0x87f9956559dc3d765c5251ac4e49d6ca6cb8eb1ba31376abeb46056e02797756"
-  },
-  {
-   "ts": "2026-10-14T17:20:12.501Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker stakes 0.0116 MON → aprMON (aPriori)",
-   "status": "allowed",
-   "tx": "0x94ef7551def326019998d32e5d49140e07e7f2d0ee5a9e6d54b009b74f49728f"
   }
  ],
  "status": "running (GitHub Actions)"
