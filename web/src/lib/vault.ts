@@ -96,8 +96,13 @@ const NONE = { approveToken: ZERO, approveAmount: 0n, outToken: ZERO, minOut: 0n
 const svc = (id: string) => SERVICES.find(s => s.id === id)! as Service & { address: Address };
 export const vcall = (v: Address, fn: string, args: readonly unknown[]) => ({ to: v, data: encodeFunctionData({ abi: vaultAbi, functionName: fn as any, args: args as any }) });
 
+/** One-click starter vault: your own wallet is the agent, so every action below can be sent from it for real.
+ *  Tiny limits (0.01 MON per action, 0.1 MON total), owner as the only payee, wrap + Kuru + Uniswap + PancakeSwap on. */
+export const STARTER = { cap: 0.01, budget: 0.1, deposit: 0.05, services: ['pay', 'wmon', 'kuru', 'uniswap', 'pancake'] };
+export const buildStarter = (owner: Address, deposit = STARTER.deposit) => buildCreate(owner, owner, { budgetOn: true, budget: STARTER.budget, capOn: true, cap: STARTER.cap, deposit, gas: 0, services: STARTER.services, payees: [], startPaused: false });
+
 export type AgentAction = { label: string; dapp: string; icon: string; req: { to: Address; data: Hex }; value: bigint };
-export async function buildAction(pub: PublicClient, kind: string, vault: Address, owner: Address, executor: Address, amount: bigint, cap: bigint): Promise<AgentAction> {
+export async function buildAction(pub: PublicClient, kind: string, vault: Address, owner: Address, executor: Address, amount: bigint, cap: bigint, extra: { to?: Address } = {}): Promise<AgentAction> {
   const call = (s: string, value: bigint, data: Hex, out: { outToken: Address; minOut: bigint }, label: string) => {
     const x = svc(s); return { label, dapp: x.name, icon: x.icon, value, req: vcall(vault, 'executeCall', [rid(s), x.address, value, data, { ...NONE, ...out }]) };
   };
@@ -109,7 +114,9 @@ export async function buildAction(pub: PublicClient, kind: string, vault: Addres
   };
   switch (kind) {
     case 'pay': return { label: `Agent pays ${formatEther(amount)} MON to ${short(owner)}`, dapp: 'Pay people', icon: '💸', value: amount, req: vcall(vault, 'execute', [rid('pay'), owner, amount]) };
+    case 'payto': { const to = extra.to ?? owner; return { label: `Agent pays ${formatEther(amount)} MON to ${short(to)}`, dapp: 'Pay people', icon: '💸', value: amount, req: vcall(vault, 'execute', [rid('pay'), to, amount]) }; }
     case 'wmon': return call('wmon', amount, encodeFunctionData({ abi: wmonAbi, functionName: 'deposit' }), { outToken: TOKENS.WMON.address, minOut: amount }, `Agent wraps ${formatEther(amount)} MON → WMON`);
+    case 'unwrap': return call('wmon', 0n, encodeFunctionData({ abi: wmonAbi, functionName: 'withdraw', args: [amount] }), { outToken: ZERO, minOut: amount }, `Agent unwraps ${formatEther(amount)} WMON → MON`);
     case 'uniswap': return swap('uniswap');
     case 'pancake': return swap('pancake');
     case 'kuru': {
@@ -145,6 +152,20 @@ export async function readVault(pub: PublicClient, n: Net, v: Address): Promise<
   }
   const allowedOwner = await rd('allowedRecipient', [owner]).catch(() => false); if (allowedOwner) rules.push('pay');
   return { v, owner, executor, cap, budget, spent, paused, bal, agentBal, toks, key: localStorage.getItem(`pp.agentkey.${executor.toLowerCase()}`), rules };
+}
+
+// ---------- team showcase snapshot (written by the scheduled Actions runner) ----------
+export type TeamAgent = { id: string; name: string; emoji: string; about: string; vault: Address | null; agent: Address | null; perActionCapMON: string; allowed: number; blocked: number; pending?: boolean; lastSkip?: { ts: string; reason: string } };
+export type TeamSnapshot = { label: string; note: string; updatedAt: string; startedAt: string; owner: Address; totals: { allowed: number; blocked: number; ownerTxs: number; skipped?: number; monConsumed?: string }; agents: TeamAgent[]; recent: { ts: string; persona: string; actor: string; label: string; status: string; reason?: string; tx: string }[]; status: string };
+export const TEAM_LABEL = 'PolicyPilot showcase agents (operated by the team)';
+const RAW_SNAPSHOT = 'https://raw.githubusercontent.com/Blockchains/policypilot-monad/main/web/public/showcase-agents-143.json';
+/** Freshest of: raw GitHub (updated every round by the runner) and the copy deployed with Pages. */
+export async function fetchTeamSnapshot(n: Net, base: string): Promise<TeamSnapshot | null> {
+  if (n.id !== 143) return null;
+  const get = (u: string) => fetch(u, { cache: 'no-store' }).then(r => (r.ok ? r.json() : Promise.reject(r.status)));
+  const rs = await Promise.allSettled([get(RAW_SNAPSHOT), get(`${base}/showcase-agents-143.json`)]);
+  const xs = rs.filter(x => x.status === 'fulfilled').map(x => (x as PromiseFulfilledResult<TeamSnapshot>).value);
+  return xs.sort((x, y) => Date.parse(y.updatedAt) - Date.parse(x.updatedAt))[0] ?? null;
 }
 
 // ---------- history ----------

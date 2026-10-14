@@ -4,13 +4,17 @@
  "chainId": 143,
  "explorer": "https://monadvision.com",
  "factory": "0x0342d29055d77ba155c50233f550539E3029BA6a",
+ "legacyFactories": [
+  "0x8738B74778502ff3623A8319837A819d8dBdEeB7"
+ ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T15:30:19.143Z",
+ "updatedAt": "2026-10-14T16:43:32.049Z",
  "totals": {
   "allowed": 110,
   "blocked": 45,
-  "ownerTxs": 31
+  "ownerTxs": 31,
+  "skipped": 0
  },
  "agents": [
   {
@@ -18,9 +22,10 @@
    "name": "DCA bot",
    "emoji": "📈",
    "about": "Buys a little USDC with MON on Uniswap and PancakeSwap every round, then periodically swaps it back to MON and unwraps.",
-   "vault": "0x4443b84eF9FeeD617Af02dDE996b23748374DA81",
+   "vault": "0xe5546Be7747b0910ba50593F91f9E00B4ACeF0e9",
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
+   "pending": false,
    "allowed": 4,
    "blocked": 0
   },
@@ -29,9 +34,10 @@
    "name": "Staker",
    "emoji": "🥩",
    "about": "Stakes tiny amounts of MON into Kintsu (sMON), aPriori (aprMON) and Magma (gMON), wraps/unwraps WMON, and swaps a little on Kuru.",
-   "vault": "0x164C169F6C7ffa1825bd25D4f0A33ffe5B6057E6",
+   "vault": "0xD1d25BD880282CD8e87dedf3E3A9a931f21346fa",
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
+   "pending": false,
    "allowed": 44,
    "blocked": 0
   },
@@ -40,9 +46,10 @@
    "name": "Payroll",
    "emoji": "💸",
    "about": "Pays small MON salaries to an allowlist of team-owned addresses.",
-   "vault": "0xC2AF28B2CB329D432601a7ED0610Ccd33d486629",
+   "vault": "0xBB3b9a771Ff1ee29B47424dD9eEdF93ffad08240",
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
+   "pending": false,
    "allowed": 38,
    "blocked": 0
   },
@@ -51,9 +58,10 @@
    "name": "Rogue agent",
    "emoji": "😈",
    "about": "Deliberately tries out-of-policy actions (over cap, strangers, draining tokens, paying itself, owner-only calls). Every attempt is sent on-chain and reverted by the vault.",
-   "vault": "0x2611DD9678cd9a6Ba823b07c42242A5C27A83A25",
+   "vault": "0x7dC5A827bF7474378F8Fb76C6a6A4B59BAd68856",
    "agent": "0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E",
    "perActionCapMON": "0.01",
+   "pending": false,
    "allowed": 0,
    "blocked": 45
   },
@@ -62,10 +70,59 @@
    "name": "DCA bot (v1 vault)",
    "emoji": "📉",
    "about": "The original DCA bot on the first (legacy) factory: same strategy, no owner top-ups.",
-   "vault": "0x2B55be296500b1efb52ac7BF113C5Ec4783302E3",
+   "vault": "0x4443b84eF9FeeD617Af02dDE996b23748374DA81",
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
+   "pending": false,
    "allowed": 24,
+   "blocked": 0
+  },
+  {
+   "id": "mm",
+   "name": "Kuru market maker",
+   "emoji": "📗",
+   "about": "Two-sided flow on Kuru’s on-chain order book: sells a clip of MON for USDC, then buys MON back with the USDC (approval capped by the vault), round after round.",
+   "vault": null,
+   "agent": null,
+   "perActionCapMON": "0.03",
+   "pending": true,
+   "allowed": 0,
+   "blocked": 0
+  },
+  {
+   "id": "rebalancer",
+   "name": "Wrap/unwrap rebalancer",
+   "emoji": "⚖️",
+   "about": "Keeps the vault near a 50/50 split of MON and WMON: wraps when WMON is short, unwraps when it is long. Only WMON.deposit/withdraw are allowlisted.",
+   "vault": null,
+   "agent": null,
+   "perActionCapMON": "0.03",
+   "pending": true,
+   "allowed": 0,
+   "blocked": 0
+  },
+  {
+   "id": "tipper",
+   "name": "Tipper",
+   "emoji": "🪙",
+   "about": "Streams micro-tips (0.001–0.004 MON) to an allowlist of team addresses. A tiny per-action cap makes anything bigger impossible.",
+   "vault": null,
+   "agent": null,
+   "perActionCapMON": "0.005",
+   "pending": true,
+   "allowed": 0,
+   "blocked": 0
+  },
+  {
+   "id": "tester",
+   "name": "Policy tester",
+   "emoji": "🧪",
+   "about": "Probes the exact edges of its policy: wraps exactly the cap (allowed), then cap + 1 wei (blocked), replays a used requestId (blocked), swaps on Uniswap with the output sent to itself (blocked), pays a stranger (blocked). Blocked attempts are broadcast so the revert is public.",
+   "vault": null,
+   "agent": null,
+   "perActionCapMON": "0.01",
+   "pending": true,
+   "allowed": 0,
    "blocked": 0
   }
  ],

@@ -1,20 +1,24 @@
 name: showcase-agents
-# PolicyPilot showcase agents (operated by the team). One agent action per run, rotating personas.
+# PolicyPilot showcase agents (operated by the team). Near-continuous: every hour a job starts and loops one full
+# agent round (ALL vaults) every ~2 minutes for ~5h40m; the concurrency group queues the next job (no cancel), so
+# exactly one loop runs at a time and the demo never stops as long as the agents have gas and vault balance.
 # Uses ONLY the agents' executor keys (encrypted Actions secrets AGENT_KEY_<ID>). The deployer/owner key is never here,
 # so this job cannot withdraw, change policy or top up vaults; every action is still enforced by the vault on-chain.
-# Kill switch: repo variable SHOWCASE_ENABLED must be 'true'.
+# Kill switch: repo variable SHOWCASE_ENABLED must be 'true' (also re-checked between rounds).
 on:
-  schedule: [{ cron: '*/10 * * * *' }]
+  schedule: [{ cron: '0 * * * *' }]
   workflow_dispatch:
     inputs:
-      check_only: { description: 'Keyless health check only', type: boolean, default: true }
-permissions: { contents: write }
+      check_only: { description: 'Keyless health check only (no rounds)', type: boolean, default: false }
+      duration_minutes: { description: 'How long to loop (max 340)', type: string, default: '340' }
+      interval_seconds: { description: 'Seconds between rounds', type: string, default: '120' }
+permissions: { contents: write, actions: read }
 concurrency: { group: showcase-agents, cancel-in-progress: false }
 jobs:
-  round:
+  loop:
     if: ${{ github.event_name == 'workflow_dispatch' || vars.SHOWCASE_ENABLED == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 355
     env:
       AGENTS_ONLY: '1'
       CHAIN_ID: '143'
@@ -22,11 +26,22 @@ jobs:
       CONFIG: runner/showcase-config-143.json
       LEDGER: runner/ledger/showcase-143.jsonl
       PUBLIC_OUT: web/public/showcase-agents-143.json
-      RUN_NUMBER: ${{ github.run_number }}
-      MAX_FEE_MON: '0.15'      # per-run spend guard: fail the job if one tx costs more than this
-      MIN_AGENT_GAS: '0.08'    # skip (no tx) when an agent's gas wallet is this low
+      MAX_FEE_MON: '0.15'      # per-tx spend guard: stop the loop if one tx costs more than this
+      MIN_AGENT_GAS: '0.08'    # skip a persona (logged to the ledger) when its gas wallet is this low
+      GH_TOKEN: ${{ github.token }}
+      # agent executor keys only (missing ones = persona skipped with a logged reason)
+      AGENT_KEY_DCA: ${{ secrets.AGENT_KEY_DCA }}
+      AGENT_KEY_STAKER: ${{ secrets.AGENT_KEY_STAKER }}
+      AGENT_KEY_PAYROLL: ${{ secrets.AGENT_KEY_PAYROLL }}
+      AGENT_KEY_ROGUE: ${{ secrets.AGENT_KEY_ROGUE }}
+      AGENT_KEY_DCA1: ${{ secrets.AGENT_KEY_DCA1 }}
+      AGENT_KEY_MM: ${{ secrets.AGENT_KEY_MM }}
+      AGENT_KEY_REBALANCER: ${{ secrets.AGENT_KEY_REBALANCER }}
+      AGENT_KEY_TIPPER: ${{ secrets.AGENT_KEY_TIPPER }}
+      AGENT_KEY_TESTER: ${{ secrets.AGENT_KEY_TESTER }}
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - name: Build agent-kit
@@ -35,26 +50,14 @@ jobs:
         run: cd runner && npm ci
       - name: Health check (keyless)
         run: node runner/showcase-agents.mjs check
-        env:
-          AGENT_KEY_DCA: ${{ secrets.AGENT_KEY_DCA }}
-          AGENT_KEY_STAKER: ${{ secrets.AGENT_KEY_STAKER }}
-          AGENT_KEY_PAYROLL: ${{ secrets.AGENT_KEY_PAYROLL }}
-          AGENT_KEY_ROGUE: ${{ secrets.AGENT_KEY_ROGUE }}
-          AGENT_KEY_DCA1: ${{ secrets.AGENT_KEY_DCA1 }}
-      - name: One agent round
+      - name: Agent rounds (all vaults, every ~2 min, ~5h40m; ledger + snapshot committed after each round)
         if: ${{ vars.SHOWCASE_ENABLED == 'true' && !(github.event_name == 'workflow_dispatch' && inputs.check_only) }}
-        run: node runner/showcase-agents.mjs run
         env:
-          AGENT_KEY_DCA: ${{ secrets.AGENT_KEY_DCA }}
-          AGENT_KEY_STAKER: ${{ secrets.AGENT_KEY_STAKER }}
-          AGENT_KEY_PAYROLL: ${{ secrets.AGENT_KEY_PAYROLL }}
-          AGENT_KEY_ROGUE: ${{ secrets.AGENT_KEY_ROGUE }}
-          AGENT_KEY_DCA1: ${{ secrets.AGENT_KEY_DCA1 }}
-      - name: Commit snapshot
-        if: ${{ vars.SHOWCASE_ENABLED == 'true' && !(github.event_name == 'workflow_dispatch' && inputs.check_only) }}
-        run: |
-          git config user.name "policypilot-showcase-bot"; git config user.email "showcase-bot@users.noreply.github.com"
-          git add web/public/showcase-agents-143.json runner/ledger/showcase-143.jsonl
-          git diff --cached --quiet && exit 0
-          git commit -m "showcase: agent round ${{ github.run_number }} [skip ci]"
-          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done; exit 1
+          DURATION_MIN: ${{ github.event_name == 'workflow_dispatch' && inputs.duration_minutes || '340' }}
+          INTERVAL_S: ${{ github.event_name == 'workflow_dispatch' && inputs.interval_seconds || '120' }}
+          BRANCH: ${{ github.ref_name }}
+        run: bash runner/showcase-loop.sh
+      - name: Final commit (anything left uncommitted)
+        if: ${{ always() && vars.SHOWCASE_ENABLED == 'true' && !(github.event_name == 'workflow_dispatch' && inputs.check_only) }}
+        env: { BRANCH: "${{ github.ref_name }}" }
+        run: bash runner/showcase-commit.sh final
