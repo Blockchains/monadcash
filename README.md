@@ -106,3 +106,11 @@ The viewer reads state, execution history and the audit log from it when opened 
 ### Vault picker in the app (Agents tab)
 
 Lists the connected wallet's own vaults from both factories and the team vaults from the snapshot. For your own vaults the buttons (wrap, unwrap, Kuru swap, Uniswap / PancakeSwap swap, pay an address) send **real transactions through the vault's policy** when this browser can sign for the agent (your wallet is the executor, or the agent key is stored in this browser); otherwise they simulate, and the owner can make the connected wallet the agent in one signature (`setExecutor`). Paying an address that isn't an approved payee asks the owner to allowlist it first (one extra signature). Team vaults are read-only / simulate: the agent keys never enter a browser. The **one-click starter vault** creates a vault with your wallet as the agent and deposits 0.05 MON in a single factory transaction (`createVault` is payable); if the alpha deposit cap is full it is created empty and you deposit later.
+
+### Super vaults (Agents tab, mainnet)
+
+Three curated templates, each created and funded in one factory transaction with your wallet as the agent, then driven by a **playbook** (real transactions through the vault policy; a failed step stops the run and says why, it does not keep retrying):
+
+- **Yield** — splits a deposit across Kintsu (sMON), aPriori (aprMON) and Magma (gMON). Receipt tokens stay in the vault.
+- **Best execution** — quotes Uniswap v3, PancakeSwap v3 and Kuru for the same MON→USDC size and routes to the best output, with the vault’s own minOut (−3%) guard. The same quote panel is on the manual “Best-price swap” button whenever a vault has two or more of those venues.
+- **Payments** — 0.01 MON per payment, owner plus any extra addresses you type, then a playbook that pays each approved payee.

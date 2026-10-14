@@ -101,7 +101,16 @@ export const vcall = (v: Address, fn: string, args: readonly unknown[]) => ({ to
 export const STARTER = { cap: 0.01, budget: 0.1, deposit: 0.05, services: ['pay', 'wmon', 'kuru', 'uniswap', 'pancake'] };
 export const buildStarter = (owner: Address, deposit = STARTER.deposit) => buildCreate(owner, owner, { budgetOn: true, budget: STARTER.budget, capOn: true, cap: STARTER.cap, deposit, gas: 0, services: STARTER.services, payees: [], startPaused: false });
 
-export type AgentAction = { label: string; dapp: string; icon: string; req: { to: Address; data: Hex }; value: bigint };
+/** Live MON → USDC quotes on all three venues (null = venue unavailable right now). */
+export type Quote = { id: 'uniswap' | 'pancake' | 'kuru'; name: string; icon: string; out: bigint | null };
+export async function quoteAll(pub: PublicClient, vault: Address, amount: bigint): Promise<Quote[]> {
+  const uni = async (id: 'uniswap' | 'pancake') => { const Q = QUOTERS[id]; const q = await pub.simulateContract({ address: Q.address, abi: quoterAbi, functionName: 'quoteExactInputSingle', args: [{ tokenIn: TOKENS.WMON.address, tokenOut: TOKENS.USDC.address, amountIn: amount, fee: Q.fee, sqrtPriceLimitX96: 0n }] }); return q.result[0] as bigint; };
+  const kuru = async () => { const sim = await pub.simulateContract({ account: vault, address: KURU.router, abi: kuruAbi, functionName: 'anyToAnySwap', args: [[KURU.monUsdc], [false], [true], ZERO, TOKENS.USDC.address, amount, 1n] as any, value: amount }); return sim.result as bigint; };
+  const rs = await Promise.allSettled([uni('uniswap'), uni('pancake'), kuru()]);
+  return (['uniswap', 'pancake', 'kuru'] as const).map((id, i) => ({ id, name: svc(id).name, icon: svc(id).icon, out: rs[i].status === 'fulfilled' ? (rs[i] as PromiseFulfilledResult<bigint>).value : null }));
+}
+
+export type AgentAction = { label: string; dapp: string; icon: string; req: { to: Address; data: Hex }; value: bigint; quotes?: Quote[] };
 export async function buildAction(pub: PublicClient, kind: string, vault: Address, owner: Address, executor: Address, amount: bigint, cap: bigint, extra: { to?: Address } = {}): Promise<AgentAction> {
   const call = (s: string, value: bigint, data: Hex, out: { outToken: Address; minOut: bigint }, label: string) => {
     const x = svc(s); return { label, dapp: x.name, icon: x.icon, value, req: vcall(vault, 'executeCall', [rid(s), x.address, value, data, { ...NONE, ...out }]) };
@@ -119,6 +128,13 @@ export async function buildAction(pub: PublicClient, kind: string, vault: Addres
     case 'unwrap': return call('wmon', 0n, encodeFunctionData({ abi: wmonAbi, functionName: 'withdraw', args: [amount] }), { outToken: ZERO, minOut: amount }, `Agent unwraps ${formatEther(amount)} WMON → MON`);
     case 'uniswap': return swap('uniswap');
     case 'pancake': return swap('pancake');
+    case 'bestswap': { // best execution: quote all three venues, route to the best USDC out, keep the vault's minOut guard
+      const quotes = await quoteAll(pub, vault, amount); const ok = quotes.filter(q => q.out !== null && q.out > 0n);
+      if (!ok.length) throw new Error('No venue could quote this swap right now.');
+      const best = ok.reduce((a, b) => (b.out! > a.out! ? b : a));
+      const a = best.id === 'kuru' ? await buildAction(pub, 'kuru', vault, owner, executor, amount, cap) : await swap(best.id);
+      return { ...a, quotes, label: `Agent swaps ${formatEther(amount)} MON → USDC on ${best.name} (best of ${ok.length} venues)` };
+    }
     case 'kuru': {
       const args = [[KURU.monUsdc], [false], [true], ZERO, TOKENS.USDC.address, amount, 1n] as const;
       const sim = await pub.simulateContract({ account: vault, address: KURU.router, abi: kuruAbi, functionName: 'anyToAnySwap', args: args as any, value: amount }); // exact output, simulated from the vault
