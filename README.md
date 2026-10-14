@@ -15,7 +15,7 @@ Deploy yourself: see [`docs/DEPLOY.md`](docs/DEPLOY.md).
 ## v3: one mobile-native app ("Love agents. Love control. PolicyPilot.")
 
 https://blockchains.github.io/policypilot-monad/ is now a single Next.js PWA (installable, safe-area aware, bottom tab bar on phones and tablets). Tabs:
-- **Launch**: the novice flow. Connect wallet → connect agent (create an in-browser agent key, or paste an external agent address such as an ElizaOS agent) → switch rules on/off (total budget, per-action cap, allowed services, payees, start paused) → **Let it go into the wild** (one `createVault` tx with every rule baked in, plus optional agent gas).
+- **Launch**: a three-tap console. Pick a live preset (stake, best-price swap, or pay yourself), pick one of your vaults or create that preset in one transaction, then dispatch one real action. The cap, budget, and vault balance are checked in the page before anything is sent, and the request id is generated for you. Custom agent keys, sliders, and per-service switches are still there, under “Custom agent and custom rules”.
 - **Activity**: a live feed of real transactions (the mainnet showcase vault plus your own), with allowed/blocked filters, plain-English revert reasons, a spend chart, and quick "run your agent" / "😈 break it" actions.
 - **Agents**: your vaults, read from the factory: budget ring, a kill-switch toggle, deposit/withdraw, pull everything back, and withdraw tokens.
 - **Services**: the top Monad services, each either live or honestly marked "coming soon".

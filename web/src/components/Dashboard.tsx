@@ -49,6 +49,7 @@ export default function Dashboard({ embedded = false }: { embedded?: boolean }) 
   return (
     <div className="min-w-0 text-zinc-200">
       {!embedded && <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-200">Alpha · unaudited contract · only deposit what you&apos;re happy to lose. This dashboard reads the PolicyPilot reference deployment on Monad testnet (test token, no value).</div>}
+      {embedded && <p className="mb-3 break-words text-xs text-zinc-400">This page reads the original testnet contract and can simulate a payout. To run an agent, use Launch: pick a preset, pick a vault, and dispatch. No addresses to paste.</p>}
       <header className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
         <div className="mr-auto flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-monad" /><h1 className="text-xl font-semibold text-zinc-50">Policy <span className="text-monad">dashboard</span></h1></div>
         <span className="flex items-center gap-1 rounded-full border border-white/10 min-h-9 px-3 py-1 font-mono text-xs tabular-nums" data-testid="block"><Radio className="h-3 w-3 text-emerald-400" />block {snap ? snap.block.toLocaleString() : '…'}</span>
