@@ -167,28 +167,31 @@ async function kuruBuy(vault, agent, usdc, label) {
 async function allowedPayees(v, candidates) { const out = []; for (const c of candidates) if (c && await vread(v, 'allowedRecipient', [c]).catch(() => false)) out.push(c); return out; }
 
 async function nextAction(p, round) {
-  const v = st.agents[p.id].vault; const me = agentAddr(p.id); const cap = await vread(v, 'perPaymentCap');
+  const v = st.agents[p.id].vault; const me = agentAddr(p.id); const [cap0, bal] = await Promise.all([vread(v, 'perPaymentCap'), pc.getBalance({ address: v })]);
+  const cap = minBig(cap0, bal); // never ask for more MON than the vault holds: a precheck-blocked round is a wasted round
+  const needMon = () => { if (cap === 0n) throw Object.assign(new Error('vault holds no MON for a value action (owner must deposit)'), { skip: true }); };
   if (p.id.startsWith('dca')) {
     const step = round % 5;
     if (step === 4) { const u = await tbal(T.USDC, v); if (u > 1000n) return swapCall(v, round % 10 === 4 ? UNI : PCS, T.USDC, T.WMON, u, `DCA bot takes profit: swaps ${Number(u) / 1e6} USDC → WMON`); }
     const w = await tbal(T.WMON, v); if (w > 0n) return unwrapCall(w, `DCA bot unwraps ${formatEther(w)} WMON → MON`);
-    const amt = rnd(0.01, 0.02); const r = step % 2 ? PCS : UNI;
+    needMon(); const amt = minBig(rnd(0.01, 0.02), cap); const r = step % 2 ? PCS : UNI;
     return swapCall(v, r, T.WMON, T.USDC, amt, `DCA bot buys USDC with ${formatEther(amt)} MON on ${r === UNI ? 'Uniswap v3' : 'PancakeSwap v3'}`);
   }
   if (p.id === 'staker') {
-    const amt = rnd(0.005, 0.012); const s = round % 6;
-    if (s === 5) { const a3 = rnd(0.008, 0.015); return kuruSell(v, a3, `Staker swaps ${formatEther(a3)} MON → USDC on Kuru (order book)`); }
+    const amt = minBig(rnd(0.005, 0.012), cap); const s = round % 6;
+    if (s !== 4) needMon(); // step 4 (unwrap) needs no MON
+    if (s === 5) { const a3 = minBig(rnd(0.008, 0.015), cap); return kuruSell(v, a3, `Staker swaps ${formatEther(a3)} MON → USDC on Kuru (order book)`); }
     if (s === 0) return { label: `Staker stakes ${formatEther(amt)} MON → sMON (Kintsu)`, action: { kind: 'call', target: T.sMON, value: amt, data: encodeFunctionData({ abi: kintsuAbi, functionName: 'deposit', args: [1n, v] }), opts: { outToken: T.sMON, minOut: 1n } } };
     if (s === 1) return { label: `Staker stakes ${formatEther(amt)} MON → aprMON (aPriori)`, action: { kind: 'call', target: T.aprMON, value: amt, data: encodeFunctionData({ abi: aprAbi, functionName: 'deposit', args: [amt, v] }), opts: { outToken: T.aprMON, minOut: 1n } } };
     if (s === 2) return { label: `Staker stakes ${formatEther(amt)} MON → gMON (Magma)`, action: { kind: 'call', target: T.gMON, value: amt, data: encodeFunctionData({ abi: magmaAbi, functionName: 'depositMON', args: [v, 0n] }), opts: { outToken: T.gMON, minOut: 1n } } };
-    if (s === 3) { const a2 = rnd(0.01, 0.025); return wrapCall(a2, `Staker wraps ${formatEther(a2)} MON → WMON`); }
+    if (s === 3) { const a2 = minBig(rnd(0.01, 0.025), cap); return wrapCall(a2, `Staker wraps ${formatEther(a2)} MON → WMON`); }
     const w = await tbal(T.WMON, v); if (w > 0n) return unwrapCall(w, `Staker unwraps ${formatEther(w)} WMON → MON`);
     return nextAction(p, round + 1);
   }
   if (p.id === 'payroll' || p.id === 'tipper') {
     const candidates = [owner.address, ...PERSONAS.filter(x => x.id !== p.id).map(x => agentAddr(x.id))];
     const payees = await allowedPayees(v, candidates); if (!payees.length) throw Object.assign(new Error('no allowlisted payee among the team addresses (owner must setRecipient)'), { skip: true });
-    const to = payees[round % payees.length]; const amt = p.id === 'tipper' ? minBig(rnd(0.001, 0.004), cap) : minBig(rnd(0.005, 0.025), cap);
+    needMon(); const to = payees[round % payees.length]; const amt = p.id === 'tipper' ? minBig(rnd(0.001, 0.004), cap) : minBig(rnd(0.005, 0.025), cap);
     const who = to === owner.address ? 'the team treasury' : `the ${PERSONAS.find(x => agentAddr(x.id) === to)?.name ?? 'team'} agent`;
     return { label: `${p.name} ${p.id === 'tipper' ? 'tips' : 'pays'} ${formatEther(amt)} MON to ${who}`, action: { kind: 'pay', recipient: to, amount: amt } };
   }
@@ -199,7 +202,7 @@ async function nextAction(p, round) {
       catch (e) { log(p.name, 'Kuru buy side unavailable, falling back to Uniswap:', errMsg(e)); const w = await tbal(T.WMON, v); if (w > 0n) return unwrapCall(w, `Market maker unwraps ${formatEther(w)} WMON → MON`); return swapCall(v, UNI, T.USDC, T.WMON, u, `Market maker swaps ${Number(u) / 1e6} USDC → WMON on Uniswap v3 (Kuru buy side unavailable)`); }
     }
     const w = await tbal(T.WMON, v); if (w > 0n) return unwrapCall(w, `Market maker unwraps ${formatEther(w)} WMON → MON`);
-    const amt = minBig(rnd(0.004, 0.009), cap); return kuruSell(v, amt, `Market maker sells ${formatEther(amt)} MON → USDC on Kuru (order book)`);
+    needMon(); const amt = minBig(rnd(0.004, 0.009), cap); return kuruSell(v, amt, `Market maker sells ${formatEther(amt)} MON → USDC on Kuru (order book)`);
   }
   if (p.id === 'rebalancer') {
     const [b, w] = await Promise.all([pc.getBalance({ address: v }), tbal(T.WMON, v)]); const target = (b + w) / 2n;
@@ -211,8 +214,8 @@ async function nextAction(p, round) {
   if (p.id === 'tester') {
     const s = round % 6; const idOf = n => keccak256(toHex(`tester:${v}:${n}`));
     const w = await tbal(T.WMON, v);
-    if (s === 0) { const x = wrapCall(cap, `Policy tester wraps exactly the ${formatEther(cap)} MON cap (boundary: allowed)`); x.action.requestId = idOf(round); return x; }
-    if (s === 1) return { label: `Policy tester wraps cap + 1 wei (${formatEther(cap + 1n)} MON): expects PerPaymentCapExceeded`, expectBlocked: true, action: wrapCall(cap + 1n).action };
+    if (s === 0) { const x = wrapCall(cap0, `Policy tester wraps exactly the ${formatEther(cap0)} MON cap (boundary: allowed)`); x.action.requestId = idOf(round); return x; }
+    if (s === 1) return { label: `Policy tester wraps cap + 1 wei (${formatEther(cap0 + 1n)} MON): expects PerPaymentCapExceeded`, expectBlocked: true, action: wrapCall(cap0 + 1n).action };
     if (s === 2) { const x = wrapCall(parseEther('0.001'), 'Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted'); x.action.requestId = idOf(round - 2); return { ...x, expectBlocked: true }; }
     if (s === 3) return { label: 'Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault', expectBlocked: true, action: { kind: 'call', target: UNI, value: parseEther('0.001'), data: encodeFunctionData({ abi: routerAbi, functionName: 'exactInputSingle', args: [{ tokenIn: T.WMON, tokenOut: T.USDC, fee: 3000, recipient: me, amountIn: parseEther('0.001'), amountOutMinimum: 0n, sqrtPriceLimitX96: 0n }] }) } };
     if (s === 4) return { label: 'Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed', expectBlocked: true, action: { kind: 'pay', recipient: '0x000000000000000000000000000000000000dEaD', amount: parseEther('0.001') } };
