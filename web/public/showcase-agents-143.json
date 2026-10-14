@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T20:43:42.901Z",
+ "updatedAt": "2026-10-14T20:53:44.849Z",
  "totals": {
-  "allowed": 239,
-  "blocked": 82,
+  "allowed": 240,
+  "blocked": 83,
   "ownerTxs": 31,
   "skipped": 9
  },
@@ -42,7 +42,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 77,
+   "allowed": 78,
    "blocked": 0
   },
   {
@@ -71,7 +71,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 82
+   "blocked": 83
   },
   {
    "id": "dca1",
@@ -155,6 +155,23 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T20:53:44.802Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to stake via Kintsu (not on its allowlist)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0xA3227C5969757783154C60bF0bC1944180ed81B9, 0x1c3477dd)",
+   "tx": "0x922becf9523511e0fd6f7d082666703f799c43500b09a5c7a2522a9e1865da51"
+  },
+  {
+   "ts": "2026-10-14T20:53:44.196Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0076 MON → aprMON (aPriori)",
+   "status": "allowed",
+   "tx": "0x6942fd1af9c61218e0a0495c08fbcd54241f8154682ec80b243dea790532ad65"
+  },
   {
    "ts": "2026-10-14T20:43:42.852Z",
    "persona": "rogue",
@@ -634,22 +651,6 @@
    "status": "blocked",
    "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
    "tx": "0xfe62edb44329fde8c61dd3d0aaf6361185f83e9bb7ff9be21dcbada0a13a8238"
-  },
-  {
-   "ts": "2026-10-14T18:12:40.761Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0141 MON to the team treasury",
-   "status": "allowed",
-   "tx": "0x3c5f22efa05197e9e64925cfcf0f37cfd169c8beeffa35b4c3a43aadabde9451"
-  },
-  {
-   "ts": "2026-10-14T18:12:39.907Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker stakes 0.0074 MON → aprMON (aPriori)",
-   "status": "allowed",
-   "tx": "0x481ab8ec23d427f298870863bd241f8cd400f98340807c051edc00975f0da01b"
   }
  ],
  "status": "running (GitHub Actions)"
