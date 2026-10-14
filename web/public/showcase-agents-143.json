@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T16:56:14.662Z",
+ "updatedAt": "2026-10-14T16:58:15.885Z",
  "totals": {
-  "allowed": 126,
-  "blocked": 49,
+  "allowed": 130,
+  "blocked": 50,
   "ownerTxs": 31,
   "skipped": 4
  },
@@ -26,7 +26,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 8,
+   "allowed": 9,
    "blocked": 0
   },
   {
@@ -38,7 +38,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 48,
+   "allowed": 49,
    "blocked": 0
   },
   {
@@ -50,7 +50,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 42,
+   "allowed": 43,
    "blocked": 0
   },
   {
@@ -63,7 +63,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 49
+   "blocked": 50
   },
   {
    "id": "dca1",
@@ -74,7 +74,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 28,
+   "allowed": 29,
    "blocked": 0
   },
   {
@@ -143,6 +143,47 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T16:58:15.883Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot unwraps 0.176431205104416038 WMON → MON",
+   "status": "allowed",
+   "tx": "0xfb943147a7b47f1db5e29974303cd99981a1f0767d6e163766debf622249733b"
+  },
+  {
+   "ts": "2026-10-14T16:58:14.763Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
+   "tx": "0xfa18158187966ae54b93473a5dd6c590056d20e36a6ab2e47aa3ec47dbd7c7d4"
+  },
+  {
+   "ts": "2026-10-14T16:58:13.750Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0201 MON to the Rogue agent agent",
+   "status": "allowed",
+   "tx": "0xa390e8b1302e8f2e5a2bf127c5ef80436a82f088f60b7395194d985f9d2cc75e"
+  },
+  {
+   "ts": "2026-10-14T16:58:12.533Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.0091 MON → gMON (Magma)",
+   "status": "allowed",
+   "tx": "0x4036bcabdc8aac0cd80b2b84473fb33380390e47da84317143ac3b7aa442f30e"
+  },
+  {
+   "ts": "2026-10-14T16:58:11.311Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot takes profit: swaps 0.004256 USDC → WMON",
+   "status": "allowed",
+   "tx": "0xdd7b0200abdcbf0bbda273b8df853839cc43da947f0394e22114e61387a14eec"
+  },
   {
    "ts": "2026-10-14T16:56:14.661Z",
    "persona": "dca1",
@@ -591,47 +632,6 @@
    "label": "Owner pulls tokens out of v1 staker vault",
    "status": "owner",
    "tx": "0xe1e5bec7af582f2ce9827bb5ef6faa43834788770e05b55e232afcd63028aebb"
-  },
-  {
-   "ts": "2026-10-13T16:58:37.630Z",
-   "persona": "staker",
-   "actor": "owner",
-   "label": "Owner pulls tokens out of v1 staker vault",
-   "status": "owner",
-   "tx": "0x0b06f14a11717618b5433b732ab2906ba56118113a1f2576c8836f30d859bc08"
-  },
-  {
-   "ts": "2026-10-13T16:58:36.071Z",
-   "persona": "staker",
-   "actor": "owner",
-   "label": "Owner pulls tokens out of v1 staker vault",
-   "status": "owner",
-   "tx": "0x8f6bda40ad727dabba234089ef466917977c496a63e6b8d1f3c1dccbaf153ecb"
-  },
-  {
-   "ts": "2026-10-13T16:58:34.305Z",
-   "persona": "dca1",
-   "actor": "owner",
-   "label": "Owner unpauses the legacy DCA bot vault",
-   "status": "owner",
-   "tx": "0x48b55e65593a37577b9122c4ab90b3054421feb2efdb8ff13b5be2f05ecb07a9"
-  },
-  {
-   "ts": "2026-10-13T16:57:22.095Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
-   "tx": "0xdb9c389db64667f8148fe12aeeb8a43d6e3020d1b5442cd68357fbf15db958e3"
-  },
-  {
-   "ts": "2026-10-13T16:57:18.991Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0202 MON to the Rogue agent agent",
-   "status": "allowed",
-   "tx": "0xd73b389894aa8b4d793108468e3fddc5e2058d521efe363fd6290ff8063b9eb5"
   }
  ],
  "status": "running (GitHub Actions)"
