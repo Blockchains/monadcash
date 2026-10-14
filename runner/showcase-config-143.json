@@ -1,44 +1,78 @@
 {
- "note": "Public config for the GitHub Actions showcase runner (no keys). Keys live only in encrypted Actions secrets AGENT_KEY_<ID>.",
+ "note": "Public config for the GitHub Actions showcase runner (no keys). Keys live only in encrypted Actions secrets AGENT_KEY_<ID>. The runner verifies on-chain that each key is the executor of its vault and otherwise looks the vault up by executor across the v2 and legacy factories. Personas with vault=null are pending: the owner creates the vault and adds the secret; until then the runner skips them with a logged reason.",
  "chainId": 143,
  "factory": "0x0342d29055d77ba155c50233f550539E3029BA6a",
+ "legacyFactories": ["0x8738B74778502ff3623A8319837A819d8dBdEeB7"],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
  "agents": [
   {
    "id": "dca",
    "name": "DCA bot",
-   "vault": "0x4443b84eF9FeeD617Af02dDE996b23748374DA81",
-   "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
+   "vault": "0xe5546Be7747b0910ba50593F91f9E00B4ACeF0e9",
+   "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "secret": "AGENT_KEY_DCA"
   },
   {
    "id": "staker",
    "name": "Staker",
-   "vault": "0x164C169F6C7ffa1825bd25D4f0A33ffe5B6057E6",
-   "agent": "0x63f0bD9FEAE167ebA156f7B5fF2d604fae913626",
+   "vault": "0xD1d25BD880282CD8e87dedf3E3A9a931f21346fa",
+   "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "secret": "AGENT_KEY_STAKER"
   },
   {
    "id": "payroll",
    "name": "Payroll",
-   "vault": "0xC2AF28B2CB329D432601a7ED0610Ccd33d486629",
-   "agent": "0x8536f811E2Ac06dE9C7171473E30af135EC5f896",
+   "vault": "0xBB3b9a771Ff1ee29B47424dD9eEdF93ffad08240",
+   "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "secret": "AGENT_KEY_PAYROLL"
   },
   {
    "id": "rogue",
    "name": "Rogue agent",
-   "vault": "0x2611DD9678cd9a6Ba823b07c42242A5C27A83A25",
-   "agent": "0x777a8aF96f8bfBf9A8879C5228996A1b38eF6e20",
+   "vault": "0x7dC5A827bF7474378F8Fb76C6a6A4B59BAd68856",
+   "agent": "0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E",
    "secret": "AGENT_KEY_ROGUE"
   },
   {
    "id": "dca1",
    "name": "DCA bot (v1 vault)",
-   "vault": "0x2B55be296500b1efb52ac7BF113C5Ec4783302E3",
-   "agent": "0xE6fA8A985cA413040c353675c6C0579DC9378ceB",
-   "secret": "AGENT_KEY_DCA1"
+   "vault": "0x4443b84eF9FeeD617Af02dDE996b23748374DA81",
+   "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
+   "secret": "AGENT_KEY_DCA1",
+   "factory": "0x8738B74778502ff3623A8319837A819d8dBdEeB7"
+  },
+  {
+   "id": "mm",
+   "name": "Kuru market maker",
+   "vault": null,
+   "agent": null,
+   "secret": "AGENT_KEY_MM",
+   "status": "pending: owner creates the vault (rules kuru + uni + unwrap, USDC/WMON token caps) and adds the AGENT_KEY_MM secret"
+  },
+  {
+   "id": "rebalancer",
+   "name": "Wrap/unwrap rebalancer",
+   "vault": null,
+   "agent": null,
+   "secret": "AGENT_KEY_REBALANCER",
+   "status": "pending: owner creates the vault (rules wrap + unwrap) and adds the AGENT_KEY_REBALANCER secret"
+  },
+  {
+   "id": "tipper",
+   "name": "Tipper",
+   "vault": null,
+   "agent": null,
+   "secret": "AGENT_KEY_TIPPER",
+   "status": "pending: owner creates the vault (payees = team addresses, 0.005 MON cap) and adds the AGENT_KEY_TIPPER secret"
+  },
+  {
+   "id": "tester",
+   "name": "Policy tester",
+   "vault": null,
+   "agent": null,
+   "secret": "AGENT_KEY_TESTER",
+   "status": "pending: owner creates the vault (rules wrap + unwrap + uni, WMON token cap, owner as payee) and adds the AGENT_KEY_TESTER secret"
   }
  ]
 }
