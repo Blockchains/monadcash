@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T17:12:14.501Z",
+ "updatedAt": "2026-10-14T17:14:14.512Z",
  "totals": {
-  "allowed": 158,
-  "blocked": 57,
+  "allowed": 162,
+  "blocked": 58,
   "ownerTxs": 31,
   "skipped": 4
  },
@@ -26,7 +26,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 16,
+   "allowed": 17,
    "blocked": 0
   },
   {
@@ -38,7 +38,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 56,
+   "allowed": 57,
    "blocked": 0
   },
   {
@@ -50,7 +50,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 50,
+   "allowed": 51,
    "blocked": 0
   },
   {
@@ -63,7 +63,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 57
+   "blocked": 58
   },
   {
    "id": "dca1",
@@ -74,7 +74,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 36,
+   "allowed": 37,
    "blocked": 0
   },
   {
@@ -143,6 +143,47 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T17:14:14.511Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.013 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0x20c431133b6f8c5bc30477715c04d8e536ad37edd6dad301358c5b9d825da960"
+  },
+  {
+   "ts": "2026-10-14T17:14:13.798Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay a stranger (0x…dEaD)",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0x6123b6cc50004de72297a1af2b593c47c75bf04d4756e025a6d88e071c6ebfde"
+  },
+  {
+   "ts": "2026-10-14T17:14:13.224Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0221 MON to the DCA bot agent",
+   "status": "allowed",
+   "tx": "0x313d3a2e1b4ff17e2c86d14268e6db3d191367562d19ea03a09d9e668af3850a"
+  },
+  {
+   "ts": "2026-10-14T17:14:12.050Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker unwraps 0.0229 WMON → MON",
+   "status": "allowed",
+   "tx": "0xfc563f4dc6f4ab4ad910517d9a7b7661b05c3f366310aa591b6f4a562e820eb1"
+  },
+  {
+   "ts": "2026-10-14T17:14:11.410Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0115 MON on Uniswap v3",
+   "status": "allowed",
+   "tx": "0x300788d84b9e24c2582022b3f744fd4a0a415243ce3aceafb6ab34188cea5963"
+  },
   {
    "ts": "2026-10-14T17:12:14.500Z",
    "persona": "dca1",
@@ -593,47 +634,6 @@
    "label": "DCA bot buys USDC with 0.0176 MON on PancakeSwap v3",
    "status": "allowed",
    "tx": "0xf83613db43e28b660b23bd31b7fcd42664347219896512d6aece3ff1bfda4b6f"
-  },
-  {
-   "ts": "2026-10-14T16:50:15.863Z",
-   "persona": "dca1",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0165 MON on PancakeSwap v3",
-   "status": "allowed",
-   "tx": "0xa06b4ce57b1abc601f826d1cc06fce036e8f7873d639e8ee90f6a8123f8e70a0"
-  },
-  {
-   "ts": "2026-10-14T16:50:14.573Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
-   "tx": "0xdab458e0d31ceffffd0eb3c464c01d42fca6b05d07ab6e9e91fb6333f37c16ff"
-  },
-  {
-   "ts": "2026-10-14T16:50:13.461Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0143 MON to the DCA bot (v1 vault) agent",
-   "status": "allowed",
-   "tx": "0xd892c6c08e1745360e266f6cfcdd9dfa8fefd6546345e97ff457090a7bf3654a"
-  },
-  {
-   "ts": "2026-10-14T16:50:12.167Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker swaps 0.0086 MON → USDC on Kuru (order book)",
-   "status": "allowed",
-   "tx": "0x61e3e41b95734920bd95cf29ef57b466b7aab3424a9a3807aeda535afdde5ed2"
-  },
-  {
-   "ts": "2026-10-14T16:50:11.340Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0147 MON on Uniswap v3",
-   "status": "allowed",
-   "tx": "0x5b6016e8a28806280da981c59ca77de8cd51b71b2b556460b281c59bf0f5f8ff"
   }
  ],
  "status": "running (GitHub Actions)"
