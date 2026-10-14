@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T16:58:15.885Z",
+ "updatedAt": "2026-10-14T17:00:15.101Z",
  "totals": {
-  "allowed": 130,
-  "blocked": 50,
+  "allowed": 134,
+  "blocked": 51,
   "ownerTxs": 31,
   "skipped": 4
  },
@@ -26,7 +26,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 9,
+   "allowed": 10,
    "blocked": 0
   },
   {
@@ -38,7 +38,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 49,
+   "allowed": 50,
    "blocked": 0
   },
   {
@@ -50,7 +50,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 43,
+   "allowed": 44,
    "blocked": 0
   },
   {
@@ -63,7 +63,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 50
+   "blocked": 51
   },
   {
    "id": "dca1",
@@ -74,7 +74,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 29,
+   "allowed": 30,
    "blocked": 0
   },
   {
@@ -143,6 +143,47 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T17:00:15.100Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0113 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0xe658f2f926851942fe81d0ecf11e756e38c35a74983dd05b9e53821ca10e9181"
+  },
+  {
+   "ts": "2026-10-14T17:00:13.875Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay a stranger (0x…dEaD)",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0x64244ec41b93c74f05a491174bfecf5522e788fcba2405194deecbefdcb65df3"
+  },
+  {
+   "ts": "2026-10-14T17:00:13.248Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0195 MON to the DCA bot (v1 vault) agent",
+   "status": "allowed",
+   "tx": "0x9eadd67ff0f359e652760fbcdb2b2cbd80bcda54d02fd612957b7b7736f33715"
+  },
+  {
+   "ts": "2026-10-14T17:00:12.415Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker wraps 0.0156 MON → WMON",
+   "status": "allowed",
+   "tx": "0xf07ba6c60af077f4cfe5de21916f61c4c68f298a7baee78182bd1210c900b265"
+  },
+  {
+   "ts": "2026-10-14T17:00:11.737Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot unwraps 0.174839572250745401 WMON → MON",
+   "status": "allowed",
+   "tx": "0xb5f7a89a4852aafda490b7ed0f386caf0cbf759baf2dea9e482a9f33133d765c"
+  },
   {
    "ts": "2026-10-14T16:58:15.883Z",
    "persona": "dca1",
@@ -592,46 +633,6 @@
    "label": "Owner pulls all MON out of v1 rogue vault",
    "status": "owner",
    "tx": "0xd3ce9ce5b517c6cf9522345db5e884067404bc69a3372ab3e6ab5df40128f040"
-  },
-  {
-   "ts": "2026-10-13T16:58:46.087Z",
-   "persona": "payroll",
-   "actor": "agent-sweep",
-   "label": "Return v1 payroll agent gas",
-   "status": "owner",
-   "tx": "0x842d52005a905861d45b4733b2df103a5e5cb69e264f09de5468f300d2b2db89"
-  },
-  {
-   "ts": "2026-10-13T16:58:43.861Z",
-   "persona": "staker",
-   "actor": "agent-sweep",
-   "label": "Return v1 staker agent gas",
-   "status": "owner",
-   "tx": "0x602f16c998cca83b137c92b473a4a8bb7801f714d9a8f9c110c135f7d15ff786"
-  },
-  {
-   "ts": "2026-10-13T16:58:42.665Z",
-   "persona": "staker",
-   "actor": "owner",
-   "label": "Owner pulls all MON out of v1 staker vault",
-   "status": "owner",
-   "tx": "0x9b2b7e4c2e17dc8d96ee9c666a2b871a67a23a941954c69c44c39ecbe0222ad8"
-  },
-  {
-   "ts": "2026-10-13T16:58:41.109Z",
-   "persona": "staker",
-   "actor": "owner",
-   "label": "Owner pulls tokens out of v1 staker vault",
-   "status": "owner",
-   "tx": "0x75f55ca4d5ec1b2abcdf33e3d88b3771c74ab38aebe25e81097f5c48fdc256f8"
-  },
-  {
-   "ts": "2026-10-13T16:58:39.178Z",
-   "persona": "staker",
-   "actor": "owner",
-   "label": "Owner pulls tokens out of v1 staker vault",
-   "status": "owner",
-   "tx": "0xe1e5bec7af582f2ce9827bb5ef6faa43834788770e05b55e232afcd63028aebb"
   }
  ],
  "status": "running (GitHub Actions)"
