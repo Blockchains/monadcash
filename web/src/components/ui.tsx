@@ -8,7 +8,7 @@ export function Card({ children, className = '', ...rest }: { children: ReactNod
 }
 export function Btn({ children, kind = 'ghost', className = '', ...rest }: { children: ReactNode; kind?: 'pri' | 'ghost' | 'danger' | 'soft' } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const k = { pri: 'bg-monad text-white shadow-[0_8px_30px_-8px_#836EF9] hover:brightness-110', ghost: 'border border-white/15 bg-white/[0.03] text-zinc-100 hover:border-monad/60', danger: 'border border-red-500/40 bg-red-500/10 text-red-200 hover:bg-red-500/20', soft: 'bg-monad/15 text-violet-200 hover:bg-monad/25' }[kind];
-  return <button {...rest} onClick={e => { haptic(); rest.onClick?.(e); }} className={`inline-flex min-h-11 max-w-full select-none items-center justify-center gap-2 whitespace-nowrap rounded-2xl px-4 text-sm font-medium transition active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 ${k} ${className}`}>{children}</button>;
+  return <button {...rest} onClick={e => { haptic(); rest.onClick?.(e); }} className={`inline-flex min-h-11 w-auto min-w-0 max-w-full select-none items-center justify-center gap-2 whitespace-normal break-words rounded-2xl px-4 text-center text-sm font-medium transition active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 ${k} ${className}`}>{children}</button>;
 }
 export function Switch({ on, onChange, label, sub, disabled, testid }: { on: boolean; onChange: (v: boolean) => void; label: ReactNode; sub?: ReactNode; disabled?: boolean; testid?: string }) {
   return (
@@ -49,5 +49,5 @@ export function useToasts() {
   return { push, view };
 }
 export const Pill = ({ children, tone = 'zinc' }: { children: ReactNode; tone?: 'ok' | 'bad' | 'warn' | 'zinc' | 'monad' }) => (
-  <span className={`inline-flex max-w-full shrink-0 items-center gap-1 truncate rounded-full px-2.5 py-1 text-[11px] font-medium ${{ ok: 'bg-emerald-500/15 text-emerald-300', bad: 'bg-red-500/15 text-red-300', warn: 'bg-amber-500/15 text-amber-300', zinc: 'bg-white/10 text-zinc-300', monad: 'bg-monad/20 text-violet-200' }[tone]}`}>{children}</span>
+  <span className={`inline-flex min-w-0 max-w-full items-center gap-1 truncate rounded-full px-2.5 py-1 text-[11px] font-medium ${{ ok: 'bg-emerald-500/15 text-emerald-300', bad: 'bg-red-500/15 text-red-300', warn: 'bg-amber-500/15 text-amber-300', zinc: 'bg-white/10 text-zinc-300', monad: 'bg-monad/20 text-violet-200' }[tone]}`}>{children}</span>
 );

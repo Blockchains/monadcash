@@ -134,9 +134,9 @@ export default function App() {
   return (
     <div className="min-h-dvh overflow-x-clip pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-10">
       {toasts}
-      <div className="bg-amber-500/10 px-[max(1rem,env(safe-area-inset-left))] pt-[env(safe-area-inset-top)] text-center text-[11px] leading-5 text-amber-200" data-testid="alpha">⚠️ <b>Alpha · unaudited contract · only deposit what you&apos;re happy to lose.</b> Max 1 MON per vault.{net.id === 143 ? ' Monad mainnet = real MON.' : ' Testnet = free test MON.'}</div>
+      <div className="bg-amber-500/10 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] text-center text-[11px] leading-5 text-amber-200" data-testid="alpha">⚠️ <b>Alpha · unaudited contract · only deposit what you&apos;re happy to lose.</b> Max 1 MON per vault.{net.id === 143 ? ' Monad mainnet = real MON.' : ' Testnet = free test MON.'}</div>
       <header className="sticky top-0 z-40 border-b border-white/5 bg-ink/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-[max(1rem,env(safe-area-inset-left))]">
+        <div className="mx-auto flex h-16 min-w-0 max-w-6xl items-center gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
           <button onClick={() => setTab('launch')} className="flex min-h-11 min-w-0 items-center gap-2" aria-label="PolicyPilot home"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-monad/20"><ShieldCheck className="h-5 w-5 text-monad" /></span><span className="truncate text-base font-semibold text-zinc-50">PolicyPilot</span></button>
           <nav className="ml-4 hidden items-center gap-1 lg:flex">{TABS.map(t => <button key={t.id} onClick={() => setTab(t.id)} className={`min-h-11 rounded-xl px-3 text-sm transition ${tab === t.id ? 'bg-white/10 text-white' : 'text-zinc-400 hover:text-white'}`}>{t.label}</button>)}</nav>
           <div className="ml-auto flex min-w-0 items-center gap-2">
@@ -146,7 +146,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-[max(1rem,env(safe-area-inset-left))] pt-4">
+      <main className="mx-auto min-w-0 max-w-6xl pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-4">
         {tab === 'launch' && <Launch {...{ net, pub: pub!, account, wallet, need, send, toast, refreshHist, loadVaults, setTab, block, kpi, hist }} />}
         {tab === 'activity' && <ActivityView {...{ net, pub, hist, kpi, block, vaults, account, runAgent, setTab, refresh: refreshHist }} />}
         {tab === 'agents' && <Agents {...{ net, pub: pub!, account, wallet, need, send, vaults, loadVaults, runAgent, ownerTx, setConnectOpen, setTab, toast, refreshHist }} />}
@@ -155,7 +155,7 @@ export default function App() {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden" data-testid="tabbar">
-        <div className="mx-auto grid max-w-lg grid-cols-5 px-[env(safe-area-inset-left)]">
+        <div className="mx-auto grid max-w-lg grid-cols-5 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
           {TABS.map(t => { const I = t.icon; const on = tab === t.id; return (
             <button key={t.id} onClick={() => setTab(t.id)} aria-current={on ? 'page' : undefined} className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 text-[11px] transition active:scale-90 ${on ? 'text-white' : 'text-zinc-500'}`}>
               <span className={`grid h-8 w-12 place-items-center rounded-full transition ${on ? 'bg-monad/25' : ''}`}><I className={`h-5 w-5 ${on ? 'text-violet-300' : ''}`} /></span>{t.label}
@@ -247,7 +247,7 @@ function Launch({ net, pub, account, wallet, need, send, toast, refreshHist, loa
 
   return (
     <div className="grid gap-4">
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(131,110,249,.35),transparent_55%),radial-gradient(90%_90%_at_100%_100%,rgba(34,211,238,.12),transparent_60%)] p-5 sm:p-8">
+      <section className="relative min-w-0 overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(131,110,249,.35),transparent_55%),radial-gradient(90%_90%_at_100%_100%,rgba(34,211,238,.12),transparent_60%)] p-5 sm:p-8">
         <Pill tone="monad"><Sparkles className="h-3 w-3" /> Monad {net.name} · block {block ? block.toLocaleString() : '…'}</Pill>
         <h1 className="mt-3 text-[clamp(1.75rem,7vw,3.25rem)] font-bold leading-[1.05] tracking-tight text-white" data-testid="tagline">Love agents.<br />Love control.<br /><span className="bg-gradient-to-r from-violet-300 to-cyan-300 bg-clip-text text-transparent">PolicyPilot.</span></h1>
         <p className="mt-3 max-w-xl text-sm text-zinc-300 sm:text-base">Give your AI agent a wallet with a harness: a budget, a per-action cap and only the services you switch on. It’s all enforced on-chain, so you can pull everything back any time.</p>
@@ -273,7 +273,7 @@ function Launch({ net, pub, account, wallet, need, send, toast, refreshHist, loa
           <input data-testid="agent-addr" value={ext} onChange={e => setExt(e.target.value)} placeholder="0x… your agent's address" className="min-h-11 w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 font-mono text-sm outline-none focus:border-monad" />
           <details className="rounded-2xl bg-black/30 p-3 text-xs text-zinc-400"><summary className="flex min-h-11 cursor-pointer items-center text-zinc-300">How does my ElizaOS / custom agent use it?</summary>
             <p className="mt-2">Your agent signs with its own key and calls the vault, never your wallet:</p>
-            <pre className="mt-2 overflow-x-auto whitespace-pre rounded-xl bg-black/50 p-2 font-mono text-[11px] text-zinc-300">{`vault.execute(requestId, payee, amountWei)\nvault.executeCall(requestId, service, valueWei, calldata, opts)`}</pre>
+            <pre className="mt-2 min-w-0 max-w-full overflow-x-auto whitespace-pre rounded-xl bg-black/50 p-2 font-mono text-[11px] text-zinc-300">{`vault.execute(requestId, payee, amountWei)\nvault.executeCall(requestId, service, valueWei, calldata, opts)`}</pre>
             <p className="mt-2">If it goes over a limit or calls a service you didn’t switch on, the vault reverts with the exact reason. Our <code>plugin-eliza</code> ships the <code>EXECUTE_POLICY_PAYMENT</code> action for the PolicyPilot contract; vault support for the plugin is next.</p></details>
         </div>}
         {agentMode === 'new' && <p className="mt-3 text-xs text-zinc-400"><KeyRound className="mr-1 inline h-3 w-3" />The agent key is stored only in this browser (alpha). Even with the key, the agent can only act inside your rules.</p>}
@@ -517,8 +517,8 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem),minmax(0,1fr)] lg:items-start">
-      <Card data-testid="vault-picker" className="grid gap-3">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,22rem),minmax(0,1fr)] lg:items-start">
+      <Card data-testid="vault-picker" className="grid grid-cols-[minmax(0,1fr)] gap-3">
         <div className="flex items-center gap-3"><h1 className="min-w-0 flex-1 text-xl font-bold text-white">Vaults</h1><Btn onClick={() => { loadVaults(); if (sel && teamState[sel]) refreshTeam(sel); }} className="shrink-0 px-3 text-xs">Refresh</Btn></div>
         <div>
           <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-wider text-zinc-500"><Wallet className="h-3.5 w-3.5" />Your vaults{account && <span className="ml-auto font-mono normal-case tracking-normal">{short(account)}</span>}</div>
@@ -546,7 +546,7 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
           </div>
         </div>}
         <div>
-          <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-wider text-zinc-500"><Users className="h-3.5 w-3.5" /><span className="min-w-0 truncate">{TEAM_LABEL}</span></div>
+          <div className="mb-2 flex min-w-0 items-center gap-2 text-[11px] uppercase tracking-wider text-zinc-500"><Users className="h-3.5 w-3.5 shrink-0" /><span className="min-w-0 flex-1 truncate">{TEAM_LABEL}</span></div>
           {net.id !== 143 && <p className="text-xs text-zinc-500">Team vaults live on mainnet only.</p>}
           {net.id === 143 && !snap && <div className="text-sm text-zinc-500">Loading team vaults…</div>}
           <div className="grid gap-2">
@@ -580,7 +580,7 @@ function OwnVault({ s, net, pub, account, runAgent, ownerTx, toast, teamName, te
   return (
     <Card data-testid="vault-card">
       <div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-monad/20 text-xl">{template ? template.emoji : <ShieldCheck className="h-5 w-5 text-violet-300" />}</span>
-        <div className="min-w-0 flex-1"><div className="break-words font-semibold text-white">{teamName ?? template?.name ?? `Vault ${short(s.v)}`}</div><a className="block truncate text-xs text-violet-300" href={`${net.exp}/address/${s.v}`} target="_blank" rel="noreferrer">{s.v} ↗</a>{template && <p className="mt-1 break-words text-xs text-zinc-400">{template.tagline}</p>}{teamName && <div className="mt-1"><Pill tone="zinc">{TEAM_LABEL}</Pill></div>}</div>
+        <div className="min-w-0 flex-1"><div className="break-words font-semibold text-white">{teamName ?? template?.name ?? `Vault ${short(s.v)}`}</div><a className="block truncate text-xs text-violet-300" href={`${net.exp}/address/${s.v}`} target="_blank" rel="noreferrer">{s.v} ↗</a>{template && <p className="mt-1 break-words text-xs text-zinc-400">{template.tagline}</p>}{teamName && <div className="mt-1 min-w-0 max-w-full"><Pill tone="zinc">{TEAM_LABEL}</Pill></div>}</div>
         <Pill tone={s.paused ? 'warn' : 'ok'}>{s.paused ? 'Paused' : 'Active'}</Pill></div>
       <VaultReport key={s.v} s={s} net={net} pub={pub} account={account} template={template} runAgent={runAgent} ownerTx={ownerTx} reload={reload} canSign={signer !== null} isOwner readOnly={false} />
       <Switch testid="sw-pause-vault" on={!s.paused} onChange={async v => { try { await ownerTx(v ? 'Owner resumes the agent' : 'Owner pauses the agent', vcall(s.v, 'setPaused', [!v])); toast(v ? '▶️ Agent resumed' : '⏸ Agent paused', 'ok'); } catch (e) { toast(plain(reasonOf(e)), 'bad'); } }} label={s.paused ? 'Agent is paused' : 'Agent is live'} sub="Instant kill-switch, one signature" />
@@ -660,7 +660,7 @@ function TeamVault({ a, s, net, pub, account, runAgent, owner }: { a: TeamAgent;
       <div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/5 text-2xl">{a.emoji}</span>
         <div className="min-w-0 flex-1"><div className="truncate font-semibold text-white">{a.name}</div><a className="block truncate text-xs text-violet-300" href={`${net.exp}/address/${a.vault}`} target="_blank" rel="noreferrer">{a.vault} ↗</a></div>
         <Pill tone="zinc"><Lock className="h-3 w-3" />read-only</Pill></div>
-      <div className="mt-2"><Pill tone="warn">{TEAM_LABEL}</Pill></div>
+      <div className="mt-2 min-w-0 max-w-full"><Pill tone="warn">{TEAM_LABEL}</Pill></div>
       <p className="mt-2 text-sm text-zinc-300">{a.about}</p>
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-300"><span>✅ {a.allowed} allowed</span><span>⛔ {a.blocked} blocked on-chain</span><span>cap {a.perActionCapMON} MON</span>{a.agent && <span className="font-mono">agent {short(a.agent)}</span>}</div>
       {idle && <p className="mt-2 break-words rounded-xl bg-amber-400/10 p-2 text-[11px] text-amber-100/80">Last runner note ({new Date(idle.ts).toLocaleString()}): {idle.reason}</p>}

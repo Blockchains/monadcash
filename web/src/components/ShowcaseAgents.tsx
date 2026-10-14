@@ -30,7 +30,7 @@ export default function ShowcaseAgents({ net, pub, base, totalVaults, extraTeamV
   const liveTx = Object.values(live).reduce((s, x) => s + x.nonce, 0);
   const active = snap.agents.filter(a => a.vault); const team = active.length + extraTeamVaults;
   return (
-    <section data-testid="showcase-agents" className="grid min-w-0 gap-3 rounded-3xl border border-amber-400/25 bg-amber-400/[0.04] p-3 sm:p-4">
+    <section data-testid="showcase-agents" className="grid min-w-0 max-w-full gap-3 rounded-3xl border border-amber-400/25 bg-amber-400/[0.04] p-3 sm:p-4">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <h2 className="min-w-0 flex-1 text-base font-semibold text-amber-100">{TEAM_LABEL}</h2>
         <Pill tone="zinc">{snap.status.startsWith('running') ? 'running' : 'stopped'}</Pill>
