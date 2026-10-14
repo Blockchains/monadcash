@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-14T20:13:34.130Z",
+ "updatedAt": "2026-10-14T20:23:38.046Z",
  "totals": {
-  "allowed": 234,
-  "blocked": 79,
+  "allowed": 237,
+  "blocked": 80,
   "ownerTxs": 31,
   "skipped": 7
  },
@@ -42,7 +42,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 74,
+   "allowed": 75,
    "blocked": 0
   },
   {
@@ -54,7 +54,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 66,
+   "allowed": 67,
    "blocked": 0
   },
   {
@@ -67,7 +67,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 79
+   "blocked": 80
   },
   {
    "id": "dca1",
@@ -78,7 +78,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 58,
+   "allowed": 59,
    "blocked": 0
   },
   {
@@ -147,6 +147,39 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T20:23:38.045Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot unwraps 0.047611467166388655 WMON → MON",
+   "status": "allowed",
+   "tx": "0xe038a7af9e53a7eb5edbbde46680b9690944412234897a0438d34c3b48f55808"
+  },
+  {
+   "ts": "2026-10-14T20:23:37.361Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
+   "tx": "0xd23a960d28902bb53e4ff4ccfcedbad342b63e7ea00aed5c028fd9b32d9dd9c6"
+  },
+  {
+   "ts": "2026-10-14T20:23:36.791Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.0123 MON to the DCA bot (v1 vault) agent",
+   "status": "allowed",
+   "tx": "0x2a99cd824cdeafc3409955e2de4bc9a6942d63cf7887acc1538c05acfdbf8ab7"
+  },
+  {
+   "ts": "2026-10-14T20:23:35.930Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker unwraps 0.0162 WMON → MON",
+   "status": "allowed",
+   "tx": "0x26e0d58e2bd7525ece6b772138cca02ff89406137434f5eea6ffa73d48d5963e"
+  },
   {
    "ts": "2026-10-14T20:13:34.129Z",
    "persona": "dca1",
@@ -608,39 +641,6 @@
    "label": "Payroll pays 0.0114 MON to the DCA bot (v1 vault) agent",
    "status": "allowed",
    "tx": "0x7eb5fcb9d5b2b7f6d772f8e1c4586bd3d5437415127052718402c1c8dcd360cc"
-  },
-  {
-   "ts": "2026-10-14T18:02:35.128Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker stakes 0.0101 MON → sMON (Kintsu)",
-   "status": "allowed",
-   "tx": "0xa503c4a39410fab659ca604d2373ec38e22f6a40ffe00dd9d8d3f308c1cb3fcd"
-  },
-  {
-   "ts": "2026-10-14T18:02:34.457Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot unwraps 0.045342313453828714 WMON → MON",
-   "status": "allowed",
-   "tx": "0x2f7ae8eaa26c671b7a2071193b57ffcb1ff13e127b3e6c84cd0579e4e0e6cc02"
-  },
-  {
-   "ts": "2026-10-14T17:52:33.024Z",
-   "persona": "dca1",
-   "actor": "agent",
-   "label": "DCA bot unwraps 0.101656758249439249 WMON → MON",
-   "status": "allowed",
-   "tx": "0x1318e0bf1f21a2e37da34c141fa5d8e63639abfd1c7b96bbc25f412e7e859bd5"
-  },
-  {
-   "ts": "2026-10-14T17:52:32.280Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay a stranger (0x…dEaD)",
-   "status": "blocked",
-   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
-   "tx": "0x69b4e10849424d2abcbf1769655141edcd4ca995bcd222166edb01bbf24da8e9"
   }
  ],
  "status": "running (GitHub Actions)"
