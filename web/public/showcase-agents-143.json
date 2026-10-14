@@ -6,10 +6,10 @@
  "factory": "0x0342d29055d77ba155c50233f550539E3029BA6a",
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-13T22:21:57.387Z",
+ "updatedAt": "2026-10-14T00:47:31.565Z",
  "totals": {
   "allowed": 110,
-  "blocked": 44,
+  "blocked": 45,
   "ownerTxs": 31
  },
  "agents": [
@@ -55,7 +55,7 @@
    "agent": "0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E",
    "perActionCapMON": "0.01",
    "allowed": 0,
-   "blocked": 44
+   "blocked": 45
   },
   {
    "id": "dca1",
@@ -70,6 +70,15 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-14T00:47:31.564Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay a stranger (0x…dEaD)",
+   "status": "blocked",
+   "reason": "NotExecutor",
+   "tx": "0x50d932287d98be712088f17cf06a2fb683cd29998ab27ea2a283536537749b69"
+  },
   {
    "ts": "2026-10-13T21:51:29.244Z",
    "persona": "dca",
@@ -552,15 +561,6 @@
    "label": "Staker swaps 0.008 MON → USDC on Kuru (order book)",
    "status": "allowed",
    "tx": "0x7e88d023fb469fbade01634642644c3a18a69ad35208b8469456e7090eec2d25"
-  },
-  {
-   "ts": "2026-10-13T16:30:25.216Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
-   "tx": "0x741f5856113f3164889fb610b315bf601657ffe5d1a502d2924d24b83aefba92"
   }
  ],
  "status": "running (GitHub Actions)"
