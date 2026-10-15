@@ -7,7 +7,7 @@ import { haptic } from '@/lib/wallets';
 import { addLocal, mon, sendFault, short, type Net } from '@/lib/vault';
 import { pricedGas } from '@/lib/fastPath';
 import {
-  clearsFloor, decodeKuru, decodeQuote, explainSpread, fetchCalls, meshQuotes, minOuts, ROUGH_GAS_WEI, roundTripBacks, SETTLEMENT_VENUES, spreadAbi,
+  clearsFloor, decodeKuru, decodeQuote, explainSpread, fetchCalls, isCurrentSpreadCode, meshQuotes, minOuts, ROUGH_GAS_WEI, roundTripBacks, SETTLEMENT_VENUES, spreadAbi,
   SPREAD_CAP, spreadCaptureData, spreadDeployData, spreadDepositData, spreadGate, spreadWithdrawData, VENUES, workerUrl, type CallRow, type QuoteCall, type StateOverride, type VenueId,
 } from '@/lib/spread';
 
@@ -53,7 +53,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   const [amount, setAmount] = useState('0.2');
   const [topUp, setTopUp] = useState('0.02');
   const [vault, setVault] = useState<Address | null>(null);
-  const [snap, setSnap] = useState<{ pool: bigint; shares: bigint; yours: bigint; cap: bigint; thinOk: boolean } | null>(null);
+  const [snap, setSnap] = useState<{ pool: bigint; shares: bigint; yours: bigint; cap: bigint } | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -84,15 +84,20 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
       const code = await pub.getCode({ address: vault });
       if (!on) return;
       if (!code || code === '0x') { if (key) localStorage.removeItem(key); setVault(null); return; }
+      if (!isCurrentSpreadCode(code)) {
+        if (key) localStorage.removeItem(key);
+        setVault(null);
+        setLine({ ok: false, text: 'That saved pool is not the current spread bytecode, so it was cleared. Open a new pool.' });
+        return;
+      }
       const who = account ?? '0x0000000000000000000000000000000000000000';
-      const [pool, shares, yours, cap, thinFee] = await Promise.all([
+      const [pool, shares, yours, cap] = await Promise.all([
         pub.getBalance({ address: vault }),
         pub.readContract({ address: vault, abi: spreadAbi, functionName: 'balanceOf', args: [who] }),
         pub.readContract({ address: vault, abi: spreadAbi, functionName: 'assetsOf', args: [who] }),
         pub.readContract({ address: vault, abi: spreadAbi, functionName: 'vaultCap' }),
-        pub.readContract({ address: vault, abi: spreadAbi, functionName: 'UNI_THIN_FEE' }).catch(() => null),
-      ]) as [bigint, bigint, bigint, bigint, bigint | null];
-      if (on) setSnap({ pool, shares, yours, cap, thinOk: thinFee === 500n });
+      ]) as [bigint, bigint, bigint, bigint];
+      if (on) setSnap({ pool, shares, yours, cap });
     })().catch(() => { if (on) setSnap(null); });
     return () => { on = false; };
   }, [vault, pub, account, block, key]);
@@ -100,8 +105,8 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   const [scans, setScans] = useState(0);
   const [bounty, setBounty] = useState<{ paid: bigint; last: Hex | null } | null>(null);
   const [bountyError, setBountyError] = useState(false);
-  const ctx = useRef({ amount, rpc: net.rpc, mainnet: net.id === 143, thinOk: true });
-  ctx.current = { amount, rpc: net.rpc, mainnet: net.id === 143, thinOk: vault ? snap?.thinOk === true : true };
+  const ctx = useRef({ amount, rpc: net.rpc, mainnet: net.id === 143 });
+  ctx.current = { amount, rpc: net.rpc, mainnet: net.id === 143 };
   const lastAt = useRef(0);
   const inflight = useRef(false);
   const again = useRef(false);
@@ -137,12 +142,11 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         const failed = [rows[0], rows[1], rows[2]].find((r): r is { ok: false; error: string } => !!r && !r.ok);
         throw new Error(failed?.error || 'Quote failed');
       }
-      const allow = ctx.current.thinOk ? SETTLEMENT_VENUES : SETTLEMENT_VENUES.filter(id => id !== 'uniswap-thin');
       const backs = roundTripBacks([
         { id: 'uniswap', usdc: uni },
         { id: 'uniswap-thin', usdc: thin },
         { id: 'pancake', usdc: cake },
-      ], allow);
+      ]);
       const empty = { amount: wei, uni, thin, cake, kuru, sell: null, buy: null, usdc: 0n, back: 0n, profit: 0n, bounty: 0n, fee: 0n, poolCut: 0n, ok: false, coversGas: false };
       if (backs.length === 0) {
         setQuote(empty);
@@ -178,7 +182,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     }
   };
 
-  useEffect(() => { const t = window.setTimeout(() => void quoteOnce(true), 200); return () => window.clearTimeout(t); }, [amount, net.id, net.rpc, vault, snap?.thinOk]);
+  useEffect(() => { const t = window.setTimeout(() => void quoteOnce(true), 200); return () => window.clearTimeout(t); }, [amount, net.id, net.rpc, vault]);
   useEffect(() => { const t = window.setInterval(() => void quoteOnce(false), 1_000); return () => window.clearInterval(t); }, [net.id, net.rpc]);
   useEffect(() => { if (block != null) void quoteOnce(false); }, [block]);
 
@@ -239,6 +243,8 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         const gas = await pricedGas(pub, account, { data, value: size });
         const rc = await send(wallet, { data, value: size, gas });
         if (!rc.contractAddress) throw new Error(`The transaction was included, but the pool address was not in the receipt. Open it and paste the contract here. ${rc.transactionHash}`);
+        const deployed = await pub.getCode({ address: rc.contractAddress });
+        if (!isCurrentSpreadCode(deployed)) throw new Error('The deployed pool is not the current spread bytecode.');
         remember(rc.contractAddress);
         addLocal(net, { label: `Opened a spread pool with ${amount} MON`, kind: 'owner', tx: rc.transactionHash, from: account });
         const href = `${net.exp}/tx/${rc.transactionHash}`;
@@ -336,8 +342,8 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     if (!account) { await need(); return; }
     if (!isAddress(paste.trim())) { toast('Paste the pool address, starting with 0x.', 'bad'); return; }
     const a = getAddress(paste.trim());
-    try { await pub.readContract({ address: a, abi: spreadAbi, functionName: 'minProfitBps' }); }
-    catch { toast('That contract is not a PolicyPilot spread pool.', 'bad'); return; }
+    const code = await pub.getCode({ address: a }).catch(() => undefined);
+    if (!isCurrentSpreadCode(code)) { toast('That address is not the current spread pool.', 'bad'); return; }
     remember(a); setPaste('');
     toast(`Using pool ${short(a)}.`, 'ok');
   };
@@ -367,7 +373,6 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
           <span>Rough gas {mon(ROUGH_GAS_WEI)}</span>
         </div>
         {quoteForAmount?.ok && !quoteForAmount.coversGas && <p data-testid="spread-gas-note" className="break-words text-amber-200">This gain is smaller than rough gas. Submitting still runs the round trip. You pay the gas.</p>}
-        {vault && snap && !snap.thinOk && <p className="break-words text-amber-200">This pool was opened before the Uniswap 0.05% leg. Open a new pool to settle that price.</p>}
         {quoteError && <p className="break-words text-rose-300">{quoteError}</p>}
       </div>
 
