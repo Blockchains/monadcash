@@ -292,7 +292,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   const button = gate.code === 'connect' ? 'Connect wallet' : gate.code === 'open' ? `Open pool · ${amount || '0'} MON` : gate.code === 'go' ? 'Submit round trip' : 'Waiting for a spread';
 
   return (
-    <section data-testid="spread-desk" className="min-w-0 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+    <section id="desk-spread" data-testid="spread-desk" className="min-w-0 scroll-mt-16 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
       <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-400/15 text-emerald-200"><Radio className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">

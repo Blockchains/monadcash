@@ -144,7 +144,7 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
   const button = gate.code === 'connect' ? 'Connect wallet' : gate.code === 'create' ? `Create vault · ${preset.deposit} MON` : gate.code === 'sim' ? 'Check policy' : '1-click dispatch';
 
   return (
-    <section data-testid="fast-dispatch" className="min-w-0 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+    <section id="desk-dispatch" data-testid="fast-dispatch" className="min-w-0 scroll-mt-16 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
       <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-monad/20 text-violet-200"><Zap className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
