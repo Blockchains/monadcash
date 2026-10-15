@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T07:56:16.492Z",
+ "updatedAt": "2026-10-15T08:06:20.037Z",
  "totals": {
-  "allowed": 409,
-  "blocked": 162,
+  "allowed": 410,
+  "blocked": 163,
   "ownerTxs": 31,
   "skipped": 22
  },
@@ -138,7 +138,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 57,
+   "allowed": 58,
    "blocked": 0
   },
   {
@@ -151,10 +151,27 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 19,
-   "blocked": 38
+   "blocked": 39
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T08:06:20.036Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
+   "tx": "0x6b5057270a8de1367aaaa1fc760bf056964713fddf90964cd336ba36ee9d5b3a"
+  },
+  {
+   "ts": "2026-10-15T08:06:19.118Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0036 MON to the Payroll agent",
+   "status": "allowed",
+   "tx": "0x5de09e1da546dfdae34270110b46264bf90b0df8f67090dbbc3794b49012f562"
+  },
   {
    "ts": "2026-10-15T07:56:16.491Z",
    "persona": "tester",
@@ -634,22 +651,6 @@
    "label": "Tipper tips 0.0019 MON to the Payroll agent",
    "status": "allowed",
    "tx": "0x610b6b6c8054e043545c75e6588e0cef6ca38043361044c76070fc2be91bc64d"
-  },
-  {
-   "ts": "2026-10-15T04:45:04.990Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.74 < target 1)",
-   "status": "allowed",
-   "tx": "0xd20026d30a61a60446c9b15891508b7d9a5a3d035afe57521a92c6f8b84fcfdf"
-  },
-  {
-   "ts": "2026-10-15T04:35:02.864Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
-   "status": "allowed",
-   "tx": "0x8139afadd4e4b36e29434c63e576e4b255787cf826065fb594328de8ed079f3b"
   }
  ],
  "status": "running (GitHub Actions)"
