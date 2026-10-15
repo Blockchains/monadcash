@@ -9,12 +9,12 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T05:05:14.550Z",
+ "updatedAt": "2026-10-15T05:15:17.316Z",
  "totals": {
-  "allowed": 372,
-  "blocked": 150,
+  "allowed": 374,
+  "blocked": 151,
   "ownerTxs": 31,
-  "skipped": 17
+  "skipped": 18
  },
  "agents": [
   {
@@ -75,7 +75,11 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 123
+   "blocked": 123,
+   "lastSkip": {
+    "ts": "2026-10-15T05:15:15.322Z",
+    "reason": "agent gas 0.07506 MON < 0.08 MON (owner must top up the agent wallet)"
+   }
   },
   {
    "id": "dca1",
@@ -118,7 +122,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 40,
+   "allowed": 41,
    "blocked": 0
   },
   {
@@ -130,7 +134,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 40,
+   "allowed": 41,
    "blocked": 0
   },
   {
@@ -143,10 +147,35 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 13,
-   "blocked": 27
+   "blocked": 28
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T05:15:17.315Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0x0f03445524af9d58a866f0e2573c6a64b6d5bfad432a6ecc41459dd7799f6273"
+  },
+  {
+   "ts": "2026-10-15T05:15:16.782Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0024 MON to the DCA bot agent",
+   "status": "allowed",
+   "tx": "0x2ef471d80f291bbb1cab24f4d2fb1b12f984e5a499d4962e1859243d67d8e073"
+  },
+  {
+   "ts": "2026-10-15T05:15:16.080Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.8 < target 1)",
+   "status": "allowed",
+   "tx": "0xec336fcab213d38f354483aab0862380bb4343d5cf6e9bef1d5d59e8062cf37e"
+  },
   {
    "ts": "2026-10-15T05:05:14.549Z",
    "persona": "tester",
@@ -619,32 +648,6 @@
    "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.46 < target 1)",
    "status": "allowed",
    "tx": "0xa023b7d7b9145555838cef9c6bdcc4ad6d606898d9a34002caa0a143de8bd9ce"
-  },
-  {
-   "ts": "2026-10-15T02:27:48.282Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
-   "status": "blocked",
-   "reason": "NotOwner",
-   "tx": "0x1540815eb25cde2eb032d1096e54d62aef4b1ffd852bca4310850fa7021231c7"
-  },
-  {
-   "ts": "2026-10-15T02:27:46.743Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.012 MON to the team treasury",
-   "status": "allowed",
-   "tx": "0x0dcd7937b4b1adb2b005311605cf6fc5b01a1762a8bd80d72164c5033162a9d9"
-  },
-  {
-   "ts": "2026-10-15T02:17:44.246Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
-   "status": "blocked",
-   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
-   "tx": "0x6f7194d793b2ae0119e46b9a54a1e4fe9e9553e0a29548a8ea129f776370e63f"
   }
  ],
  "status": "running (GitHub Actions)"
