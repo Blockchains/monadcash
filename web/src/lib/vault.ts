@@ -27,6 +27,13 @@ export const pubOf = (n: Net) => createPublicClient({ chain: chainOf(n), transpo
 export const services = (n: Net) => (n.id === 143 ? SERVICES : SERVICES.filter(s => s.id === 'pay').concat(SERVICES.filter(s => s.id !== 'pay').map(s => ({ ...s, status: 'soon' as const, why: s.why ?? 'Mainnet only: these are mainnet contracts.' }))));
 
 export const mon = (v: bigint | number | string, d = 4) => `${Number(formatEther(BigInt(v))).toLocaleString(undefined, { maximumFractionDigits: d })} MON`;
+/** Largest MON a value action can attach and still clear the cap, the remaining budget, and the vault balance. */
+export function executableMon(s: { cap: bigint; budget: bigint; spent: bigint; bal: bigint }): bigint {
+  const rem = s.budget > s.spent ? s.budget - s.spent : 0n;
+  let n = s.cap < s.bal ? s.cap : s.bal;
+  if (rem < n) n = rem;
+  return n > 0n ? n : 0n;
+}
 export const short = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '');
 export const rid = (t: string) => keccak256(toHex(`${t}:${Date.now()}:${Math.random()}`));
 

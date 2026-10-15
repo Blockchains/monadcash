@@ -4,7 +4,7 @@ import { formatEther, formatUnits, parseEther, type Address, type PublicClient, 
 import { AlertTriangle, CheckCircle2, Zap } from 'lucide-react';
 import { Btn, receiptClass } from './ui';
 import { haptic } from '@/lib/wallets';
-import { addLocal, factoryAbi, mon, quoteAll, sendFault, short, type Net, type VaultState } from '@/lib/vault';
+import { addLocal, executableMon, factoryAbi, mon, quoteAll, sendFault, short, type Net, type VaultState } from '@/lib/vault';
 import { buildSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
 import { GAS } from '@/lib/fastPath';
 
@@ -16,7 +16,7 @@ const ACTION: Record<SuperVault['id'], { kind: string; target: string; verb: str
   payments: { kind: 'pay', target: 'your wallet', verb: 'Pay yourself' },
 };
 
-const defaultAmount = (t: SuperVault) => t.playbook.find(s => /^\d/.test(s.amount))?.amount ?? String(t.cap);
+const presetAmount = (t: SuperVault) => String(t.cap);
 
 function fits(s: VaultState, t: SuperVault) {
   return t.services.every(id => s.rules.includes(id));
@@ -53,17 +53,24 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
 }) {
   const [preset, setPreset] = useState<SuperVault>(SUPER_VAULTS[0]);
   const [vaultId, setVaultId] = useState<string>('new');
-  const [amount, setAmount] = useState(defaultAmount(SUPER_VAULTS[0]));
+  const [amount, setAmount] = useState(presetAmount(SUPER_VAULTS[0]));
   const [busy, setBusy] = useState(false);
   const [line, setLine] = useState<{ ok: boolean; pending?: boolean; text: string; href?: string } | null>(null);
   const [best, setBest] = useState<string | null>(null);
   const userPicked = useRef(false);
+  const amountTyped = useRef(false);
   const action = ACTION[preset.id];
   const matches = (vaults ?? []).filter(s => fits(s, preset));
   const selected = vaultId === 'new' ? null : matches.find(s => s.v.toLowerCase() === vaultId.toLowerCase()) ?? null;
   const mainnet = net.id === 143;
 
-  useEffect(() => { userPicked.current = false; setAmount(defaultAmount(preset)); setLine(null); setBest(null); }, [preset.id]);
+  useEffect(() => { userPicked.current = false; amountTyped.current = false; setAmount(presetAmount(preset)); setLine(null); setBest(null); }, [preset.id]);
+  useEffect(() => {
+    if (amountTyped.current) return;
+    if (!selected) { setAmount(presetAmount(preset)); return; }
+    const n = executableMon(selected);
+    setAmount(n > 0n ? formatEther(n) : '0');
+  }, [preset.id, selected]);
   useEffect(() => {
     if (userPicked.current) return;
     const ready = (vaults ?? []).filter(s => fits(s, preset) && !s.paused && s.bal > 0n).sort((a, b) => (a.bal > b.bal ? -1 : 1));
@@ -87,6 +94,7 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
   }, [preset.id, selected?.v, amount, pub]);
 
   const cap = selected ? selected.cap : parseEther(String(preset.cap));
+  const maxWei = selected ? executableMon(selected) : cap;
   const gate = dispatchGate({
     mainnet, account: !!account, mode: selected ? 'run' : 'create', amount,
     cap, budget: selected?.budget ?? parseEther(String(preset.budget)), spent: selected?.spent ?? 0n,
@@ -209,8 +217,8 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
           <div className="mb-2 text-[11px] uppercase tracking-wider text-zinc-500">3 · Dispatch</div>
           <div className="flex flex-1 flex-col gap-3 rounded-2xl border border-white/10 bg-black/30 p-3">
             <div className="break-words text-sm text-zinc-200">{action.verb} on {action.target}</div>
-            <label className="grid gap-1 text-xs text-zinc-400">Amount (MON)
-              <input data-testid="dispatch-amount" inputMode="decimal" value={amount} onChange={e => { setAmount(e.target.value); setLine(null); }} className="min-h-12 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 font-mono text-base text-white outline-none focus:border-monad" />
+            <label className="grid gap-1 text-xs text-zinc-400"><span className="flex min-w-0 items-center justify-between gap-2"><span>Amount (MON)</span><button type="button" data-testid="dispatch-max" onClick={() => { amountTyped.current = false; setAmount(formatEther(maxWei)); setLine(null); }} className="shrink-0 rounded-full border border-white/15 px-2 py-1 text-[11px] text-violet-200">Max {mon(maxWei, 6)}</button></span>
+              <input data-testid="dispatch-amount" inputMode="decimal" value={amount} onChange={e => { amountTyped.current = true; setAmount(e.target.value); setLine(null); }} className="min-h-12 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 font-mono text-base text-white outline-none focus:border-monad" />
             </label>
             <div className="text-[11px] text-zinc-500">Cap {mon(cap)} · budget {selected ? mon(selected.budget) : `${preset.budget} MON`}</div>
             {best && <div data-testid="dispatch-quote" className="break-words text-xs text-emerald-200">Best quote: {best}</div>}
