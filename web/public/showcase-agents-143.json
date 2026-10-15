@@ -9,12 +9,12 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T01:57:32.698Z",
+ "updatedAt": "2026-10-15T02:07:38.762Z",
  "totals": {
-  "allowed": 327,
-  "blocked": 128,
+  "allowed": 329,
+  "blocked": 130,
   "ownerTxs": 31,
-  "skipped": 12
+  "skipped": 13
  },
  "agents": [
   {
@@ -75,7 +75,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 114
+   "blocked": 115
   },
   {
    "id": "dca1",
@@ -87,7 +87,11 @@
    "perActionCapMON": "0.03",
    "pending": false,
    "allowed": 60,
-   "blocked": 0
+   "blocked": 0,
+   "lastSkip": {
+    "ts": "2026-10-15T02:07:35.090Z",
+    "reason": "agent gas 0.037441246 MON < 0.08 MON (owner must top up the agent wallet)"
+   }
   },
   {
    "id": "mm",
@@ -114,7 +118,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 21,
+   "allowed": 22,
    "blocked": 0
   },
   {
@@ -126,7 +130,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 21,
+   "allowed": 22,
    "blocked": 0
   },
   {
@@ -139,10 +143,44 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 7,
-   "blocked": 14
+   "blocked": 15
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T02:07:38.761Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
+   "tx": "0x61cf8b3d536934d7a5ac616ba6480fade4a9239830939042ab0bf8bd6349c83c"
+  },
+  {
+   "ts": "2026-10-15T02:07:37.684Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0035 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0x4b97502eb2a1c4aa2b5e071643a5525146b887341c4d12504bc9f102386623b9"
+  },
+  {
+   "ts": "2026-10-15T02:07:36.263Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.42 < target 1)",
+   "status": "allowed",
+   "tx": "0xf915b51510d415d7bd6e5c4edff6ad44a5990f9347e4544ca6227b3ec360b147"
+  },
+  {
+   "ts": "2026-10-15T02:07:35.036Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
+   "tx": "0x62325a5e284bb99983b00d422323910a348daa055edcaeb88d39a8e5c42db1bd"
+  },
   {
    "ts": "2026-10-15T01:57:32.697Z",
    "persona": "tester",
@@ -609,40 +647,6 @@
    "label": "Market maker buys 0.0064590924 MON with 0.000156 USDC on Kuru (order book)",
    "status": "allowed",
    "tx": "0x7e203dfa0c8d9f779e4cda64c484a34adf0495f2e3259389b2532ca9035217f5"
-  },
-  {
-   "ts": "2026-10-15T00:05:57.104Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
-   "status": "blocked",
-   "reason": "NotOwner",
-   "tx": "0x25b36da16549ca5561d7e56ecf3758e16debba5a3e9ec95b77300c1f9402e8e4"
-  },
-  {
-   "ts": "2026-10-14T23:55:54.613Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
-   "status": "blocked",
-   "reason": "RequestAlreadyExecuted(0x9036f9552dfe274535b490af4a646e5126b38059fc7e43d056dca00bf5811d93)",
-   "tx": "0xe67a50bf90ca44b06bbbe4661e8495eaa4666275f5b9c4751c410bb3f341b72d"
-  },
-  {
-   "ts": "2026-10-14T23:55:53.157Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0026 MON to the Rogue agent agent",
-   "status": "allowed",
-   "tx": "0x2313afd34b20140a561779504d3e5ea97b66c61f129007ac2de5216c017be376"
-  },
-  {
-   "ts": "2026-10-14T23:55:51.768Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.16 < target 1)",
-   "status": "allowed",
-   "tx": "0xe4493fa1252b35349025be2b0ee388b0c735c1bfa056db45f7da9c28d5ccd896"
   }
  ],
  "status": "running (GitHub Actions)"
