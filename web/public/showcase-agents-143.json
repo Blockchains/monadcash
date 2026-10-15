@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T01:06:56.629Z",
+ "updatedAt": "2026-10-15T01:17:04.780Z",
  "totals": {
-  "allowed": 313,
-  "blocked": 120,
+  "allowed": 316,
+  "blocked": 122,
   "ownerTxs": 31,
   "skipped": 11
  },
@@ -75,7 +75,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 109
+   "blocked": 110
   },
   {
    "id": "dca1",
@@ -102,7 +102,7 @@
    "agent": "0x8fdaB828628F211BC10E074Fa550430cf5048462",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 16,
+   "allowed": 17,
    "blocked": 0
   },
   {
@@ -114,7 +114,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 16,
+   "allowed": 17,
    "blocked": 0
   },
   {
@@ -126,7 +126,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 16,
+   "allowed": 17,
    "blocked": 0
   },
   {
@@ -139,10 +139,52 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 5,
-   "blocked": 11
+   "blocked": 12
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T01:17:04.779Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0x3064e84f8ada8d542c30ba1d46fc453a10fd5c883e567b3a9689633bd11b3a81"
+  },
+  {
+   "ts": "2026-10-15T01:17:03.591Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0025 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0x9905b22c270890298a81e599f9ed4a54fb90561e3c680f29777114d60e672d8e"
+  },
+  {
+   "ts": "2026-10-15T01:17:02.168Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.32 < target 1)",
+   "status": "allowed",
+   "tx": "0x6af84875ff6e3987028252e5928fa6f0c766856dcac17debe93112630c5fa164"
+  },
+  {
+   "ts": "2026-10-15T01:17:00.567Z",
+   "persona": "mm",
+   "actor": "agent",
+   "label": "Market maker sells 0.0048 MON → USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0x17eb7dd50ab2cf750381fb8aa1d49356896debe7f56ffcf1d7212e8ba4f2fe39"
+  },
+  {
+   "ts": "2026-10-15T01:16:59.233Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0xb832d606a71b48766787d35a233c3eddb92f66468a2e4d1fafc9358fe3d33d87"
+  },
   {
    "ts": "2026-10-15T01:06:56.628Z",
    "persona": "tester",
@@ -599,47 +641,6 @@
    "label": "Policy tester unwraps 0.05 WMON → MON (allowed)",
    "status": "allowed",
    "tx": "0xd1e7281cb9984ad9fe11ca9f4c4b40882eb373163249e1bc548dd57a6be55c30"
-  },
-  {
-   "ts": "2026-10-14T23:25:22.143Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0035 MON to the DCA bot agent",
-   "status": "allowed",
-   "tx": "0x6ee58eda360997a63c97f2aed035c9529d132b14ee54ee2b4b153bb69d66ebad"
-  },
-  {
-   "ts": "2026-10-14T23:25:20.413Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.1 < target 1)",
-   "status": "allowed",
-   "tx": "0x2e9a5a6343202410b03e512691dc763b8779a4923c95fdc0ef2112edd1072f5f"
-  },
-  {
-   "ts": "2026-10-14T23:25:19.279Z",
-   "persona": "mm",
-   "actor": "agent",
-   "label": "Market maker buys 0.0066055651 MON with 0.00016 USDC on Kuru (order book)",
-   "status": "allowed",
-   "tx": "0x4b238c52df7501e5c5e48341c78b086d698c5130bd5f57a49b0588b6ca786a19"
-  },
-  {
-   "ts": "2026-10-14T23:25:18.038Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
-   "tx": "0x94626509779d18de705f4add5f00500795fa92fe1325bb71716ffa796642a244"
-  },
-  {
-   "ts": "2026-10-14T23:25:16.996Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker swaps 0.0133 MON → USDC on Kuru (order book)",
-   "status": "allowed",
-   "tx": "0x3c25d3878fd89ebdf1e24e1bdf424e50c8e655491fa40890e415010f1de4a070"
   }
  ],
  "status": "running (GitHub Actions)"
