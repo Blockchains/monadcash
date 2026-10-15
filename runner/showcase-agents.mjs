@@ -61,22 +61,22 @@ const rule = k => ({ target: R[k][0], selector: R[k][1], recipientWord: R[k][2] 
 
 // `attack` personas deliberately send out-of-policy actions and broadcast the reverts; everyone else only sends what passes.
 const PERSONAS = [
-  { id: 'dca', name: 'DCA bot', emoji: '📈', about: 'Buys a little USDC with MON on Uniswap and PancakeSwap every round, then periodically swaps it back to MON and unwraps.',
+  { id: 'dca', name: 'DCA bot', emoji: '📈', about: 'Buys the largest USDC clip the vault will allow on Uniswap and PancakeSwap every round, then periodically swaps it back to MON and unwraps.',
     cap: '0.03', budget: '5', deposit: '0.9', gas: '1.0', rules: ['uni', 'pcs', 'unwrap'], caps: [[T.USDC, 5_000_000n], [T.WMON, parseEther('1')]], payees: false },
-  { id: 'staker', name: 'Staker', emoji: '🥩', about: 'Stakes tiny amounts of MON into Kintsu (sMON), aPriori (aprMON) and Magma (gMON), wraps/unwraps WMON, and swaps a little on Kuru.',
+  { id: 'staker', name: 'Staker', emoji: '🥩', about: 'Stakes the largest MON clip the vault will allow into Kintsu (sMON), aPriori (aprMON) and Magma (gMON), wraps and unwraps WMON, and swaps that same size on Kuru.',
     cap: '0.03', budget: '5', deposit: '0.9', gas: '1.0', rules: ['kintsu', 'apriori', 'magma', 'wrap', 'unwrap', 'kuru'], caps: [], payees: false },
-  { id: 'payroll', name: 'Payroll', emoji: '💸', about: 'Pays small MON salaries to an allowlist of team-owned addresses.',
+  { id: 'payroll', name: 'Payroll', emoji: '💸', about: 'Pays the largest MON salary the vault will allow to an allowlist of team-owned addresses.',
     cap: '0.03', budget: '5', deposit: '0.9', gas: '0.8', rules: [], caps: [], payees: true },
   { id: 'rogue', name: 'Rogue agent', emoji: '😈', about: 'Deliberately tries out-of-policy actions (over cap, strangers, draining tokens, paying itself, owner-only calls). Every attempt is sent on-chain and reverted by the vault.',
     cap: '0.01', budget: '0.02', deposit: '0.05', gas: '0.8', rules: ['uni'], caps: [], payees: true, attack: true },
   ...(E.LEGACY_DCA === '0' ? [] : [{ id: 'dca1', legacy: true, name: 'DCA bot (v1 vault)', emoji: '📉', about: 'The original DCA bot on the first (legacy) factory: same strategy, no owner top-ups.',
     cap: '0.03', budget: '1', deposit: '0', gas: '0', rules: ['uni', 'pcs', 'unwrap'], caps: [], payees: false }]),
   // ---- new personas (vaults + AGENT_KEY_<ID> secrets are created by the owner; until then they are skipped with a logged reason) ----
-  { id: 'mm', name: 'Kuru market maker', emoji: '📗', about: 'Two-sided flow on Kuru’s on-chain order book: sells a clip of MON for USDC, then buys MON back with the USDC (approval capped by the vault), round after round.',
+  { id: 'mm', name: 'Kuru market maker', emoji: '📗', about: 'Two-sided flow on Kuru’s on-chain order book: sells the largest MON clip the vault will allow for USDC, then buys MON back with the USDC (approval capped by the vault), round after round.',
     cap: '0.03', budget: '5', deposit: '0.9', gas: '1.0', rules: ['kuru', 'uni', 'unwrap'], caps: [[T.USDC, 5_000_000n], [T.WMON, parseEther('1')]], payees: false },
-  { id: 'rebalancer', name: 'Wrap/unwrap rebalancer', emoji: '⚖️', about: 'Keeps the vault near a 50/50 split of MON and WMON: wraps when WMON is short, unwraps when it is long. Only WMON.deposit/withdraw are allowlisted.',
+  { id: 'rebalancer', name: 'Wrap/unwrap rebalancer', emoji: '⚖️', about: 'Keeps the vault near a 50/50 split of MON and WMON, moving the whole gap in one wrap or unwrap up to the per-action cap. Only WMON.deposit/withdraw are allowlisted.',
     cap: '0.03', budget: '5', deposit: '0.9', gas: '0.8', rules: ['wrap', 'unwrap'], caps: [], payees: false },
-  { id: 'tipper', name: 'Tipper', emoji: '🪙', about: 'Streams micro-tips (0.001–0.004 MON) to an allowlist of team addresses. A tiny per-action cap makes anything bigger impossible.',
+  { id: 'tipper', name: 'Tipper', emoji: '🪙', about: 'Pays the full per-action cap to an allowlist of team addresses. The cap is the largest tip the vault will accept.',
     cap: '0.005', budget: '2', deposit: '0.5', gas: '0.6', rules: [], caps: [], payees: true },
   { id: 'tester', name: 'Policy tester', emoji: '🧪', about: 'Probes the exact edges of its policy: wraps exactly the cap (allowed), then cap + 1 wei (blocked), replays a used requestId (blocked), swaps on Uniswap with the output sent to itself (blocked), pays a stranger (blocked). Blocked attempts are broadcast so the revert is public.',
     cap: '0.01', budget: '2', deposit: '0.5', gas: '0.8', rules: ['wrap', 'unwrap', 'uni'], caps: [[T.WMON, parseEther('1')]], payees: true, attack: true },
@@ -144,8 +144,9 @@ const tbal = (tok, who) => pc.readContract({ address: tok, abi: erc20, functionN
 const quote = async (router, tin, tout, amt) => { const [q, fee] = QUOTER[router]; const r = await pc.simulateContract({ address: q, abi: quoterAbi, functionName: 'quoteExactInputSingle', args: [{ tokenIn: tin, tokenOut: tout, amountIn: amt, fee, sqrtPriceLimitX96: 0n }] }); return [r.result[0], fee]; };
 const swapCall = async (vault, router, tin, tout, amt, label) => { const [q, fee] = await quote(router, tin, tout, amt); const minOut = (q * 97n) / 100n;
   return { label, action: { kind: 'call', target: router, value: tin === T.WMON ? amt : 0n, data: encodeFunctionData({ abi: routerAbi, functionName: 'exactInputSingle', args: [{ tokenIn: tin, tokenOut: tout, fee, recipient: vault, amountIn: amt, amountOutMinimum: minOut, sqrtPriceLimitX96: 0n }] }), opts: tin === T.WMON ? { outToken: tout, minOut } : { approveToken: tin, approveAmount: amt, outToken: tout, minOut } } }; };
-const rnd = (lo, hi) => parseEther((lo + Math.random() * (hi - lo)).toFixed(4));
 const minBig = (a, b) => (a < b ? a : b);
+/** Largest MON execute/executeCall will accept: per-action cap, vault balance, and budget still left. */
+const spendSize = (cap, bal, budget, spent) => { const rem = budget > spent ? budget - spent : 0n; return minBig(minBig(cap, bal), rem); };
 const wrapCall = (amt, label) => ({ label, action: { kind: 'call', target: T.WMON, value: amt, data: encodeFunctionData({ abi: wmonAbi, functionName: 'deposit' }), opts: { outToken: T.WMON, minOut: amt } } });
 const unwrapCall = (w, label) => ({ label, action: { kind: 'call', target: T.WMON, value: 0n, data: encodeFunctionData({ abi: wmonAbi, functionName: 'withdraw', args: [w] }), opts: { minOut: w } } });
 /** Kuru MON → USDC (sell base for quote). Quoted with a plain simulation from the vault. */
@@ -167,31 +168,36 @@ async function kuruBuy(vault, agent, usdc, label) {
 async function allowedPayees(v, candidates) { const out = []; for (const c of candidates) if (c && await vread(v, 'allowedRecipient', [c]).catch(() => false)) out.push(c); return out; }
 
 async function nextAction(p, round) {
-  const v = st.agents[p.id].vault; const me = agentAddr(p.id); const [cap0, bal] = await Promise.all([vread(v, 'perPaymentCap'), pc.getBalance({ address: v })]);
-  const cap = minBig(cap0, bal); // never ask for more MON than the vault holds: a precheck-blocked round is a wasted round
-  const needMon = () => { if (cap === 0n) throw Object.assign(new Error('vault holds no MON for a value action (owner must deposit)'), { skip: true }); };
+  const v = st.agents[p.id].vault; const me = agentAddr(p.id);
+  const [cap0, bal, budget, spent] = await Promise.all([vread(v, 'perPaymentCap'), pc.getBalance({ address: v }), vread(v, 'budget'), vread(v, 'totalSpent')]);
+  const maxAmt = spendSize(cap0, bal, budget, spent); // the largest value the vault will still accept, so the built tx simulates and is broadcast
+  const needMon = () => {
+    if (bal === 0n) throw Object.assign(new Error('vault holds no MON for a value action (owner must deposit)'), { skip: true });
+    if (maxAmt === 0n) throw Object.assign(new Error(`budget exhausted (${formatEther(spent)}/${formatEther(budget)} MON spent; owner must setBudget)`), { skip: true });
+  };
   if (p.id.startsWith('dca')) {
     const step = round % 5;
     if (step === 4) { const u = await tbal(T.USDC, v); if (u > 1000n) return swapCall(v, round % 10 === 4 ? UNI : PCS, T.USDC, T.WMON, u, `DCA bot takes profit: swaps ${Number(u) / 1e6} USDC → WMON`); }
     const w = await tbal(T.WMON, v); if (w > 0n) return unwrapCall(w, `DCA bot unwraps ${formatEther(w)} WMON → MON`);
-    needMon(); const amt = minBig(rnd(0.01, 0.02), cap); const r = step % 2 ? PCS : UNI;
+    needMon(); const amt = maxAmt; const r = step % 2 ? PCS : UNI;
     return swapCall(v, r, T.WMON, T.USDC, amt, `DCA bot buys USDC with ${formatEther(amt)} MON on ${r === UNI ? 'Uniswap v3' : 'PancakeSwap v3'}`);
   }
   if (p.id === 'staker') {
-    const amt = minBig(rnd(0.005, 0.012), cap); const s = round % 6;
+    const s = round % 6;
     if (s !== 4) needMon(); // step 4 (unwrap) needs no MON
-    if (s === 5) { const a3 = minBig(rnd(0.008, 0.015), cap); return kuruSell(v, a3, `Staker swaps ${formatEther(a3)} MON → USDC on Kuru (order book)`); }
+    const amt = maxAmt;
+    if (s === 5) return kuruSell(v, amt, `Staker swaps ${formatEther(amt)} MON → USDC on Kuru (order book)`);
     if (s === 0) return { label: `Staker stakes ${formatEther(amt)} MON → sMON (Kintsu)`, action: { kind: 'call', target: T.sMON, value: amt, data: encodeFunctionData({ abi: kintsuAbi, functionName: 'deposit', args: [1n, v] }), opts: { outToken: T.sMON, minOut: 1n } } };
     if (s === 1) return { label: `Staker stakes ${formatEther(amt)} MON → aprMON (aPriori)`, action: { kind: 'call', target: T.aprMON, value: amt, data: encodeFunctionData({ abi: aprAbi, functionName: 'deposit', args: [amt, v] }), opts: { outToken: T.aprMON, minOut: 1n } } };
     if (s === 2) return { label: `Staker stakes ${formatEther(amt)} MON → gMON (Magma)`, action: { kind: 'call', target: T.gMON, value: amt, data: encodeFunctionData({ abi: magmaAbi, functionName: 'depositMON', args: [v, 0n] }), opts: { outToken: T.gMON, minOut: 1n } } };
-    if (s === 3) { const a2 = minBig(rnd(0.01, 0.025), cap); return wrapCall(a2, `Staker wraps ${formatEther(a2)} MON → WMON`); }
+    if (s === 3) return wrapCall(amt, `Staker wraps ${formatEther(amt)} MON → WMON`);
     const w = await tbal(T.WMON, v); if (w > 0n) return unwrapCall(w, `Staker unwraps ${formatEther(w)} WMON → MON`);
     return nextAction(p, round + 1);
   }
   if (p.id === 'payroll' || p.id === 'tipper') {
     const candidates = [owner.address, ...PERSONAS.filter(x => x.id !== p.id).map(x => agentAddr(x.id))];
     const payees = await allowedPayees(v, candidates); if (!payees.length) throw Object.assign(new Error('no allowlisted payee among the team addresses (owner must setRecipient)'), { skip: true });
-    needMon(); const to = payees[round % payees.length]; const amt = p.id === 'tipper' ? minBig(rnd(0.001, 0.004), cap) : minBig(rnd(0.005, 0.025), cap);
+    needMon(); const to = payees[round % payees.length]; const amt = maxAmt;
     const who = to === owner.address ? 'the team treasury' : `the ${PERSONAS.find(x => agentAddr(x.id) === to)?.name ?? 'team'} agent`;
     return { label: `${p.name} ${p.id === 'tipper' ? 'tips' : 'pays'} ${formatEther(amt)} MON to ${who}`, action: { kind: 'pay', recipient: to, amount: amt } };
   }
@@ -202,13 +208,17 @@ async function nextAction(p, round) {
       catch (e) { log(p.name, 'Kuru buy side unavailable, falling back to Uniswap:', errMsg(e)); const w = await tbal(T.WMON, v); if (w > 0n) return unwrapCall(w, `Market maker unwraps ${formatEther(w)} WMON → MON`); return swapCall(v, UNI, T.USDC, T.WMON, u, `Market maker swaps ${Number(u) / 1e6} USDC → WMON on Uniswap v3 (Kuru buy side unavailable)`); }
     }
     const w = await tbal(T.WMON, v); if (w > 0n) return unwrapCall(w, `Market maker unwraps ${formatEther(w)} WMON → MON`);
-    needMon(); const amt = minBig(rnd(0.004, 0.009), cap); return kuruSell(v, amt, `Market maker sells ${formatEther(amt)} MON → USDC on Kuru (order book)`);
+    needMon(); return kuruSell(v, maxAmt, `Market maker sells ${formatEther(maxAmt)} MON → USDC on Kuru (order book)`);
   }
   if (p.id === 'rebalancer') {
-    const [b, w] = await Promise.all([pc.getBalance({ address: v }), tbal(T.WMON, v)]); const target = (b + w) / 2n;
-    const clamp = x => minBig(x < parseEther('0.002') ? parseEther('0.002') : x > parseEther('0.02') ? parseEther('0.02') : x, cap);
-    if (w < target) { const amt = clamp(target - w); return wrapCall(amt, `Rebalancer wraps ${formatEther(amt)} MON → WMON (WMON ${formatEther(w)} < target ${formatEther(target)})`); }
-    const amt = minBig(clamp(w - target), w); if (amt === 0n) throw Object.assign(new Error('nothing to rebalance (vault holds no MON or WMON)'), { skip: true });
+    const w = await tbal(T.WMON, v); const target = (bal + w) / 2n;
+    if (w < target) {
+      needMon(); const amt = minBig(target - w, maxAmt);
+      if (amt === 0n) throw Object.assign(new Error('nothing to rebalance (vault holds no MON the policy can wrap)'), { skip: true });
+      return wrapCall(amt, `Rebalancer wraps ${formatEther(amt)} MON → WMON (WMON ${formatEther(w)} < target ${formatEther(target)})`);
+    }
+    if (w === target) throw Object.assign(new Error('nothing to rebalance (vault is already 50/50)'), { skip: true });
+    const amt = minBig(w - target, w); if (amt === 0n) throw Object.assign(new Error('nothing to rebalance (vault holds no WMON)'), { skip: true });
     return unwrapCall(amt, `Rebalancer unwraps ${formatEther(amt)} WMON → MON (WMON ${formatEther(w)} > target ${formatEther(target)})`);
   }
   if (p.id === 'tester') {
@@ -317,11 +327,12 @@ async function preflight(p, MIN_GAS) {
   if (paused) return 'vault is paused (owner must setPaused(false); CI holds no owner key)';
   if (gas < MIN_GAS) return `agent gas ${formatEther(gas)} MON < ${formatEther(MIN_GAS)} MON (owner must top up the agent wallet)`;
   if (p.attack) return null; // blocked attempts need gas only
-  const MIN_VAULT = parseEther('0.005'); const rem = budget > spent ? budget - spent : 0n;
+  const rem = budget > spent ? budget - spent : 0n;
   const w = ['rebalancer', 'tester', 'mm', 'dca', 'dca1', 'staker'].includes(p.id) ? await tbal(T.WMON, a.vault).catch(() => 0n) : 0n;
   const u = ['mm', 'dca', 'dca1'].includes(p.id) ? await tbal(T.USDC, a.vault).catch(() => 0n) : 0n;
-  if (bal < MIN_VAULT && w === 0n && u < 100n) return `vault balance ${formatEther(bal)} MON is too low (owner must deposit)`;
-  if (rem < parseEther('0.001') && w === 0n && u < 100n) return `budget exhausted (${formatEther(spent)}/${formatEther(budget)} MON spent; owner must setBudget)`;
+  // A positive remainder is still a real transaction (a 0.0005 MON swap is included). Skip only when nothing can move.
+  if (bal === 0n && w === 0n && u < 100n) return `vault balance ${formatEther(bal)} MON is too low (owner must deposit)`;
+  if (rem === 0n && w === 0n && u < 100n) return `budget exhausted (${formatEther(spent)}/${formatEther(budget)} MON spent; owner must setBudget)`;
   return null;
 }
 /** Minimum spacing between rounds, enforced by the runner itself so the cadence holds whoever calls it (and so a

@@ -7,7 +7,7 @@ import { Btn, Card, Pill, Sheet, Slider, Switch, useToasts } from './ui';
 import PolicyDashboard from './Dashboard';
 import ShowcaseAgents from './ShowcaseAgents';
 import { discoverWallets, deepLinks, INSTALL, isMobile, haptic, type Discovered, type Eip1193 } from '@/lib/wallets';
-import { addLocal, APP_VAULT_MON, buildAction, buildCreate, buildStarter, chainOf, decodeInput, erc20, factoryAbi, fetchTeamSnapshot, loadHistory, mon, plain, pubOf, quoteAll, readVault, reasonOf, resolveNet, sendFault, services, short, STARTER, TEAM_LABEL, vaultAbi, vcall, type Quote, type Ev, type Net, type Policy, type TeamAgent, type TeamSnapshot, type VaultState } from '@/lib/vault';
+import { addLocal, APP_VAULT_MON, buildAction, buildCreate, buildStarter, chainOf, decodeInput, erc20, executableMon, factoryAbi, fetchTeamSnapshot, loadHistory, mon, plain, pubOf, quoteAll, readVault, reasonOf, resolveNet, sendFault, services, short, STARTER, TEAM_LABEL, vaultAbi, vcall, type Quote, type Ev, type Net, type Policy, type TeamAgent, type TeamSnapshot, type VaultState } from '@/lib/vault';
 import { TOKENS, type TokenSym } from '@/lib/services';
 import { buildSuper, matchSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
 import VaultReport from './VaultReport';
@@ -547,7 +547,8 @@ const signerOf = (s: VaultState, account: Address | null): 'key' | 'wallet' | nu
 function ActionSheet({ s, kind, onClose, runAgent, net, pub, account, ownerTx, readOnly }: { s: VaultState; kind: string | null; onClose: () => void; runAgent: any; net: Net; pub: PublicClient; account: Address | null; ownerTx?: any; readOnly?: boolean }) {
   const a = ACTIONS.find(x => x.kind === kind); const [amt, setAmt] = useState(a?.amt ?? '0.01'); const [to, setTo] = useState(''); const [atk, setAtk] = useState<string>('x-cap');
   const [res, setRes] = useState<{ ok: boolean; msg: React.ReactNode } | null>(null); const [busy, setBusy] = useState(false); const [step, setStep] = useState('');
-  useEffect(() => { setRes(null); setStep(''); setAmt(kind === 'unwrap' && s.toks.WMON ? formatEther(s.toks.WMON) : a?.amt ?? '0.01'); setTo(account ?? ''); }, [kind]); // eslint-disable-line
+  const maxWei = kind === 'unwrap' ? (s.toks.WMON ?? 0n) : executableMon(s);
+  useEffect(() => { setRes(null); setStep(''); if (kind && kind !== 'break') setAmt(formatEther(kind === 'unwrap' ? (s.toks.WMON ?? 0n) : executableMon(s))); setTo(account ?? ''); }, [kind]); // eslint-disable-line
   const live = signerOf(s, account) !== null && !readOnly;
   const [quotes, setQuotes] = useState<Quote[] | null>(null);
   useEffect(() => { // best-price swap: show the live quotes from all three venues before sending
@@ -573,7 +574,7 @@ function ActionSheet({ s, kind, onClose, runAgent, net, pub, account, ownerTx, r
       {kind === 'break' ? <div className="grid gap-2" data-testid="attacks">{ATTACKS.filter(([k]) => net.id === 143 || !['x-drain', 'x-self'].includes(k)).map(([k, l]) => <button key={k} data-testid={`atk-${k}`} onClick={() => setAtk(k)} className={`min-h-12 rounded-2xl border px-3 text-left text-sm ${atk === k ? 'border-red-400 bg-red-500/10' : 'border-white/10'}`}>{l}</button>)}<p className="text-xs text-zinc-400">Checked before anything is sent, so no gas is spent and nothing moves.</p></div>
         : <div className="grid gap-3">
           {kind === 'payto' && <label className="grid gap-1 text-sm text-zinc-300">Pay to (0x address)<input data-testid="payto" value={to} onChange={e => setTo(e.target.value)} placeholder="0x…" className="min-h-12 w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 font-mono text-sm outline-none focus:border-monad" /><span className="text-xs text-zinc-500">Must be an approved payee. If you own this vault and it isn’t yet, you’ll be asked to approve it first (1 extra signature).</span></label>}
-          <label className="grid gap-1 text-sm text-zinc-300">Amount ({kind === 'unwrap' ? 'WMON' : 'MON'})<input data-testid="amt" inputMode="decimal" value={amt} onChange={e => setAmt(e.target.value)} className="min-h-12 w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 font-mono text-base outline-none focus:border-monad" /></label>
+          <label className="grid gap-1 text-sm text-zinc-300"><span className="flex min-w-0 items-center justify-between gap-2"><span>Amount ({kind === 'unwrap' ? 'WMON' : 'MON'})</span><button type="button" data-testid="amt-max" onClick={() => setAmt(formatEther(maxWei))} className="shrink-0 rounded-full border border-white/15 px-2 py-1 text-[11px] text-violet-200">Max {mon(maxWei, 6)}</button></span><input data-testid="amt" inputMode="decimal" value={amt} onChange={e => setAmt(e.target.value)} className="min-h-12 w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 font-mono text-base outline-none focus:border-monad" /></label>
         </div>}
       {(kind === 'uniswap' || kind === 'pancake') && <p className="mt-2 text-xs text-zinc-400">Live quote from the official QuoterV2; minOut = quote − 3%. USDC comes back to the vault.</p>}
       {kind === 'kuru' && <p className="mt-2 text-xs text-zinc-400">Quoted on Kuru’s on-chain order book (MON-USDC market); minOut = quote − 3%. USDC comes back to the vault.</p>}
@@ -763,6 +764,16 @@ function Playbook({ s, template, pub, runAgent, canSign, reload }: { s: VaultSta
     if (!canSign) return; setBusy(true); setDone(false); setLines([]);
     const push = (ok: boolean, text: string, msg?: React.ReactNode) => setLines(l => [...l, { ok, text, msg }]);
     let stopped = false;
+    const fitMon = async (want: bigint) => {
+      const [bal, budget, spent, cap] = await Promise.all([
+        pub.getBalance({ address: s.v }),
+        pub.readContract({ address: s.v, abi: vaultAbi, functionName: 'budget' }) as Promise<bigint>,
+        pub.readContract({ address: s.v, abi: vaultAbi, functionName: 'totalSpent' }) as Promise<bigint>,
+        pub.readContract({ address: s.v, abi: vaultAbi, functionName: 'perPaymentCap' }) as Promise<bigint>,
+      ]);
+      const room = executableMon({ cap, budget, spent, bal });
+      return want < room ? want : room;
+    };
     const step = async (kind: string, amount: bigint, label: string, extra?: { to?: Address }) => {
       const r = await runAgent(s, kind, amount, extra ?? {});
       push(r.ok, label, r.ok ? undefined : r.msg); if (!r.ok) stopped = true;
@@ -776,21 +787,22 @@ function Playbook({ s, template, pub, runAgent, canSign, reload }: { s: VaultSta
           for (const raw of [s.owner, ...stored]) { if (!isAddress(raw)) continue; const a = getAddress(raw); if (allowed.some(x => x.toLowerCase() === a.toLowerCase())) continue; if (await pub.readContract({ address: s.v, abi: vaultAbi, functionName: 'allowedRecipient', args: [a] })) allowed.push(a); }
           if (!allowed.length) { push(false, 'No approved payees on this vault.'); stopped = true; break; }
           for (const to of allowed) {
-            const amt = parseEther(st.amount); const bal = await pub.getBalance({ address: s.v });
-            if (bal < amt) { push(false, `Stopped: vault holds ${mon(bal)}, and the next payment is ${st.amount} MON.`); stopped = true; break; }
-            await step('payto', amt, `Paid ${st.amount} MON to ${short(to)}`, { to }); if (stopped) break;
+            const want = parseEther(st.amount); const amt = await fitMon(want);
+            if (amt === 0n) { push(false, 'Stopped: nothing left inside the cap and budget for the next payment.'); stopped = true; break; }
+            await step('payto', amt, `Paid ${formatEther(amt)} MON to ${short(to)}`, { to }); if (stopped) break;
           }
           continue;
         }
-        let amount: bigint;
+        let amount: bigint; let label = st.label;
         if (st.amount === 'wmon-all') {
           amount = await pub.readContract({ address: TOKENS.WMON.address, abi: erc20, functionName: 'balanceOf', args: [s.v] }).catch(() => 0n) as bigint;
           if (amount === 0n) { push(true, 'No WMON to unwrap — skipped.'); continue; }
         } else {
-          amount = parseEther(st.amount); const bal = await pub.getBalance({ address: s.v });
-          if (bal < amount) { push(false, `Stopped: vault holds ${mon(bal)}, and “${st.label}” needs ${st.amount} MON. Deposit more, then run again.`); stopped = true; break; }
+          const want = parseEther(st.amount); amount = await fitMon(want);
+          if (amount === 0n) { push(false, `Stopped: nothing left inside the cap and budget for “${st.label}”.`); stopped = true; break; }
+          if (amount !== want) label = `${st.label} — sent ${formatEther(amount)} MON, the most this vault can move`;
         }
-        await step(st.kind, amount, st.label);
+        await step(st.kind, amount, label);
       }
       if (!stopped) { push(true, 'Playbook finished. Receipts stay in the vault until you withdraw them.'); setDone(true); }
     } catch (e) { push(false, sendFault(e).text); }

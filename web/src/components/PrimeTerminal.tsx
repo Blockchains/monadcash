@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { getAddress, isAddress, parseEther, type Address, type PublicClient, type WalletClient } from 'viem';
+import { formatEther, getAddress, isAddress, parseEther, type Address, type PublicClient, type WalletClient } from 'viem';
 import { AlertTriangle, CheckCircle2, Lock, Shield, Zap } from 'lucide-react';
 import { Btn, receiptClass } from './ui';
 import { haptic } from '@/lib/wallets';
@@ -203,7 +203,7 @@ export default function PrimeTerminal({ net, pub, account, wallet, bal, need, se
       </div>
 
       <div className="mt-4 grid grid-cols-1 items-end gap-3 md:grid-cols-2">
-        <label className="grid min-w-0 gap-1 text-xs text-zinc-400">Deposit (MON)
+        <label className="grid min-w-0 gap-1 text-xs text-zinc-400"><span className="flex min-w-0 items-center justify-between gap-2"><span>Deposit (MON)</span><button type="button" data-testid="prime-max" onClick={() => { const room = cap > nav ? cap - nav : 0n; const maxDep = bal != null && bal < room ? bal : room; setAmount(formatEther(maxDep)); setLine(null); }} className="shrink-0 rounded-full border border-white/15 px-2 py-1 text-[11px] text-violet-200">Max</button></span>
           <input data-testid="prime-amount" inputMode="decimal" value={amount} onChange={e => { setAmount(e.target.value); setLine(null); }} className="min-h-12 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 font-mono text-base text-white outline-none focus:border-monad" />
         </label>
         <div className="min-w-0">
