@@ -9,12 +9,12 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T07:26:05.702Z",
+ "updatedAt": "2026-10-15T07:36:10.257Z",
  "totals": {
-  "allowed": 404,
-  "blocked": 159,
+  "allowed": 407,
+  "blocked": 160,
   "ownerTxs": 31,
-  "skipped": 19
+  "skipped": 20
  },
  "agents": [
   {
@@ -26,12 +26,8 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 37,
-   "blocked": 0,
-   "lastSkip": {
-    "ts": "2026-10-14T23:45:37.022Z",
-    "reason": "agent gas 0.0442093 MON < 0.08 MON (owner must top up the agent wallet)"
-   }
+   "allowed": 38,
+   "blocked": 0
   },
   {
    "id": "staker",
@@ -59,7 +55,11 @@
    "perActionCapMON": "0.03",
    "pending": false,
    "allowed": 69,
-   "blocked": 0
+   "blocked": 0,
+   "lastSkip": {
+    "ts": "2026-10-15T07:36:07.610Z",
+    "reason": "agent gas 0.067414728 MON < 0.08 MON (owner must top up the agent wallet)"
+   }
   },
   {
    "id": "rogue",
@@ -71,11 +71,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 123,
-   "lastSkip": {
-    "ts": "2026-10-15T05:15:15.322Z",
-    "reason": "agent gas 0.07506 MON < 0.08 MON (owner must top up the agent wallet)"
-   }
+   "blocked": 124
   },
   {
    "id": "dca1",
@@ -134,7 +130,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 54,
+   "allowed": 55,
    "blocked": 0
   },
   {
@@ -146,11 +142,44 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 18,
+   "allowed": 19,
    "blocked": 36
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T07:36:10.256Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
+   "status": "allowed",
+   "tx": "0xe1a1cee3cdad4aa0017f515ade34ced132b67965471a2380c31ade236d1251ae"
+  },
+  {
+   "ts": "2026-10-15T07:36:09.338Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0031 MON to the DCA bot (v1 vault) agent",
+   "status": "allowed",
+   "tx": "0x0e2bcdc5f5a52c0a4f258a983569011d1d7a08f9d6a79fd5a07b26f9a669d8ac"
+  },
+  {
+   "ts": "2026-10-15T07:36:08.107Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0x87aef2ad4d6c5855052afd6e299058fbbd9ce79ba3d0f152b01e7e4f7f981676"
+  },
+  {
+   "ts": "2026-10-15T07:36:07.555Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.0147 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0xfcefa129d6ccffe60189436c69964b01611f54dd8d5c304d94f171fe3f11ea08"
+  },
   {
    "ts": "2026-10-15T07:26:05.700Z",
    "persona": "tester",
@@ -611,39 +640,6 @@
    "label": "Tipper tips 0.0011 MON to the DCA bot agent",
    "status": "allowed",
    "tx": "0xa7a709055ff6659102cdcfb47206f725b7334f6355731a997bee0c5eb33fbe7e"
-  },
-  {
-   "ts": "2026-10-15T04:24:58.050Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.7 < target 1)",
-   "status": "allowed",
-   "tx": "0x31a65d65d536fa769b014f789eef0e21408e3e985fbf7af966818e944d8fc541"
-  },
-  {
-   "ts": "2026-10-15T04:14:55.720Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
-   "tx": "0x0ec5b7a0d74e8c4172956d8c181ca4259e7f97b18b83be2ac894533f570e2a0b"
-  },
-  {
-   "ts": "2026-10-15T04:14:55.230Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0039 MON to the Staker agent",
-   "status": "allowed",
-   "tx": "0xd78ddb7efa9afe0e7e14f8f96bf8081feeb2eec2650210961f50de76a0376b29"
-  },
-  {
-   "ts": "2026-10-15T04:14:54.549Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.68 < target 1)",
-   "status": "allowed",
-   "tx": "0x20b70d204bddb70b5c72294a6d0fbedc91fd6cf2112a4e16c1d98fb85ec5a9fe"
   }
  ],
  "status": "running (GitHub Actions)"
