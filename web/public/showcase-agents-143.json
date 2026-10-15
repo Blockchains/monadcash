@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T06:55:54.289Z",
+ "updatedAt": "2026-10-15T07:05:58.477Z",
  "totals": {
-  "allowed": 398,
-  "blocked": 157,
+  "allowed": 400,
+  "blocked": 158,
   "ownerTxs": 31,
   "skipped": 18
  },
@@ -122,7 +122,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 51,
+   "allowed": 52,
    "blocked": 0
   },
   {
@@ -134,7 +134,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 51,
+   "allowed": 52,
    "blocked": 0
   },
   {
@@ -147,10 +147,35 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 17,
-   "blocked": 34
+   "blocked": 35
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T07:05:58.475Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
+   "tx": "0x79ca7aea8aeee2d4ec4edc54fbd4a04b5964c97bca2c4b9a51ab650d377cb0f4"
+  },
+  {
+   "ts": "2026-10-15T07:05:57.970Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0033 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0x3b5f96427841be10d66d2483319b1facb556913a0805e4dec8f909dc58c56908"
+  },
+  {
+   "ts": "2026-10-15T07:05:56.022Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.002 MON → WMON (WMON 0.998 < target 1)",
+   "status": "allowed",
+   "tx": "0x0611867eac94cdfcfb598c08a30d00689183b12627007e1b031fb74f48835a85"
+  },
   {
    "ts": "2026-10-15T06:55:54.287Z",
    "persona": "tester",
@@ -620,31 +645,6 @@
    "label": "Tipper tips 0.0017 MON to the Payroll agent",
    "status": "allowed",
    "tx": "0x76cde38623ff296a4106a06183c577f0610cd30d01b3917dc84723290def2121"
-  },
-  {
-   "ts": "2026-10-15T03:58:41.668Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.64 < target 1)",
-   "status": "allowed",
-   "tx": "0xa58ba0e3668a42062166d5fb7665c408ce42ce91ea34f661c5db9ddb9dae39f4"
-  },
-  {
-   "ts": "2026-10-15T03:48:38.812Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester wraps cap + 1 wei (0.050000000000000001 MON): expects PerPaymentCapExceeded",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
-   "tx": "0x811ab742e2c004d66e6c833fa64bea35d182685bbe5d42c25a48e2b949351903"
-  },
-  {
-   "ts": "2026-10-15T03:48:37.819Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0037 MON to the Staker agent",
-   "status": "allowed",
-   "tx": "0xbb5a1ab7a72b0feecdbb42473bfbdd88de6039ea291d8777a7ac387fcd46fea8"
   }
  ],
  "status": "running (GitHub Actions)"
