@@ -16,8 +16,8 @@ import { VaultAgent, agentVaultAbi, agentVaultFactoryAbi, ZERO_ADDRESS } from '.
 
 const HOME = os.homedir(); const E = process.env;
 const RPC = E.RPC || 'https://rpc.monad.xyz'; const CID = Number(E.CHAIN_ID || 143);
-const FACTORY = E.FACTORY || '0x0342d29055d77ba155c50233f550539E3029BA6a'; // v2 factory (1000 MON global cap)
-const LEGACY_FACTORIES = (E.LEGACY_FACTORIES || '0x8738B74778502ff3623A8319837A819d8dBdEeB7').split(',').filter(Boolean); // v1
+const FACTORY = E.FACTORY || '0x52727226aF0efe2bfe3E5c97e46B704613344a92'; // v3 (1000 MON vault cap, 100000 MON global). New creates only.
+const LEGACY_FACTORIES = (E.LEGACY_FACTORIES || '0x0342d29055d77ba155c50233f550539E3029BA6a,0x8738B74778502ff3623A8319837A819d8dBdEeB7').split(',').filter(Boolean); // v2, then v1
 const STOP_AT = parseEther(E.STOP_AT || '1000'); const RESERVE = parseEther(E.OWNER_RESERVE || '5'); // never let the deployer drop below this
 const USER_HEADROOM = parseEther(E.USER_HEADROOM || '1'); // alpha global deposit cap kept free for real users
 const HOURS = Number(E.HOURS || 4); const INTERVAL = Number(E.INTERVAL_S || 240) * 1000;
@@ -270,7 +270,7 @@ function publish(extra = {}) {
   if (extra.used != null) { st.lastUsed = formatEther(extra.used); save(); }
   if (DRY_RUN) return out;
   fs.writeFileSync(PUB, JSON.stringify(out, null, 1));
-  if (!AGENTS_ONLY) fs.writeFileSync(CFG_FILE, JSON.stringify({ note: 'Public config for the GitHub Actions showcase runner (no keys). Keys live only in encrypted Actions secrets AGENT_KEY_<ID>. The runner verifies on-chain that each key is the executor of its vault and otherwise looks the vault up by executor across the v2 and legacy factories.', chainId: CID, factory: FACTORY, legacyFactories: LEGACY_FACTORIES, owner: owner.address, startedAt: st.startedAt, agents: PERSONAS.map(p => ({ id: p.id, name: p.name, vault: st.agents[p.id].vault, agent: acct(p.id).address, secret: `AGENT_KEY_${p.id.toUpperCase()}` })) }, null, 1));
+  if (!AGENTS_ONLY) fs.writeFileSync(CFG_FILE, JSON.stringify({ note: 'Public config for the GitHub Actions showcase runner (no keys). Keys live only in encrypted Actions secrets AGENT_KEY_<ID>. The runner verifies on-chain that each key is the executor of its vault and otherwise looks the vault up by executor across the v3 factory and the v2 and v1 factories.', chainId: CID, factory: FACTORY, legacyFactories: LEGACY_FACTORIES, owner: owner.address, startedAt: st.startedAt, agents: PERSONAS.map(p => ({ id: p.id, name: p.name, vault: st.agents[p.id].vault, agent: acct(p.id).address, secret: `AGENT_KEY_${p.id.toUpperCase()}` })) }, null, 1));
   return out;
 }
 
@@ -290,7 +290,7 @@ async function recover() {
 }
 
 // ---- GitHub Actions mode helpers ----
-/** Find the owner's vault (v2 first, then legacy factories) whose executor is `agent`. */
+/** Find the owner's vault (v3, then v2, then v1) whose executor is `agent`. */
 async function vaultByExecutor(agent) {
   for (const f of [FACTORY, ...LEGACY_FACTORIES]) {
     const vs = await pc.readContract({ address: f, abi: agentVaultFactoryAbi, functionName: 'vaultsOf', args: [owner.address] }).catch(() => []);

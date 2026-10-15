@@ -53,7 +53,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   const [amount, setAmount] = useState('0.05');
   const [topUp, setTopUp] = useState('0.02');
   const [vault, setVault] = useState<Address | null>(null);
-  const [snap, setSnap] = useState<{ pool: bigint; shares: bigint; yours: bigint } | null>(null);
+  const [snap, setSnap] = useState<{ pool: bigint; shares: bigint; yours: bigint; cap: bigint } | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -85,12 +85,13 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
       if (!on) return;
       if (!code || code === '0x') { if (key) localStorage.removeItem(key); setVault(null); return; }
       const who = account ?? '0x0000000000000000000000000000000000000000';
-      const [pool, shares, yours] = await Promise.all([
+      const [pool, shares, yours, cap] = await Promise.all([
         pub.getBalance({ address: vault }),
         pub.readContract({ address: vault, abi: spreadAbi, functionName: 'balanceOf', args: [who] }),
         pub.readContract({ address: vault, abi: spreadAbi, functionName: 'assetsOf', args: [who] }),
-      ]) as [bigint, bigint, bigint];
-      if (on) setSnap({ pool, shares, yours });
+        pub.readContract({ address: vault, abi: spreadAbi, functionName: 'vaultCap' }),
+      ]) as [bigint, bigint, bigint, bigint];
+      if (on) setSnap({ pool, shares, yours, cap });
     })().catch(() => { if (on) setSnap(null); });
     return () => { on = false; };
   }, [vault, pub, account, block, key]);
@@ -271,7 +272,8 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     try { wei = parseEther(topUp || '0'); } catch { toast('Use a MON amount such as 0.02.', 'bad'); return; }
     if (wei <= 0n) { toast('The amount needs to be more than 0 MON.', 'bad'); return; }
     const pool = snap?.pool ?? 0n;
-    if (pool + wei > SPREAD_CAP) { toast('That deposit would pass the 1 MON cap.', 'bad'); return; }
+    const cap = snap?.cap ?? SPREAD_CAP;
+    if (pool + wei > cap) { toast(`That deposit would pass the ${mon(cap)} cap.`, 'bad'); return; }
     if (bal != null && wei > bal) { toast('Your wallet does not hold this deposit.', 'bad'); return; }
     try { if (!(await need())) return; } catch (e) { fail(e); return; }
     setBusy(true); setLine(null);
@@ -343,7 +345,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
       <div className="mt-3 flex min-w-0 flex-wrap gap-2 text-[11px] text-zinc-400">
         <span className="rounded-full bg-black/30 px-2 py-1">Pool {mon(snap?.pool ?? 0n)}</span>
         <span className="rounded-full bg-black/30 px-2 py-1">Yours {mon(snap?.yours ?? 0n)}</span>
-        <span className="rounded-full bg-black/30 px-2 py-1">Cap 1 MON</span>
+        <span className="rounded-full bg-black/30 px-2 py-1">Cap {mon(snap?.cap ?? SPREAD_CAP, 2)}</span>
         {vault && <span className="max-w-full break-all rounded-full bg-black/30 px-2 py-1 font-mono">{short(vault)}</span>}
         {vault && account && <span data-testid="spread-bounty" title="Keeper bounty paid to this wallet by this pool over the last 100 blocks." className="rounded-full bg-black/30 px-2 py-1">Bounty {bounty ? mon(bounty.paid) : bountyError ? 'unavailable' : '…'}</span>}
       </div>
@@ -364,10 +366,10 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
 
       <Switch testid="spread-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One try per block. A rejection or a still-pending transaction turns it off." />
 
-      {vault && snap && snap.pool < SPREAD_CAP && (
+      {vault && snap && snap.pool < snap.cap && (
         <div className="mt-3 grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
           <label className="grid min-w-0 gap-1 text-xs text-zinc-400">
-            <span className="flex min-w-0 justify-between gap-2"><span>Add MON</span><span className="shrink-0 text-zinc-500">room {mon(SPREAD_CAP - snap.pool)}</span></span>
+            <span className="flex min-w-0 justify-between gap-2"><span>Add MON</span><span className="shrink-0 text-zinc-500">room {mon(snap.cap - snap.pool)}</span></span>
             <input data-testid="spread-topup" inputMode="decimal" value={topUp} onChange={e => { setTopUp(e.target.value); setLine(null); }} className="min-h-12 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 font-mono text-base text-white outline-none focus:border-monad" />
           </label>
           <Btn kind="ghost" data-testid="spread-deposit" disabled={busy} onClick={() => void addMon()} className="h-12 w-full sm:w-auto">Add to pool</Btn>

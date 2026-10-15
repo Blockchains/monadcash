@@ -6,7 +6,7 @@ import { Btn, receiptClass } from './ui';
 import { haptic } from '@/lib/wallets';
 import { addLocal, factoryAbi, mon, quoteAll, sendFault, short, type Net, type VaultState } from '@/lib/vault';
 import { buildSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
-import { pricedGas } from '@/lib/fastPath';
+import { GAS } from '@/lib/fastPath';
 
 type RunAgent = (s: VaultState, kind: string, amount: bigint) => Promise<{ ok: boolean; msg: React.ReactNode; detail: string }>;
 
@@ -117,8 +117,7 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
       } catch { /* older factory */ }
       const c = buildSuper(preset, account, [], Number(formatEther(dep)));
       await pub.call({ account, to: net.factory, data: c.data, value: c.value });
-      const gas = await pricedGas(pub, account, { to: net.factory, data: c.data, value: c.value });
-      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas });
+      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas: GAS.createVault });
       addLocal(net, { label: `${preset.name} created${dep > 0n ? ` + ${formatEther(dep)} MON deposited` : ''} (1 tx)`, kind: 'owner', tx: rc.transactionHash, from: account });
       const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [account] }) as Address[];
       const v = list[list.length - 1];
@@ -180,7 +179,7 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
           <div className="grid max-h-80 gap-2 overflow-y-auto">
             <button type="button" data-testid="vault-new" onClick={() => pickVault('new')} className={`min-w-0 rounded-2xl border border-dashed p-3 text-left transition active:scale-[0.99] ${vaultId === 'new' ? 'border-monad bg-monad/10' : 'border-white/15 bg-white/[0.02]'}`}>
               <div className="font-medium text-zinc-50">New {preset.name}</div>
-              <p className="mt-1 break-words text-xs text-zinc-400">Create and deposit {preset.deposit} MON in one transaction. Your wallet is the agent.</p>
+              <p className="mt-1 break-words text-xs text-zinc-400">Create and deposit {preset.deposit} MON in one transaction. Your wallet is the agent. Creation uses a fixed 8,000,000 gas limit, which Monad charges in full (about 0.8 MON at 100 gwei).</p>
             </button>
             {!account && <p className="text-xs text-zinc-500">Connect to see vaults you already own.</p>}
             {account && !vaults && <p className="text-xs text-zinc-500">Loading your vaults…</p>}

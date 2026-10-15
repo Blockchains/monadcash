@@ -9,7 +9,7 @@ export const ZERO = '0x0000000000000000000000000000000000000000' as Address;
 
 export type Net = { id: 143 | 10143; key: 'mainnet' | 'testnet'; name: string; hex: Hex; rpc: string; exp: string; factory: Address; legacy?: Address[]; faucet?: string; publicRpc: string; rpcs?: string[] };
 export const NETS: Record<'mainnet' | 'testnet', Net> = {
-  mainnet: { id: 143, key: 'mainnet', name: 'Mainnet', hex: '0x8f', rpc: 'https://rpc.monad.xyz', publicRpc: 'https://rpc.monad.xyz', exp: 'https://monadvision.com', factory: '0x0342d29055d77ba155c50233f550539E3029BA6a', legacy: ['0x8738B74778502ff3623A8319837A819d8dBdEeB7'], rpcs: ['https://rpc.monad.xyz', 'https://rpc1.monad.xyz', 'https://rpc3.monad.xyz', 'https://rpc-mainnet.monadinfra.com', 'https://rpc2.monad.xyz'] },
+  mainnet: { id: 143, key: 'mainnet', name: 'Mainnet', hex: '0x8f', rpc: 'https://rpc.monad.xyz', publicRpc: 'https://rpc.monad.xyz', exp: 'https://monadvision.com', factory: '0x52727226aF0efe2bfe3E5c97e46B704613344a92', legacy: ['0x0342d29055d77ba155c50233f550539E3029BA6a', '0x8738B74778502ff3623A8319837A819d8dBdEeB7'], rpcs: ['https://rpc.monad.xyz', 'https://rpc1.monad.xyz', 'https://rpc3.monad.xyz', 'https://rpc-mainnet.monadinfra.com', 'https://rpc2.monad.xyz'] },
   testnet: { id: 10143, key: 'testnet', name: 'Testnet', hex: '0x279f', rpc: 'https://testnet-rpc.monad.xyz', publicRpc: 'https://testnet-rpc.monad.xyz', exp: 'https://testnet.monadexplorer.com', factory: '0x2E40E06C0B864caF87cCB00f31e6EE2d0689cDd7', faucet: 'https://faucet.monad.xyz', rpcs: ['https://testnet-rpc.monad.xyz'] },
 };
 /** ?net=mainnet|testnet, plus ?rpc= & ?factory= overrides used for local fork testing. */
@@ -93,10 +93,13 @@ export const parseRecorded = (s?: string): Reason => { const m = /^(\w+)\((.*)\)
 
 // ---------- policy -> createVault args ----------
 export type Policy = { budgetOn: boolean; budget: number; capOn: boolean; cap: number; deposit: number; gas: number; services: string[]; payees: Address[]; startPaused: boolean };
+/** Product ceiling for a vault opened in this app. v3's on-chain cap is 1000 MON; v1 and v2 vaults stay at 1 MON. */
+export const APP_VAULT_MON = 10;
 export function buildCreate(executor: Address, owner: Address, p: Policy) {
   const toWei = (x: number) => BigInt(Math.round(x * 1e6)) * 10n ** 12n;
-  const budget = p.budgetOn ? toWei(p.budget) : 10n ** 18n; // off = bounded only by the 1 MON vault cap
-  const cap = p.capOn ? toWei(Math.min(p.cap, p.budgetOn ? p.budget : 1)) : budget;
+  const ceiling = BigInt(APP_VAULT_MON) * 10n ** 18n;
+  const budget = p.budgetOn ? toWei(p.budget) : ceiling; // off = bounded only by the app's vault ceiling
+  const cap = p.capOn ? toWei(Math.min(p.cap, p.budgetOn ? p.budget : APP_VAULT_MON)) : budget;
   const rules: { target: Address; selector: Hex; recipientWord: number }[] = []; const capMap = new Map<Address, bigint>();
   for (const s of LIVE.filter(s => p.services.includes(s.id) && s.address)) {
     for (const r of s.rules ?? []) rules.push({ target: s.address!, selector: r.selector, recipientWord: r.recipientWord });
@@ -122,8 +125,8 @@ const svc = (id: string) => SERVICES.find(s => s.id === id)! as Service & { addr
 export const vcall = (v: Address, fn: string, args: readonly unknown[]) => ({ to: v, data: encodeFunctionData({ abi: vaultAbi, functionName: fn as any, args: args as any }) });
 
 /** One-click starter vault: your own wallet is the agent, so every action below can be sent from it for real.
- *  Tiny limits (0.01 MON per action, 0.1 MON total), owner as the only payee, wrap + Kuru + Uniswap + PancakeSwap on. */
-export const STARTER = { cap: 0.01, budget: 0.1, deposit: 0.05, services: ['pay', 'wmon', 'kuru', 'uniswap', 'pancake'] };
+ *  0.1 MON per action, 1 MON total, owner as the only payee, wrap + Kuru + Uniswap + PancakeSwap on. */
+export const STARTER = { cap: 0.1, budget: 1, deposit: 0.5, services: ['pay', 'wmon', 'kuru', 'uniswap', 'pancake'] };
 export const buildStarter = (owner: Address, deposit = STARTER.deposit) => buildCreate(owner, owner, { budgetOn: true, budget: STARTER.budget, capOn: true, cap: STARTER.cap, deposit, gas: 0, services: STARTER.services, payees: [], startPaused: false });
 
 /** Live MON → USDC quotes on all three venues (null = venue unavailable right now). */
@@ -212,10 +215,10 @@ export async function buildAction(pub: PublicClient, kind: string, vault: Addres
 }
 
 // ---------- reads ----------
-export type VaultState = { v: Address; owner: Address; executor: Address; cap: bigint; budget: bigint; spent: bigint; paused: boolean; bal: bigint; agentBal: bigint; toks: Partial<Record<TokenSym, bigint>>; key: string | null; rules: string[] };
+export type VaultState = { v: Address; owner: Address; executor: Address; cap: bigint; budget: bigint; spent: bigint; paused: boolean; bal: bigint; vaultCap: bigint; agentBal: bigint; toks: Partial<Record<TokenSym, bigint>>; key: string | null; rules: string[] };
 export async function readVault(pub: PublicClient, n: Net, v: Address): Promise<VaultState> {
   const rd = (f: string, args?: unknown[]) => pub.readContract({ address: v, abi: vaultAbi, functionName: f as any, args: args as any }) as Promise<any>;
-  const [owner, executor, cap, budget, spent, paused, bal] = await Promise.all([rd('owner'), rd('executor'), rd('perPaymentCap'), rd('budget'), rd('totalSpent'), rd('paused'), pub.getBalance({ address: v })]);
+  const [owner, executor, cap, budget, spent, paused, bal, vaultCap] = await Promise.all([rd('owner'), rd('executor'), rd('perPaymentCap'), rd('budget'), rd('totalSpent'), rd('paused'), pub.getBalance({ address: v }), rd('vaultCap')]);
   const agentBal = await pub.getBalance({ address: executor });
   const toks: VaultState['toks'] = {}; const rules: string[] = [];
   if (n.id === 143) {
@@ -223,7 +226,7 @@ export async function readVault(pub: PublicClient, n: Net, v: Address): Promise<
     await Promise.all(LIVE.filter(s => s.address).map(async s => { const r = s.rules![0]; const ok = await rd('callRule', [s.address, r.selector]).catch(() => null); if (ok && (ok === true || ok?.[0] === true || ok?.allowed === true)) rules.push(s.id); }));
   }
   const allowedOwner = await rd('allowedRecipient', [owner]).catch(() => false); if (allowedOwner) rules.push('pay');
-  return { v, owner, executor, cap, budget, spent, paused, bal, agentBal, toks, key: localStorage.getItem(`pp.agentkey.${executor.toLowerCase()}`), rules };
+  return { v, owner, executor, cap, budget, spent, paused, bal, vaultCap, agentBal, toks, key: localStorage.getItem(`pp.agentkey.${executor.toLowerCase()}`), rules };
 }
 
 // ---------- team showcase snapshot (written by the scheduled Actions runner) ----------

@@ -7,7 +7,7 @@ import { Btn, Card, Pill, Sheet, Slider, Switch, useToasts } from './ui';
 import PolicyDashboard from './Dashboard';
 import ShowcaseAgents from './ShowcaseAgents';
 import { discoverWallets, deepLinks, INSTALL, isMobile, haptic, type Discovered, type Eip1193 } from '@/lib/wallets';
-import { addLocal, buildAction, buildCreate, buildStarter, chainOf, decodeInput, erc20, factoryAbi, fetchTeamSnapshot, loadHistory, mon, plain, pubOf, quoteAll, readVault, reasonOf, resolveNet, sendFault, services, short, STARTER, TEAM_LABEL, vaultAbi, vcall, type Quote, type Ev, type Net, type Policy, type TeamAgent, type TeamSnapshot, type VaultState } from '@/lib/vault';
+import { addLocal, APP_VAULT_MON, buildAction, buildCreate, buildStarter, chainOf, decodeInput, erc20, factoryAbi, fetchTeamSnapshot, loadHistory, mon, plain, pubOf, quoteAll, readVault, reasonOf, resolveNet, sendFault, services, short, STARTER, TEAM_LABEL, vaultAbi, vcall, type Quote, type Ev, type Net, type Policy, type TeamAgent, type TeamSnapshot, type VaultState } from '@/lib/vault';
 import { TOKENS, type TokenSym } from '@/lib/services';
 import { buildSuper, matchSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
 import VaultReport from './VaultReport';
@@ -239,7 +239,7 @@ export default function App() {
   return (
     <div className="min-h-dvh overflow-x-clip pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-10">
       {toasts}
-      <div className="bg-amber-500/10 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] text-center text-[11px] leading-5 text-amber-200" data-testid="alpha">⚠️ <b>Alpha · unaudited contract · only deposit what you&apos;re happy to lose.</b> Max 1 MON per vault.{net.id === 143 ? ' Monad mainnet = real MON.' : ' Testnet = free test MON.'}</div>
+      <div className="bg-amber-500/10 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] text-center text-[11px] leading-5 text-amber-200" data-testid="alpha">⚠️ <b>Alpha · unaudited contract · only deposit what you&apos;re happy to lose.</b> Max {APP_VAULT_MON} MON per new vault. A vault opened earlier still stops at its own cap.{net.id === 143 ? ' Monad mainnet = real MON.' : ' Testnet = free test MON.'}</div>
       <header className="sticky top-0 z-40 border-b border-white/5 bg-ink">
         <div className="mx-auto flex h-16 min-w-0 max-w-6xl items-center gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
           <button onClick={() => setTab('launch')} className="flex min-h-11 min-w-0 items-center gap-2" aria-label="PolicyPilot home"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-monad/20"><ShieldCheck className="h-5 w-5 text-monad" /></span><span className="truncate text-base font-semibold text-zinc-50">PolicyPilot</span></button>
@@ -315,15 +315,15 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
   const live = services(net).filter(s => s.status === 'live');
   const [agentMode, setAgentMode] = useState<'new' | 'external'>('new');
   const [ext, setExt] = useState('');
-  const [p, setP] = useState<Policy>({ budgetOn: true, budget: 0.2, capOn: true, cap: 0.05, deposit: 0.25, gas: 0.2, services: live.map(s => s.id), payees: [], startPaused: false });
+  const [p, setP] = useState<Policy>({ budgetOn: true, budget: 2, capOn: true, cap: 0.5, deposit: 2.5, gas: 2, services: live.map(s => s.id), payees: [], startPaused: false });
   const [payeesTxt, setPayeesTxt] = useState('');
   const [prog, setProg] = useState<{ t: string; s: 'run' | 'ok' | 'err'; h?: string }[]>([]);
   const [busy, setBusy] = useState(false); const [doneVault, setDoneVault] = useState<string | null>(null);
-  const up = (o: Partial<Policy>) => setP(x => { const n = { ...x, ...o }; if (n.cap > n.budget) n.cap = n.budget; if (n.budget > 1) n.budget = 1; return n; });
+  const up = (o: Partial<Policy>) => setP(x => { const n = { ...x, ...o }; if (n.cap > n.budget) n.cap = n.budget; if (n.budget > APP_VAULT_MON) n.budget = APP_VAULT_MON; return n; });
   const extOk = agentMode === 'new' || isAddress(ext.trim());
   const step = !account ? 1 : !extOk ? 2 : 3;
   const allowed = live.filter(s => p.services.includes(s.id));
-  const summary = `Your agent can spend ${p.capOn ? `at most ${p.cap.toFixed(3)} MON per action` : 'any amount per action'}${p.budgetOn ? ` and ${p.budget.toFixed(3)} MON in total` : ' (bounded only by the 1 MON vault cap)'}, only on ${allowed.length ? allowed.map(s => s.name).join(', ') : 'nothing yet'}. Every output comes back to the vault. You can pause it or pull everything back in one tap.`;
+  const summary = `Your agent can spend ${p.capOn ? `at most ${p.cap.toFixed(3)} MON per action` : 'any amount per action'}${p.budgetOn ? ` and ${p.budget.toFixed(3)} MON in total` : ` (bounded only by the ${APP_VAULT_MON} MON vault cap)`}, only on ${allowed.length ? allowed.map(s => s.name).join(', ') : 'nothing yet'}. Every output comes back to the vault. You can pause it or pull everything back in one tap.`;
 
   const [room, setRoom] = useState<bigint | null>(null);
   useEffect(() => { let on = true; (async () => { try { const [gc, td] = await Promise.all([pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'globalCap' }), pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'totalDeposited' })]) as [bigint, bigint]; if (on) setRoom(gc > td ? gc - td : 0n); } catch { /* older factory */ } })(); return () => { on = false; }; }, [pub, net, block]);
@@ -341,8 +341,7 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
       const c = buildCreate(exec, account, { ...p, payees });
       cur = add('Creating your vault with every rule baked in (1 signature)');
       await pub.call({ account, to: net.factory, data: c.data, value: c.value });
-      const gas = await pricedGas(pub, account, { to: net.factory, data: c.data, value: c.value });
-      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas }); cur.ok(rc.transactionHash);
+      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas: GAS.createVault }); cur.ok(rc.transactionHash);
       addLocal(net, { label: 'Harness on: vault created with limits + services', kind: 'owner', tx: rc.transactionHash, from: account });
       const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [account] }) as Address[]; const v = list[list.length - 1];
       if (p.startPaused) { cur = add('Starting paused'); const r = await send(wallet, { ...vcall(v, 'setPaused', [true]), gas: GAS.pause }); cur.ok(r.transactionHash); addLocal(net, { label: 'Owner pauses the agent', kind: 'owner', tx: r.transactionHash, from: account }); }
@@ -371,7 +370,7 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
   };
   const products = [
     { id: 'desk-dispatch', label: 'Dispatch', title: 'Stake, swap, or pay yourself. The button sends one real transaction.' },
-    { id: 'desk-prime', label: 'Prime', title: 'Open your two-tranche pool. Capped at 1 MON. No promised rate.' },
+    { id: 'desk-prime', label: 'Prime', title: 'Open your two-tranche pool. Capped at 10 MON. No promised rate.' },
     { id: 'desk-spread', label: 'Spread', title: 'Quotes Uniswap, PancakeSwap, and Kuru. Settles only if the round trip clears.' },
     { id: 'desk-rules', label: 'Rules', title: 'Custom agent, budget, cap, and which services are allowed.' },
   ];
@@ -433,12 +432,12 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
         <div className="grid gap-1 lg:grid-cols-2 lg:gap-x-6">
           <div className="min-w-0">
             <Switch testid="sw-budget" on={p.budgetOn} onChange={v => up({ budgetOn: v })} label={<>Total budget {p.budgetOn && <span className="font-mono text-violet-300">{p.budget.toFixed(3)} MON</span>}</>} sub="The most it can ever spend" />
-            {p.budgetOn && <div className="px-3"><Slider label="Budget" testid="sl-budget" value={p.budget} min={0.001} max={1} step={0.001} onChange={v => up({ budget: v })} /></div>}
+            {p.budgetOn && <div className="px-3"><Slider label="Budget" testid="sl-budget" value={p.budget} min={0.001} max={APP_VAULT_MON} step={0.001} onChange={v => up({ budget: v })} /></div>}
             <Switch testid="sw-cap" on={p.capOn} onChange={v => up({ capOn: v })} label={<>Per-action cap {p.capOn && <span className="font-mono text-violet-300">{p.cap.toFixed(3)} MON</span>}</>} sub="Max for any single action" />
-            {p.capOn && <div className="px-3"><Slider label="Per-action cap" testid="sl-cap" value={p.cap} min={0.001} max={p.budgetOn ? p.budget : 1} step={0.001} onChange={v => up({ cap: v })} /></div>}
+            {p.capOn && <div className="px-3"><Slider label="Per-action cap" testid="sl-cap" value={p.cap} min={0.001} max={p.budgetOn ? p.budget : APP_VAULT_MON} step={0.001} onChange={v => up({ cap: v })} /></div>}
             <div className="px-3 pt-2 text-sm text-zinc-100">Deposit now <span className="font-mono text-violet-300">{p.deposit.toFixed(2)} MON</span></div>
-            <div className="px-3"><Slider label="Deposit" testid="sl-deposit" value={p.deposit} min={0} max={1} step={0.01} onChange={v => up({ deposit: v })} /></div>
-            {agentMode === 'new' && <><div className="px-3 pt-1 text-sm text-zinc-100">Gas for the agent <span className="font-mono text-violet-300">{p.gas.toFixed(2)} MON</span></div><div className="px-3"><Slider label="Agent gas" testid="sl-gas" value={p.gas} min={0} max={0.5} step={0.01} onChange={v => up({ gas: v })} /></div></>}
+            <div className="px-3"><Slider label="Deposit" testid="sl-deposit" value={p.deposit} min={0} max={APP_VAULT_MON} step={0.01} onChange={v => up({ deposit: v })} /></div>
+            {agentMode === 'new' && <><div className="px-3 pt-1 text-sm text-zinc-100">Gas for the agent <span className="font-mono text-violet-300">{p.gas.toFixed(2)} MON</span></div><div className="px-3"><Slider label="Agent gas" testid="sl-gas" value={p.gas} min={0} max={5} step={0.01} onChange={v => up({ gas: v })} /></div></>}
             <Switch testid="sw-paused" on={p.startPaused} onChange={v => up({ startPaused: v })} label="Start paused" sub="Flip it on later from Agents" />
           </div>
           <div className="min-w-0">
@@ -454,6 +453,7 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
       <div>
         {room != null && <p data-testid="capacity" className={`mb-2 text-xs ${overRoom ? 'text-amber-300' : 'text-zinc-400'}`}>Alpha safety cap: {mon(room, 3)} of deposit room left across all vaults.{overRoom ? ' Lower the deposit to fit (you can launch with 0 and top up later).' : ''}</p>}
         <Btn kind="pri" data-testid="launch" disabled={busy || !extOk || overRoom} onClick={launch} className="h-14 w-full rounded-3xl text-base">{busy ? 'Launching…' : <><Rocket className="h-5 w-5" />Let it go into the wild</>}</Btn>
+        <p className="mt-2 text-xs text-zinc-500">Creating a vault uses a fixed 8,000,000 gas limit so it cannot run out of gas. Monad charges that limit, about 0.8 MON at a 100 gwei base fee.</p>
       </div>
       {prog.length > 0 && <Card data-testid="progress"><ol className="grid gap-2 text-sm">{prog.map((x, i) => <li key={i} className={`flex min-w-0 items-start gap-2 ${x.s === 'err' ? 'text-red-300' : x.s === 'ok' ? 'text-emerald-300' : 'text-zinc-300'}`}><span className="shrink-0">{x.s === 'ok' ? '✅' : x.s === 'err' ? '⛔' : '⏳'}</span><span className="min-w-0 break-words">{x.t}{x.h && <> · <a className="underline" href={`${net.exp}/tx/${x.h}`} target="_blank" rel="noreferrer">tx ↗</a></>}</span></li>)}</ol>
         {doneVault && <div className="mt-4 grid gap-2 sm:grid-cols-2" data-testid="launched"><Btn kind="pri" onClick={() => setTab('activity')}><Activity className="h-4 w-4" />Watch it live</Btn><Btn onClick={() => setTab('agents')}><Bot className="h-4 w-4" />Manage my agent</Btn></div>}
@@ -639,8 +639,7 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
       try { const [gc, td] = await Promise.all([pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'globalCap' }), pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'totalDeposited' })]) as [bigint, bigint]; if (gc - td < dep) { dep = 0n; twoStep = true; } } catch { /* older factory */ }
       const c = buildStarter(account, Number(formatEther(dep)));
       await pub.call({ account, to: net.factory, data: c.data, value: c.value });
-      const gas = await pricedGas(pub, account, { to: net.factory, data: c.data, value: c.value });
-      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas });
+      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas: GAS.createVault });
       addLocal(net, { label: `Starter vault created${dep > 0n ? ` + ${STARTER.deposit} MON deposited` : ''} (1 tx)`, kind: 'owner', tx: rc.transactionHash, from: account });
       const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [account] }) as Address[]; const v = list[list.length - 1];
       haptic([10, 40, 10] as any); toast(<>⚡ Starter vault ready. Your wallet is its agent, so every action below is real. <a className="underline" href={`${net.exp}/tx/${rc.transactionHash}`} target="_blank" rel="noreferrer">tx ↗</a></>, 'ok');
@@ -658,8 +657,7 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
       try { const [gc, td] = await Promise.all([pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'globalCap' }), pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'totalDeposited' })]) as [bigint, bigint]; const room = gc > td ? gc - td : 0n; if (dep > room) { dep = room > parseEther('0.020001') ? room - parseEther('0.000001') : 0n; shortDeposit = true; } } catch { /* older factory */ }
       const c = buildSuper(t, account, t.payees ? extras : [], Number(formatEther(dep)));
       await pub.call({ account, to: net.factory, data: c.data, value: c.value });
-      const gas = await pricedGas(pub, account, { to: net.factory, data: c.data, value: c.value });
-      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas });
+      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas: GAS.createVault });
       addLocal(net, { label: `${t.name} created${dep > 0n ? ` + ${formatEther(dep)} MON deposited` : ''} (1 tx)`, kind: 'owner', tx: rc.transactionHash, from: account });
       const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [account] }) as Address[]; const v = list[list.length - 1];
       localStorage.setItem(`pp.super.${v.toLowerCase()}`, t.id);
@@ -688,6 +686,7 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-monad/20"><Zap className="h-5 w-5 text-violet-200" /></span>
             <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-zinc-50">{starting ? 'Creating…' : 'One-click starter vault'}</span><span className="block text-xs text-zinc-400">Create + deposit {STARTER.deposit} MON in one transaction. Your wallet is the agent; {STARTER.cap} MON per action, {STARTER.budget} MON total; wrap, Kuru, Uniswap, PancakeSwap and paying yourself switched on.</span></span>
           </button>}
+          {account && <p className="mt-1 text-[11px] leading-4 text-zinc-500">Vault creation uses a fixed 8,000,000 gas limit. Monad charges that whole limit, about 0.8 MON at a 100 gwei base fee.</p>}
           {net.id === 143 && <button onClick={() => setTab('launch')} className="mt-1 min-h-11 px-1 text-left text-xs text-violet-300">Want a separate agent key and custom rules? Use Launch →</button>}
         </div>
         {net.id === 143 && <div data-testid="super-vaults">
@@ -720,7 +719,7 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
         {superOpen && <div className="grid gap-3" data-testid="super-sheet">
           <p className="text-sm text-zinc-300">{superOpen.tagline}</p>
           <ul className="grid gap-1 text-sm text-zinc-200">{superOpen.value.map(v => <li key={v} className="flex min-w-0 gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" /><span className="min-w-0 break-words">{v}</span></li>)}</ul>
-          <p className="text-xs text-zinc-400">One transaction: your wallet becomes the agent. Limits: {superOpen.cap} MON per action, {superOpen.budget} MON total, {superOpen.deposit} MON deposited now (max 1 MON per vault).</p>
+          <p className="text-xs text-zinc-400">One transaction: your wallet becomes the agent. Limits: {superOpen.cap} MON per action, {superOpen.budget} MON total, {superOpen.deposit} MON deposited now (max {APP_VAULT_MON} MON per new vault).</p>
           <ol className="grid gap-1 text-xs text-zinc-400">{superOpen.playbook.map((st, i) => <li key={i}>{i + 1}. {st.label}</li>)}</ol>
           {superOpen.payees && <label className="grid gap-1 text-sm text-zinc-300">Extra payees (you are included)<textarea data-testid="super-payees" value={superPayees} onChange={e => setSuperPayees(e.target.value)} placeholder="0x…, 0x…" rows={2} className="w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 py-2 font-mono text-xs outline-none focus:border-monad" /></label>}
           <Btn kind="pri" data-testid="super-create" disabled={superBusy} onClick={() => createSuper(superOpen)} className="w-full">{superBusy ? 'Creating…' : <>Create + deposit {superOpen.deposit} MON</>}</Btn>
@@ -837,7 +836,7 @@ function OwnerSheet({ x, onClose, ownerTx, account }: any) {
   useEffect(() => { setRes(null); if (x) setAmt(x.kind === 'withdraw' ? formatEther(x.s.bal) : '0.05'); }, [x]);
   if (!x) return null;
   const go = async () => { setBusy(true); try { const v = parseEther(amt || '0'); setRes(await (x.kind === 'deposit' ? ownerTx(`Deposit ${amt} MON`, { ...vcall(x.s.v, 'deposit', []), value: v }) : ownerTx(`Withdraw ${amt} MON`, vcall(x.s.v, 'withdraw', [account, v])))); } catch (e) { setRes({ ok: false, msg: sendFault(e).text }); } setBusy(false); };
-  return <Sheet open onClose={onClose} title={x.kind === 'deposit' ? 'Deposit MON' : 'Withdraw MON'}><label className="grid gap-1 text-sm text-zinc-300">Amount (MON)<input inputMode="decimal" value={amt} onChange={e => setAmt(e.target.value)} className="min-h-12 w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 font-mono text-base outline-none focus:border-monad" /></label>{x.kind === 'deposit' && <p className="mt-2 text-xs text-zinc-400">Max 1 MON per vault (alpha).</p>}<Btn kind="pri" disabled={busy} onClick={go} className="mt-4 w-full">{busy ? 'Working…' : 'Confirm'}</Btn>{res && <div className={`mt-3 break-words rounded-2xl border p-3 text-sm ${res.ok ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-red-500/40 bg-red-500/10'}`}>{res.msg}</div>}</Sheet>;
+  return <Sheet open onClose={onClose} title={x.kind === 'deposit' ? 'Deposit MON' : 'Withdraw MON'}><label className="grid gap-1 text-sm text-zinc-300">Amount (MON)<input inputMode="decimal" value={amt} onChange={e => setAmt(e.target.value)} className="min-h-12 w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 font-mono text-base outline-none focus:border-monad" /></label>{x.kind === 'deposit' && <p className="mt-2 text-xs text-zinc-400">This vault stops at {mon(x.s.vaultCap)}.</p>}<Btn kind="pri" disabled={busy} onClick={go} className="mt-4 w-full">{busy ? 'Working…' : 'Confirm'}</Btn>{res && <div className={`mt-3 break-words rounded-2xl border p-3 text-sm ${res.ok ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-red-500/40 bg-red-500/10'}`}>{res.msg}</div>}</Sheet>;
 }
 
 // ---------------- Services ----------------
