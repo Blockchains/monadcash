@@ -9,12 +9,12 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T07:05:58.477Z",
+ "updatedAt": "2026-10-15T07:16:01.554Z",
  "totals": {
-  "allowed": 400,
-  "blocked": 158,
+  "allowed": 401,
+  "blocked": 159,
   "ownerTxs": 31,
-  "skipped": 18
+  "skipped": 19
  },
  "agents": [
   {
@@ -123,7 +123,11 @@
    "perActionCapMON": "0.03",
    "pending": false,
    "allowed": 52,
-   "blocked": 0
+   "blocked": 0,
+   "lastSkip": {
+    "ts": "2026-10-15T07:15:59.532Z",
+    "reason": "agent gas 0.063915604 MON < 0.08 MON (owner must top up the agent wallet)"
+   }
   },
   {
    "id": "tipper",
@@ -134,7 +138,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 52,
+   "allowed": 53,
    "blocked": 0
   },
   {
@@ -147,10 +151,27 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 17,
-   "blocked": 35
+   "blocked": 36
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T07:16:01.552Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0xf1d7ab58dd8257a6398f645e14f5a5dc9d7a1426e645b84250efdfaa414f3fa3"
+  },
+  {
+   "ts": "2026-10-15T07:16:01.051Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0034 MON to the Payroll agent",
+   "status": "allowed",
+   "tx": "0x00522be88338eba51b50593f0912def2dc25255693370b2c7cd5b60f48e66825"
+  },
   {
    "ts": "2026-10-15T07:05:58.475Z",
    "persona": "tester",
@@ -628,23 +649,6 @@
    "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.66 < target 1)",
    "status": "allowed",
    "tx": "0x0f9d3ff88d568447408e92837d6e6100831a5b4866d17fa046e35a10a3a452a1"
-  },
-  {
-   "ts": "2026-10-15T03:58:44.049Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
-   "status": "blocked",
-   "reason": "RequestAlreadyExecuted(0xaf78f17378ff08413c0542ca65d06dd6a32fcdb03dbf2fa88aed560425fa30b8)",
-   "tx": "0x81bf7efd4b10549034dad86eacaa520f6ae2ddb62526950775e6cceab84010a1"
-  },
-  {
-   "ts": "2026-10-15T03:58:43.026Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0017 MON to the Payroll agent",
-   "status": "allowed",
-   "tx": "0x76cde38623ff296a4106a06183c577f0610cd30d01b3917dc84723290def2121"
   }
  ],
  "status": "running (GitHub Actions)"
