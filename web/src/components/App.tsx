@@ -371,7 +371,7 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
   const products = [
     { id: 'desk-dispatch', label: 'Dispatch', title: 'Stake, swap, or pay yourself. The button sends one real transaction.' },
     { id: 'desk-prime', label: 'Prime', title: 'Open your two-tranche pool. Capped at 10 MON. No promised rate.' },
-    { id: 'desk-spread', label: 'Spread', title: 'Quotes Uniswap, PancakeSwap, and Kuru. Settles only if the round trip clears.' },
+    { id: 'desk-spread', label: 'Spread', title: 'Quotes Uniswap 0.30%, Uniswap 0.05%, PancakeSwap, and Kuru. Settles when the pool gains MON.' },
     { id: 'desk-rules', label: 'Rules', title: 'Custom agent, budget, cap, and which services are allowed.' },
   ];
 

@@ -29,11 +29,11 @@ interface ISwapRouter02 {
 }
 
 /// @title PolicyPilotSpreadVault
-/// @notice A personal MON pool. Anyone may run one round trip, Uniswap v3 against PancakeSwap v3,
-///         and the call reverts unless the pool's MON balance grows by the floor set at deployment.
+/// @notice A personal MON pool. Anyone may run one round trip across the fixed Uniswap v3 and
+///         PancakeSwap v3 pools, and the call reverts unless the pool's MON balance grows.
 ///         10% of that profit is paid to the caller, 10% to the treasury, and 80% stays in the pool.
 ///         Alpha and unaudited. There is no promised rate. The caller pays gas, including on a revert.
-/// @dev The two routers, WMON, and USDC are fixed. A caller cannot point the pool at another contract.
+/// @dev The routers, fee tiers, WMON, and USDC are fixed. A caller cannot point the pool at another contract.
 contract PolicyPilotSpreadVault is ReentrancyGuard {
     error ZeroAddress();
     error ZeroAmount();
@@ -52,7 +52,8 @@ contract PolicyPilotSpreadVault is ReentrancyGuard {
 
     enum Venue {
         UNI,
-        CAKE
+        CAKE,
+        UNI_THIN
     }
 
     uint256 public constant BPS = 10_000;
@@ -65,6 +66,7 @@ contract PolicyPilotSpreadVault is ReentrancyGuard {
     address public constant UNI_ROUTER = 0xfE31F71C1b106EAc32F1A19239c9a9A72ddfb900;
     address public constant CAKE_ROUTER = 0x21114915Ac6d5A2e156931e20B20b038dEd0Be7C;
     uint24 public constant UNI_FEE = 3000;
+    uint24 public constant UNI_THIN_FEE = 500;
     uint24 public constant CAKE_FEE = 500;
 
     address public immutable treasury;
@@ -88,13 +90,14 @@ contract PolicyPilotSpreadVault is ReentrancyGuard {
     );
     event Swept(address indexed token, uint256 amount);
 
-    /// @param minProfitBps_ Floor for a round trip, in basis points of the MON sold. 1 to 500.
+    /// @param minProfitBps_ Floor for a round trip, in basis points of the MON sold. 0 to 500.
+    ///        Zero accepts any increase in the pool's MON.
     /// @param maxTradeBps_ Largest single round trip, in basis points of the pool's MON. 1 to 10000.
     constructor(address treasury_, uint256 vaultCap_, uint256 minProfitBps_, uint256 maxTradeBps_) payable {
         if (block.chainid != 143) revert WrongNetwork();
         if (treasury_ == address(0) || treasury_ == address(this)) revert ZeroAddress();
         if (vaultCap_ == 0) revert ZeroAmount();
-        if (minProfitBps_ == 0 || minProfitBps_ > 500) revert Floor();
+        if (minProfitBps_ > 500) revert Floor();
         if (maxTradeBps_ == 0 || maxTradeBps_ > BPS) revert Floor();
         treasury = treasury_;
         vaultCap = vaultCap_;
@@ -143,7 +146,7 @@ contract PolicyPilotSpreadVault is ReentrancyGuard {
         uint256 maxAmount = start * maxTradeBps / BPS;
         if (amount == 0 || amount > maxAmount || amount > start) revert TradeTooLarge(amount, maxAmount);
         uint256 floorProfit = amount * minProfitBps / BPS;
-        if (floorProfit == 0 || minWmon < amount + floorProfit) revert Floor();
+        if (minWmon < amount + floorProfit) revert Floor();
 
         IWMON(WMON).deposit{value: amount}();
         _swap(_router(sellVenue), WMON, USDC, _fee(sellVenue), amount, minUsdc);
@@ -226,10 +229,12 @@ contract PolicyPilotSpreadVault is ReentrancyGuard {
     }
 
     function _router(Venue venue) internal pure returns (address) {
-        return venue == Venue.UNI ? UNI_ROUTER : CAKE_ROUTER;
+        return venue == Venue.CAKE ? CAKE_ROUTER : UNI_ROUTER;
     }
 
     function _fee(Venue venue) internal pure returns (uint24) {
-        return venue == Venue.UNI ? UNI_FEE : CAKE_FEE;
+        if (venue == Venue.UNI) return UNI_FEE;
+        if (venue == Venue.UNI_THIN) return UNI_THIN_FEE;
+        return CAKE_FEE;
     }
 }
