@@ -78,7 +78,10 @@ contract RateRouterSwap {
         uint160 sqrtPriceLimitX96;
     }
 
+    uint24 public lastFee;
+
     function exactInputSingle(ExactInputSingleParams calldata p) external returns (uint256 amountOut) {
+        lastFee = p.fee;
         if (p.tokenIn == wmon && p.tokenOut == usdc) {
             amountOut = p.amountIn * wmonToUsdc / 1e18;
             require(amountOut >= p.amountOutMinimum, "min usdc");
@@ -174,6 +177,8 @@ contract PolicyPilotSpreadVaultTest is Test {
         assertEq(IMini(USDC).allowance(address(v), CAKE), 0, "usdc approval cleared");
         assertEq(IMini(WMON).balanceOf(address(v)), 0, "no wrapped dust");
         assertEq(IMini(USDC).balanceOf(address(v)), 0, "no usdc dust");
+        assertEq(RateRouterSwap(UNI).lastFee(), 3000, "deep uniswap fee");
+        assertEq(RateRouterSwap(CAKE).lastFee(), 500, "pancake fee");
     }
 
     function test_unprofitableRoundTripReverts() public {
@@ -243,6 +248,43 @@ contract PolicyPilotSpreadVaultTest is Test {
         assertEq(address(v).balance, before, "mon stays");
         vm.expectRevert(PolicyPilotSpreadVault.NotSweepable.selector);
         v.sweep(alice);
+    }
+
+    function test_zeroFloorAcceptsASmallGainOnTheThinPool() public {
+        PolicyPilotSpreadVault v = _open(0, 10_000, 1 ether);
+        assertEq(v.minProfitBps(), 0, "zero floor");
+        // 1 MON -> 2 USDC on the Uniswap router, and 2 USDC -> 1.0002 MON on Pancake.
+        RateRouterSwap(CAKE).set(1e6, 0.5001e18);
+        uint256 carolBefore = carol.balance;
+        vm.prank(carol);
+        (uint256 profit, uint256 bounty) = v.capture(
+            PolicyPilotSpreadVault.Venue.UNI_THIN, PolicyPilotSpreadVault.Venue.CAKE, 1 ether, 1, 1 ether
+        );
+        assertEq(profit, 0.0002 ether, "small profit");
+        assertEq(bounty, 0.00002 ether, "bounty");
+        assertEq(carol.balance - carolBefore, 0.00002 ether, "caller paid");
+        assertEq(address(v).balance, 1.00016 ether, "pool keeps 80%");
+        assertEq(RateRouterSwap(UNI).lastFee(), 500, "thin fee uses the uniswap router");
+        assertEq(RateRouterSwap(CAKE).lastFee(), 500, "pancake fee");
+
+        RateRouterSwap(CAKE).set(1e6, 0.5e18);
+        vm.prank(carol);
+        vm.expectRevert();
+        v.capture(PolicyPilotSpreadVault.Venue.UNI_THIN, PolicyPilotSpreadVault.Venue.CAKE, 1 ether, 1, 1 ether);
+        assertEq(address(v).balance, 1.00016 ether, "flat trip untouched");
+    }
+
+    function test_fiveBpsFloorStillRejectsASmallerQuotedMinimum() public {
+        PolicyPilotSpreadVault v = _open(5, 10_000, 1 ether);
+        vm.prank(carol);
+        vm.expectRevert(PolicyPilotSpreadVault.Floor.selector);
+        v.capture(PolicyPilotSpreadVault.Venue.UNI, PolicyPilotSpreadVault.Venue.CAKE, 1 ether, 1, 1 ether + 0.0001 ether);
+    }
+
+    function test_bpsAboveFiveHundredReverts() public {
+        vm.prank(alice);
+        vm.expectRevert(PolicyPilotSpreadVault.Floor.selector);
+        new PolicyPilotSpreadVault(treasury, 1 ether, 501, 10_000);
     }
 
     function test_callerCannotLowerTheFloor() public {

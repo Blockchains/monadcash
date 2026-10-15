@@ -73,8 +73,10 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
   }, [preset.id, selected]);
   useEffect(() => {
     if (userPicked.current) return;
-    const ready = (vaults ?? []).filter(s => fits(s, preset) && !s.paused && s.bal > 0n).sort((a, b) => (a.bal > b.bal ? -1 : 1));
-    setVaultId(ready[0]?.v ?? 'new');
+    const ranked = (list: VaultState[]) => list.sort((a, b) => (a.bal > b.bal ? -1 : 1));
+    const live = ranked((vaults ?? []).filter(s => fits(s, preset) && !s.paused && s.bal > 0n));
+    const paused = ranked((vaults ?? []).filter(s => fits(s, preset) && s.paused));
+    setVaultId(live[0]?.v ?? paused[0]?.v ?? 'new');
   }, [preset.id, vaults]);
 
   useEffect(() => {
@@ -140,8 +142,9 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
   };
 
   const go = async () => {
-    if (!gate.ok || busy) return;
+    if (busy) return;
     if (gate.code === 'connect') { try { await need(); } catch (e) { note(e); } return; }
+    if (!gate.ok) return;
     if (gate.code === 'create') { await create(); return; }
     if (!selected) return;
     setBusy(true); setLine(null);

@@ -6,8 +6,8 @@ import { KURU, QUOTERS, SERVICES, TOKENS } from './services';
 export const spreadAbi = artifact.abi as Abi;
 export const SPREAD_BYTECODE = artifact.bytecode as Hex;
 
-/** Matches PolicyPilotSpreadVault. 5 bps is the floor, not a forecast. */
-export const MIN_PROFIT_BPS = 5;
+/** New pools accept any increase in MON. A positive floor is still allowed, up to 500 bps. */
+export const MIN_PROFIT_BPS = 0;
 export const KEEPER_BPS = 1_000;
 export const PROTOCOL_BPS = 1_000;
 export const SPREAD_CAP = parseEther('10');
@@ -15,18 +15,21 @@ export const MAX_TRADE_BPS = 10_000;
 /** 500,000 gas at the 100 gwei minimum base fee. A revert still costs the gas limit. */
 export const ROUGH_GAS_WEI = 500_000n * 100_000_000_000n;
 
-export type VenueId = 'uniswap' | 'pancake';
+export type VenueId = 'uniswap' | 'pancake' | 'uniswap-thin';
 
 const quoterAbi = parseAbi([
   'function quoteExactInputSingle((address tokenIn,address tokenOut,uint256 amountIn,uint24 fee,uint160 sqrtPriceLimitX96)) returns (uint256 amountOut,uint160 sqrtPriceX96After,uint32 initializedTicksCrossed,uint256 gasEstimate)',
 ]);
 
-export const VENUES: Record<VenueId, { name: string; router: Address; quoter: Address; fee: number }> = {
-  uniswap: { name: 'Uniswap', router: SERVICES.find(s => s.id === 'uniswap')!.address!, quoter: QUOTERS.uniswap.address, fee: QUOTERS.uniswap.fee },
-  pancake: { name: 'PancakeSwap', router: SERVICES.find(s => s.id === 'pancake')!.address!, quoter: QUOTERS.pancake.address, fee: QUOTERS.pancake.fee },
+export const VENUES: Record<VenueId, { name: string; router: Address; quoter: Address; fee: number; index: 0 | 1 | 2 }> = {
+  uniswap: { name: 'Uniswap 0.30%', router: SERVICES.find(s => s.id === 'uniswap')!.address!, quoter: QUOTERS.uniswap.address, fee: QUOTERS.uniswap.fee, index: 0 },
+  pancake: { name: 'PancakeSwap 0.05%', router: SERVICES.find(s => s.id === 'pancake')!.address!, quoter: QUOTERS.pancake.address, fee: QUOTERS.pancake.fee, index: 1 },
+  'uniswap-thin': { name: 'Uniswap 0.05%', router: SERVICES.find(s => s.id === 'uniswap')!.address!, quoter: QUOTERS.uniswap.address, fee: 500, index: 2 },
 };
 
-export const venueIndex = (id: VenueId): 0 | 1 => (id === 'uniswap' ? 0 : 1);
+export const SETTLEMENT_VENUES: VenueId[] = ['uniswap', 'pancake', 'uniswap-thin'];
+
+export const venueIndex = (id: VenueId): 0 | 1 | 2 => VENUES[id].index;
 
 export function floorProfit(amount: bigint): bigint {
   return (amount * BigInt(MIN_PROFIT_BPS)) / 10_000n;
@@ -38,12 +41,13 @@ export function splitProfit(profit: bigint): { bounty: bigint; fee: bigint; pool
   return { bounty, fee, pool: profit - bounty - fee };
 }
 
-/** True only when the quoted MON back clears the contract floor and a rough gas cost. */
-export function clearsFloor(amount: bigint, wmonBack: bigint): { profit: bigint; floor: bigint; bounty: bigint; fee: bigint; pool: bigint; ok: boolean } {
+/** `ok` is a quoted gain that meets the pool floor. Rough gas is reported beside it and does not veto the quote. */
+export function clearsFloor(amount: bigint, wmonBack: bigint): { profit: bigint; floor: bigint; bounty: bigint; fee: bigint; pool: bigint; ok: boolean; coversGas: boolean } {
   const profit = wmonBack > amount ? wmonBack - amount : 0n;
   const floor = floorProfit(amount);
   const split = splitProfit(profit);
-  return { profit, floor, ...split, ok: floor > 0n && profit >= floor && profit > ROUGH_GAS_WEI };
+  const ok = profit > 0n && profit >= floor;
+  return { profit, floor, ...split, ok, coversGas: ok && profit > ROUGH_GAS_WEI };
 }
 
 export function chooseSell(uniUsdc: bigint, cakeUsdc: bigint): { sell: VenueId; buy: VenueId; usdc: bigint } | null {
@@ -63,7 +67,7 @@ export type SpreadGate = { ok: boolean; code: string; label: string; detail: str
 
 export function spreadGate(o: {
   mainnet: boolean; account: boolean; vault: boolean; amount: string; pool: bigint;
-  walletBal: bigint | null; quoting: boolean; quoteOk: boolean | null;
+  walletBal: bigint | null; quoting: boolean; quoteOk: boolean | null; coversGas?: boolean;
 }): SpreadGate {
   let wei: bigint;
   try { wei = parseEther(o.amount || '0'); } catch {
@@ -79,8 +83,9 @@ export function spreadGate(o: {
     return { ok: true, code: 'open', label: 'READY TO OPEN', detail: 'One signature opens your pool and deposits this MON. There is no promised rate.' };
   }
   if (o.quoting || o.quoteOk == null) return { ok: false, code: 'quote', label: 'QUOTING', detail: 'Asking Uniswap, PancakeSwap, and Kuru for this size.' };
-  if (!o.quoteOk) return { ok: false, code: 'flat', label: 'NO SPREAD', detail: 'The quote does not clear the 0.05% floor and a rough gas cost. Nothing is sent.' };
-  return { ok: true, code: 'go', label: 'SPREAD COVERS THE FLOOR', detail: 'Submit sells on the richer pool and buys back on the other. A loss reverts.' };
+  if (!o.quoteOk) return { ok: false, code: 'flat', label: 'NO SPREAD', detail: 'Every quoted round trip comes back with no extra MON. Nothing is sent.' };
+  if (!o.coversGas) return { ok: true, code: 'go', label: 'QUOTED GAIN', detail: 'The pool gains MON on this quote. Rough gas can be larger than that gain, and you pay it. A loss still reverts.' };
+  return { ok: true, code: 'go', label: 'SPREAD COVERS GAS', detail: 'Submit the round trip with the most MON back. A loss reverts.' };
 }
 
 export type QuoteCall = { to: Address; data: Hex; value?: Hex; from?: Address };
@@ -108,14 +113,30 @@ export function quoteCall(venue: VenueId, tokenIn: Address, tokenOut: Address, a
 export function forwardQuotes(amount: bigint): QuoteCall[] {
   const wmon = TOKENS.WMON.address;
   const usdc = TOKENS.USDC.address;
-  return [quoteCall('uniswap', wmon, usdc, amount), quoteCall('pancake', wmon, usdc, amount)];
+  return SETTLEMENT_VENUES.map(id => quoteCall(id, wmon, usdc, amount));
 }
 
 export function backQuote(venue: VenueId, usdcAmount: bigint): QuoteCall {
   return quoteCall(venue, TOKENS.USDC.address, TOKENS.WMON.address, usdcAmount);
 }
 
-/** Uniswap, PancakeSwap, then Kuru. Kuru is a price only; capture still uses the two v3 routers. */
+export type BackLeg = { sell: VenueId; buy: VenueId; usdc: bigint; call: QuoteCall };
+
+/** Every ordered pair of settlement venues. Kuru is not a leg. */
+export function roundTripBacks(legs: { id: VenueId; usdc: bigint }[], allow: VenueId[] = SETTLEMENT_VENUES): BackLeg[] {
+  const allowed = new Set(allow);
+  const rows: BackLeg[] = [];
+  for (const sell of legs) {
+    if (!allowed.has(sell.id) || sell.usdc <= 0n) continue;
+    for (const buy of legs) {
+      if (buy.id === sell.id || !allowed.has(buy.id)) continue;
+      rows.push({ sell: sell.id, buy: buy.id, usdc: sell.usdc, call: backQuote(buy.id, sell.usdc) });
+    }
+  }
+  return rows;
+}
+
+/** Settlement venues in `SETTLEMENT_VENUES` order, then Kuru. Kuru is a price only. */
 export function meshQuotes(amount: bigint): { calls: QuoteCall[]; stateOverride: StateOverride } {
   const kuru = encodeFunctionData({
     abi: kuruAbi,

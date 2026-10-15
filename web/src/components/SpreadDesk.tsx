@@ -7,13 +7,13 @@ import { haptic } from '@/lib/wallets';
 import { addLocal, mon, sendFault, short, type Net } from '@/lib/vault';
 import { pricedGas } from '@/lib/fastPath';
 import {
-  backQuote, chooseSell, clearsFloor, decodeKuru, decodeQuote, explainSpread, fetchCalls, meshQuotes, minOuts, ROUGH_GAS_WEI, spreadAbi,
+  clearsFloor, decodeKuru, decodeQuote, explainSpread, fetchCalls, meshQuotes, minOuts, ROUGH_GAS_WEI, roundTripBacks, SETTLEMENT_VENUES, spreadAbi,
   SPREAD_CAP, spreadCaptureData, spreadDeployData, spreadDepositData, spreadGate, spreadWithdrawData, VENUES, workerUrl, type CallRow, type QuoteCall, type StateOverride, type VenueId,
 } from '@/lib/spread';
 
 type Quote = {
-  amount: bigint; uni: bigint; cake: bigint; kuru: bigint | null; sell: VenueId | null; buy: VenueId | null;
-  usdc: bigint; back: bigint; profit: bigint; bounty: bigint; fee: bigint; poolCut: bigint; ok: boolean;
+  amount: bigint; uni: bigint; thin: bigint; cake: bigint; kuru: bigint | null; sell: VenueId | null; buy: VenueId | null;
+  usdc: bigint; back: bigint; profit: bigint; bounty: bigint; fee: bigint; poolCut: bigint; ok: boolean; coversGas: boolean;
 };
 
 function asRows(rows: unknown): CallRow[] {
@@ -50,10 +50,10 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   send: (w: WalletClient, req: { to?: Address; data?: Hex; value?: bigint; gas?: bigint }) => Promise<{ transactionHash: Hex; contractAddress?: Address | null }>;
   toast: (m: React.ReactNode, k?: 'ok' | 'bad' | 'info') => void; block: bigint | null;
 }) {
-  const [amount, setAmount] = useState('0.05');
+  const [amount, setAmount] = useState('0.2');
   const [topUp, setTopUp] = useState('0.02');
   const [vault, setVault] = useState<Address | null>(null);
-  const [snap, setSnap] = useState<{ pool: bigint; shares: bigint; yours: bigint; cap: bigint } | null>(null);
+  const [snap, setSnap] = useState<{ pool: bigint; shares: bigint; yours: bigint; cap: bigint; thinOk: boolean } | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -85,13 +85,14 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
       if (!on) return;
       if (!code || code === '0x') { if (key) localStorage.removeItem(key); setVault(null); return; }
       const who = account ?? '0x0000000000000000000000000000000000000000';
-      const [pool, shares, yours, cap] = await Promise.all([
+      const [pool, shares, yours, cap, thinFee] = await Promise.all([
         pub.getBalance({ address: vault }),
         pub.readContract({ address: vault, abi: spreadAbi, functionName: 'balanceOf', args: [who] }),
         pub.readContract({ address: vault, abi: spreadAbi, functionName: 'assetsOf', args: [who] }),
         pub.readContract({ address: vault, abi: spreadAbi, functionName: 'vaultCap' }),
-      ]) as [bigint, bigint, bigint, bigint];
-      if (on) setSnap({ pool, shares, yours, cap });
+        pub.readContract({ address: vault, abi: spreadAbi, functionName: 'UNI_THIN_FEE' }).catch(() => null),
+      ]) as [bigint, bigint, bigint, bigint, bigint | null];
+      if (on) setSnap({ pool, shares, yours, cap, thinOk: thinFee === 500n });
     })().catch(() => { if (on) setSnap(null); });
     return () => { on = false; };
   }, [vault, pub, account, block, key]);
@@ -99,8 +100,8 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   const [scans, setScans] = useState(0);
   const [bounty, setBounty] = useState<{ paid: bigint; last: Hex | null } | null>(null);
   const [bountyError, setBountyError] = useState(false);
-  const ctx = useRef({ amount, rpc: net.rpc, mainnet: net.id === 143 });
-  ctx.current = { amount, rpc: net.rpc, mainnet: net.id === 143 };
+  const ctx = useRef({ amount, rpc: net.rpc, mainnet: net.id === 143, thinOk: true });
+  ctx.current = { amount, rpc: net.rpc, mainnet: net.id === 143, thinOk: vault ? snap?.thinOk === true : true };
   const lastAt = useRef(0);
   const inflight = useRef(false);
   const again = useRef(false);
@@ -122,26 +123,49 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
       const mesh = meshQuotes(wei);
       const rows = await ask(workerRef.current, rpc, mesh.calls, mesh.stateOverride);
       if (!alive.current) return;
-      const uniRow = rows[0];
-      const cakeRow = rows[1];
-      const kuruRow = rows[2];
-      if (!uniRow?.ok) throw new Error(uniRow?.error || 'Quote failed');
-      if (!cakeRow?.ok) throw new Error(cakeRow?.error || 'Quote failed');
-      const uni = decodeQuote(uniRow.result);
-      const cake = decodeQuote(cakeRow.result);
+      const quoted = (id: VenueId) => {
+        const row = rows[SETTLEMENT_VENUES.indexOf(id)];
+        if (!row?.ok) return 0n;
+        return decodeQuote(row.result);
+      };
+      const uni = quoted('uniswap');
+      const cake = quoted('pancake');
+      const thin = quoted('uniswap-thin');
+      const kuruRow = rows[SETTLEMENT_VENUES.length];
       const kuru = kuruRow?.ok ? decodeKuru(kuruRow.result) : null;
-      const choice = chooseSell(uni, cake);
-      if (!choice) {
-        setQuote({ amount: wei, uni, cake, kuru, sell: null, buy: null, usdc: 0n, back: 0n, profit: 0n, bounty: 0n, fee: 0n, poolCut: 0n, ok: false });
+      if (!rows[0]?.ok && !rows[1]?.ok && !rows[2]?.ok) {
+        const failed = [rows[0], rows[1], rows[2]].find((r): r is { ok: false; error: string } => !!r && !r.ok);
+        throw new Error(failed?.error || 'Quote failed');
+      }
+      const allow = ctx.current.thinOk ? SETTLEMENT_VENUES : SETTLEMENT_VENUES.filter(id => id !== 'uniswap-thin');
+      const backs = roundTripBacks([
+        { id: 'uniswap', usdc: uni },
+        { id: 'uniswap-thin', usdc: thin },
+        { id: 'pancake', usdc: cake },
+      ], allow);
+      const empty = { amount: wei, uni, thin, cake, kuru, sell: null, buy: null, usdc: 0n, back: 0n, profit: 0n, bounty: 0n, fee: 0n, poolCut: 0n, ok: false, coversGas: false };
+      if (backs.length === 0) {
+        setQuote(empty);
         setScans(n => n + 1);
         return;
       }
-      const backRows = await ask(workerRef.current, rpc, [backQuote(choice.buy, choice.usdc)]);
+      const backRows = await ask(workerRef.current, rpc, backs.map(b => b.call));
       if (!alive.current) return;
-      if (!backRows[0]?.ok) throw new Error(backRows[0]?.error || 'Quote failed');
-      const back = decodeQuote(backRows[0].result);
-      const cleared = clearsFloor(wei, back);
-      setQuote({ amount: wei, uni, cake, kuru, sell: choice.sell, buy: choice.buy, usdc: choice.usdc, back, profit: cleared.profit, bounty: cleared.bounty, fee: cleared.fee, poolCut: cleared.pool, ok: cleared.ok });
+      let best: Quote | null = null;
+      for (let i = 0; i < backs.length; i++) {
+        const row = backRows[i];
+        if (!row?.ok) continue;
+        const back = decodeQuote(row.result);
+        const cleared = clearsFloor(wei, back);
+        if (!best || back > best.back) {
+          best = { amount: wei, uni, thin, cake, kuru, sell: backs[i].sell, buy: backs[i].buy, usdc: backs[i].usdc, back, profit: cleared.profit, bounty: cleared.bounty, fee: cleared.fee, poolCut: cleared.pool, ok: cleared.ok, coversGas: cleared.coversGas };
+        }
+      }
+      if (!best) {
+        const failed = backRows.find((r): r is { ok: false; error: string } => !!r && !r.ok);
+        throw new Error(failed?.error || 'Quote failed');
+      }
+      setQuote(best);
       setScans(n => n + 1);
     } catch (e) {
       if (!alive.current) return;
@@ -154,7 +178,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     }
   };
 
-  useEffect(() => { const t = window.setTimeout(() => void quoteOnce(true), 200); return () => window.clearTimeout(t); }, [amount, net.id, net.rpc]);
+  useEffect(() => { const t = window.setTimeout(() => void quoteOnce(true), 200); return () => window.clearTimeout(t); }, [amount, net.id, net.rpc, vault, snap?.thinOk]);
   useEffect(() => { const t = window.setInterval(() => void quoteOnce(false), 1_000); return () => window.clearInterval(t); }, [net.id, net.rpc]);
   useEffect(() => { if (block != null) void quoteOnce(false); }, [block]);
 
@@ -189,8 +213,10 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   const quoteForAmount = quote && quote.amount === wei ? quote : null;
   const gate = spreadGate({
     mainnet: net.id === 143, account: !!account, vault: !!vault, amount,
-    pool: snap?.pool ?? 0n, walletBal: bal, quoting: quoting || (!!vault && !quoteForAmount && !quoteError),
+    pool: snap?.pool ?? 0n, walletBal: bal,
+    quoting: !quoteForAmount && !quoteError && (quoting || !!vault),
     quoteOk: quoteForAmount ? quoteForAmount.ok : quoteError ? false : null,
+    coversGas: quoteForAmount?.coversGas,
   });
 
   const remember = (a: Address) => { if (key) localStorage.setItem(key, a); setVault(a); };
@@ -324,21 +350,24 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-400/15 text-emerald-200"><Radio className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
           <h2 className="text-lg font-semibold text-white">Spread</h2>
-          <p className="break-words text-xs text-zinc-400">This tab quotes Uniswap v3, PancakeSwap v3, and Kuru when a new block arrives. A round trip settles only between the two v3 pools, and only when it clears a 0.05% floor and a rough gas cost. There is no promised rate.</p>
+          <p className="break-words text-xs text-zinc-400">This tab quotes Uniswap v3 at 0.30% and 0.05%, PancakeSwap v3 at 0.05%, and Kuru when a new block arrives. A round trip settles on the pair that returns the most MON. Any quoted gain can be submitted. Rough gas is shown and does not block it. There is no promised rate.</p>
         </div>
       </div>
 
       <div data-testid="spread-quote" className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs text-zinc-300">
-        <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0">Uniswap</span><span className="shrink-0 font-mono">{quoteForAmount ? usdc(quoteForAmount.uni) : quoting ? '…' : '—'}</span></div>
-        <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0">PancakeSwap</span><span className="shrink-0 font-mono">{quoteForAmount ? usdc(quoteForAmount.cake) : quoting ? '…' : '—'}</span></div>
+        <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0">Uniswap 0.30%</span><span className="shrink-0 font-mono">{quoteForAmount ? usdc(quoteForAmount.uni) : quoting ? '…' : '—'}</span></div>
+        <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0">Uniswap 0.05%</span><span data-testid="spread-thin" className="shrink-0 font-mono">{quoteForAmount ? usdc(quoteForAmount.thin) : quoting ? '…' : '—'}</span></div>
+        <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0">PancakeSwap 0.05%</span><span className="shrink-0 font-mono">{quoteForAmount ? usdc(quoteForAmount.cake) : quoting ? '…' : '—'}</span></div>
         <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0">Kuru <span className="text-zinc-500">price only</span></span><span data-testid="spread-kuru" className="shrink-0 font-mono">{quoteForAmount ? (quoteForAmount.kuru != null ? usdc(quoteForAmount.kuru) : 'unavailable') : quoting ? '…' : '—'}</span></div>
-        <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0 break-words">{quoteForAmount?.sell ? `Back via ${VENUES[quoteForAmount.buy!].name}` : 'Round trip'}</span><span className="shrink-0 font-mono">{quoteForAmount?.sell ? mon(quoteForAmount.back) : '—'}</span></div>
+        <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0 break-words">{quoteForAmount?.sell ? `${VENUES[quoteForAmount.sell].name} → ${VENUES[quoteForAmount.buy!].name}` : 'Round trip'}</span><span className="shrink-0 font-mono">{quoteForAmount?.sell ? mon(quoteForAmount.back) : '—'}</span></div>
         <div className="flex min-w-0 flex-wrap justify-between gap-x-3 gap-y-1 text-zinc-400">
           <span>Quoted profit {quoteForAmount ? mon(quoteForAmount.profit) : '—'}</span>
           <span>Caller 10% {quoteForAmount ? mon(quoteForAmount.bounty) : '—'}</span>
           <span>Pool 80% {quoteForAmount ? mon(quoteForAmount.poolCut) : '—'}</span>
           <span>Rough gas {mon(ROUGH_GAS_WEI)}</span>
         </div>
+        {quoteForAmount?.ok && !quoteForAmount.coversGas && <p data-testid="spread-gas-note" className="break-words text-amber-200">This gain is smaller than rough gas. Submitting still runs the round trip. You pay the gas.</p>}
+        {vault && snap && !snap.thinOk && <p className="break-words text-amber-200">This pool was opened before the Uniswap 0.05% leg. Open a new pool to settle that price.</p>}
         {quoteError && <p className="break-words text-rose-300">{quoteError}</p>}
       </div>
 
@@ -364,7 +393,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         </div>
       </div>
 
-      <Switch testid="spread-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One try per block. A rejection or a still-pending transaction turns it off." />
+      <Switch testid="spread-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One send per block when the quote gains MON. You pay gas, which can be larger than the gain. A rejection or a still-pending transaction turns it off." />
 
       {vault && snap && snap.pool < snap.cap && (
         <div className="mt-3 grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
