@@ -9,9 +9,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T09:26:40.230Z",
+ "updatedAt": "2026-10-15T09:36:42.568Z",
  "totals": {
-  "allowed": 415,
+  "allowed": 416,
   "blocked": 168,
   "ownerTxs": 31,
   "skipped": 23
@@ -154,11 +154,19 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 22,
+   "allowed": 23,
    "blocked": 44
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T09:36:42.567Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
+   "status": "allowed",
+   "tx": "0x1e38df57e30953f0d8aca5a5c2d06e1a384e35bf3dc1a305cfab14e9afa743f8"
+  },
   {
    "ts": "2026-10-15T09:26:40.229Z",
    "persona": "tester",
@@ -648,14 +656,6 @@
    "status": "blocked",
    "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
    "tx": "0x0f03445524af9d58a866f0e2573c6a64b6d5bfad432a6ecc41459dd7799f6273"
-  },
-  {
-   "ts": "2026-10-15T05:15:16.782Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0024 MON to the DCA bot agent",
-   "status": "allowed",
-   "tx": "0x2ef471d80f291bbb1cab24f4d2fb1b12f984e5a499d4962e1859243d67d8e073"
   }
  ],
  "status": "running (GitHub Actions)"
