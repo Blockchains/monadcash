@@ -6,6 +6,7 @@ import { Btn } from './ui';
 import { haptic } from '@/lib/wallets';
 import { addLocal, factoryAbi, mon, plain, quoteAll, reasonOf, short, type Net, type VaultState } from '@/lib/vault';
 import { buildSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
+import { pricedGas } from '@/lib/fastPath';
 
 type RunAgent = (s: VaultState, kind: string, amount: bigint) => Promise<{ ok: boolean; msg: React.ReactNode; detail: string }>;
 
@@ -47,7 +48,7 @@ export function dispatchGate(o: {
 
 export default function FastDispatch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, loadVaults, refreshHist, toast }: {
   net: Net; pub: PublicClient; account: Address | null; wallet: WalletClient | null; bal: bigint | null;
-  vaults: VaultState[] | null; need: () => Promise<boolean>; send: (w: WalletClient, req: { to: Address; data?: `0x${string}`; value?: bigint }) => Promise<{ transactionHash: `0x${string}` }>;
+  vaults: VaultState[] | null; need: () => Promise<boolean>; send: (w: WalletClient, req: { to: Address; data?: `0x${string}`; value?: bigint; gas?: bigint }) => Promise<{ transactionHash: `0x${string}` }>;
   runAgent: RunAgent; loadVaults: () => Promise<void>; refreshHist: () => void; toast: (m: React.ReactNode, k?: 'ok' | 'bad' | 'info') => void;
 }) {
   const [preset, setPreset] = useState<SuperVault>(SUPER_VAULTS[0]);
@@ -110,7 +111,8 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
       } catch { /* older factory */ }
       const c = buildSuper(preset, account, [], Number(formatEther(dep)));
       await pub.call({ account, to: net.factory, data: c.data, value: c.value });
-      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value });
+      const gas = await pricedGas(pub, account, { to: net.factory, data: c.data, value: c.value });
+      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas });
       addLocal(net, { label: `${preset.name} created${dep > 0n ? ` + ${formatEther(dep)} MON deposited` : ''} (1 tx)`, kind: 'owner', tx: rc.transactionHash, from: account });
       const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [account] }) as Address[];
       const v = list[list.length - 1];

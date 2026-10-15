@@ -4,8 +4,9 @@ import { getAddress, isAddress, parseEther, type Address, type PublicClient, typ
 import { AlertTriangle, CheckCircle2, Lock, Shield, Zap } from 'lucide-react';
 import { Btn } from './ui';
 import { haptic } from '@/lib/wallets';
-import { addLocal, chainOf, mon, plain, reasonOf, short, type Net } from '@/lib/vault';
+import { addLocal, mon, plain, reasonOf, short, type Net } from '@/lib/vault';
 import { BREAKER_BPS, explainPrime, FEE_BPS, HOP_BPS, primeAbi, primeDeployData, primeDepositData, primeGate, primeWithdrawData, PRIME_CAP, PRIME_HOP, SENIOR_PROFIT_BPS, trancheAssets, type TrancheId } from '@/lib/prime';
+import { GAS, pricedGas } from '@/lib/fastPath';
 
 type Snap = {
   nav: bigint; hwm: bigint; halted: boolean; cap: bigint; ceiling: bigint; drawdown: bigint;
@@ -20,7 +21,7 @@ const CHOICES: { id: TrancheId; title: string; line: string; take: string }[] = 
 export default function PrimeTerminal({ net, pub, account, wallet, bal, need, send, toast, block }: {
   net: Net; pub: PublicClient; account: Address | null; wallet: WalletClient | null; bal: bigint | null;
   need: () => Promise<boolean>;
-  send: (w: WalletClient, req: { to: Address; data?: `0x${string}`; value?: bigint }) => Promise<{ transactionHash: `0x${string}` }>;
+  send: (w: WalletClient, req: { to?: Address; data?: `0x${string}`; value?: bigint; gas?: bigint }) => Promise<{ transactionHash: `0x${string}`; contractAddress?: Address | null }>;
   toast: (m: React.ReactNode, k?: 'ok' | 'bad' | 'info') => void; block: bigint | null;
 }) {
   const [tranche, setTranche] = useState<TrancheId>(0);
@@ -96,17 +97,16 @@ export default function PrimeTerminal({ net, pub, account, wallet, bal, need, se
     try {
       if (!vault) {
         const data = primeDeployData(account, account, account, tranche);
-        const gas = ((await pub.estimateGas({ account, data, value: wei })) * 13n) / 10n;
-        const hash = await wallet.sendTransaction({ data, value: wei, gas, account: wallet.account!, chain: chainOf(net) } as any);
-        const rc = await pub.waitForTransactionReceipt({ hash, timeout: 180_000 });
-        if (rc.status !== 'success' || !rc.contractAddress) throw Object.assign(new Error('Transaction reverted'), { hash });
+        const gas = await pricedGas(pub, account, { data, value: wei });
+        const rc = await send(wallet, { data, value: wei, gas });
+        if (!rc.contractAddress) throw new Error('The vault address was missing from the receipt.');
         remember(rc.contractAddress);
-        addLocal(net, { label: `Opened a prime vault and deposited ${amount} MON into ${choice.take}`, kind: 'owner', tx: hash, from: account });
-        const href = `${net.exp}/tx/${hash}`;
+        addLocal(net, { label: `Opened a prime vault and deposited ${amount} MON into ${choice.take}`, kind: 'owner', tx: rc.transactionHash, from: account });
+        const href = `${net.exp}/tx/${rc.transactionHash}`;
         setLine({ ok: true, text: `Opened ${short(rc.contractAddress)} and deposited ${amount} MON into ${choice.take}.`, href });
         toast(<>Vault opened. <a className="underline" href={href} target="_blank" rel="noreferrer">View tx ↗</a></>, 'ok');
       } else {
-        const rc = await send(wallet, { to: vault, data: primeDepositData(tranche), value: wei });
+        const rc = await send(wallet, { to: vault, data: primeDepositData(tranche), value: wei, gas: GAS.primeDeposit });
         addLocal(net, { label: `Deposited ${amount} MON into ${choice.take}`, kind: 'owner', tx: rc.transactionHash, from: account });
         const href = `${net.exp}/tx/${rc.transactionHash}`;
         setLine({ ok: true, text: `Deposited ${amount} MON into ${choice.take}.`, href });
@@ -122,7 +122,7 @@ export default function PrimeTerminal({ net, pub, account, wallet, bal, need, se
     if (!(await need())) return;
     setBusy(true); setLine(null);
     try {
-      const rc = await send(wallet, { to: vault, data: primeWithdrawData(tranche, snap.shares[tranche]) });
+      const rc = await send(wallet, { to: vault, data: primeWithdrawData(tranche, snap.shares[tranche]), gas: GAS.primeWithdraw });
       addLocal(net, { label: `Withdrew ${choice.take}`, kind: 'owner', tx: rc.transactionHash, from: account });
       const href = `${net.exp}/tx/${rc.transactionHash}`;
       setLine({ ok: true, text: `Withdrew your ${choice.take} tranche.`, href });

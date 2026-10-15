@@ -109,6 +109,7 @@ function Sandbox({ snap, allowedSet, pc }: { snap: PolicySnapshot | null; allowe
       const amt = parseUnits(amount || '0', 18);
       const allowed = await pc.readContract({ address: DEPLOYMENT.policyPilot, abi: policyPilotAbi, functionName: 'allowedRecipient', args: [recipient as Address] });
       const pre = precheck(snap, allowed, recipient as Address, amt);
+      if (pre && !pre.ok) { setRes({ pre, chain: pre }); return; }
       const reqId = keccak256(toHex(`sandbox-${Date.now()}-${Math.random()}`));
       const chain = await simulateExecute(pc, snap.executor, recipient as Address, amt, reqId);
       setRes({ pre, chain });
@@ -129,7 +130,7 @@ function Sandbox({ snap, allowedSet, pc }: { snap: PolicySnapshot | null; allowe
       {res && (
         <div data-testid="sb-result" className={`mt-3 rounded-lg border p-3 text-sm ${ok ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-red-500/40 bg-red-500/10'}`}>
           <div className="flex items-center gap-2 font-semibold">{ok ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <XCircle className="h-4 w-4 text-red-400" />}{ok ? 'PASS' : 'FAIL'}{!res.chain.ok && <code className="font-mono text-red-300">{res.chain.error}</code>}</div>
-          <div className="mt-1 text-xs text-zinc-400">on-chain eth_call: {res.chain.ok ? 'would succeed' : res.chain.error} · client precheck: {res.pre ? res.pre.ok ? 'pass' : (res.pre as any).error : 'pass'}{res.pre && !res.pre.ok && !res.chain.ok && (res.pre as any).error !== res.chain.error && <span className="text-amber-300"> (mismatch)</span>}</div>
+          <div className="mt-1 text-xs text-zinc-400">{res.chain.via === 'precheck' ? <>local precheck: {res.chain.ok ? 'pass' : res.chain.error} · eth_call skipped</> : <>on-chain eth_call: {res.chain.ok ? 'would succeed' : res.chain.error}</>} · client precheck: {res.pre ? res.pre.ok ? 'pass' : (res.pre as any).error : 'pass'}{res.pre && !res.pre.ok && !res.chain.ok && (res.pre as any).error !== res.chain.error && <span className="text-amber-300"> (mismatch)</span>}</div>
           {!res.chain.ok && <div className="mt-1 flex items-center gap-1 text-xs text-zinc-500"><ShieldAlert className="h-3 w-3" />The contract would revert, so an agent could not make this payout.</div>}
         </div>
       )}
