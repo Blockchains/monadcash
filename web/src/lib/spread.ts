@@ -1,7 +1,7 @@
 'use client';
-import { decodeErrorResult, decodeFunctionResult, encodeDeployData, encodeFunctionData, parseAbi, parseEther, type Abi, type Address, type Hex } from 'viem';
+import { decodeErrorResult, decodeFunctionResult, encodeDeployData, encodeFunctionData, parseAbi, parseEther, toHex, type Abi, type Address, type Hex } from 'viem';
 import artifact from './spreadArtifact.json';
-import { QUOTERS, SERVICES, TOKENS } from './services';
+import { KURU, QUOTERS, SERVICES, TOKENS } from './services';
 
 export const spreadAbi = artifact.abi as Abi;
 export const SPREAD_BYTECODE = artifact.bytecode as Hex;
@@ -70,7 +70,7 @@ export function spreadGate(o: {
     return { ok: false, code: 'amount', label: 'ENTER AN AMOUNT', detail: 'Use a MON amount such as 0.05.' };
   }
   if (wei <= 0n) return { ok: false, code: 'amount', label: 'ENTER AN AMOUNT', detail: 'The amount needs to be more than 0 MON.' };
-  if (!o.mainnet) return { ok: false, code: 'net', label: 'MAINNET ONLY', detail: 'These quotes are Uniswap v3 and PancakeSwap v3 on Monad mainnet.' };
+  if (!o.mainnet) return { ok: false, code: 'net', label: 'MAINNET ONLY', detail: 'These quotes are Uniswap v3, PancakeSwap v3, and Kuru on Monad mainnet.' };
   if (!o.vault && wei > SPREAD_CAP) return { ok: false, code: 'cap', label: 'EXCEEDS CAP', detail: 'A spread pool holds at most 1 MON.' };
   if (o.vault && wei > o.pool) return { ok: false, code: 'bal', label: 'LARGER THAN THE POOL', detail: 'A round trip cannot sell more MON than the pool holds.' };
   if (!o.account) return { ok: false, code: 'connect', label: 'CONNECT WALLET', detail: 'One wallet connection opens the pool or submits a round trip.' };
@@ -78,12 +78,20 @@ export function spreadGate(o: {
     if (o.walletBal != null && wei > o.walletBal) return { ok: false, code: 'wallet', label: 'NOT ENOUGH MON', detail: 'Your wallet does not hold this deposit.' };
     return { ok: true, code: 'open', label: 'READY TO OPEN', detail: 'One signature opens your pool and deposits this MON. There is no promised rate.' };
   }
-  if (o.quoting || o.quoteOk == null) return { ok: false, code: 'quote', label: 'QUOTING', detail: 'Asking both pools for this size.' };
+  if (o.quoting || o.quoteOk == null) return { ok: false, code: 'quote', label: 'QUOTING', detail: 'Asking Uniswap, PancakeSwap, and Kuru for this size.' };
   if (!o.quoteOk) return { ok: false, code: 'flat', label: 'NO SPREAD', detail: 'The quote does not clear the 0.05% floor and a rough gas cost. Nothing is sent.' };
   return { ok: true, code: 'go', label: 'SPREAD COVERS THE FLOOR', detail: 'Submit sells on the richer pool and buys back on the other. A loss reverts.' };
 }
 
-export type QuoteCall = { to: Address; data: Hex };
+export type QuoteCall = { to: Address; data: Hex; value?: Hex; from?: Address };
+export type CallRow = { ok: true; result: Hex } | { ok: false; error: string };
+export type StateOverride = Record<string, { balance: Hex }>;
+
+/** eth_call sender used only for the Kuru simulation. Its balance is overridden for that call. */
+const KURU_FROM: Address = '0x0000000000000000000000000000000000000001';
+const kuruAbi = parseAbi([
+  'function anyToAnySwap(address[] markets,bool[] isBuy,bool[] nativeSend,address debitToken,address creditToken,uint256 amount,uint256 minAmountOut) payable returns (uint256)',
+]);
 
 export function quoteCall(venue: VenueId, tokenIn: Address, tokenOut: Address, amountIn: bigint): QuoteCall {
   const v = VENUES[venue];
@@ -107,9 +115,29 @@ export function backQuote(venue: VenueId, usdcAmount: bigint): QuoteCall {
   return quoteCall(venue, TOKENS.USDC.address, TOKENS.WMON.address, usdcAmount);
 }
 
+/** Uniswap, PancakeSwap, then Kuru. Kuru is a price only; capture still uses the two v3 routers. */
+export function meshQuotes(amount: bigint): { calls: QuoteCall[]; stateOverride: StateOverride } {
+  const kuru = encodeFunctionData({
+    abi: kuruAbi,
+    functionName: 'anyToAnySwap',
+    args: [[KURU.monUsdc], [false], [true], '0x0000000000000000000000000000000000000000', TOKENS.USDC.address, amount, 1n],
+  });
+  return {
+    calls: [
+      ...forwardQuotes(amount),
+      { to: KURU.router, from: KURU_FROM, value: toHex(amount), data: kuru },
+    ],
+    stateOverride: { [KURU_FROM]: { balance: toHex(parseEther('1') + amount) } },
+  };
+}
+
 export function decodeQuote(data: Hex): bigint {
   const out = decodeFunctionResult({ abi: quoterAbi, functionName: 'quoteExactInputSingle', data });
   return out[0];
+}
+
+export function decodeKuru(data: Hex): bigint {
+  return decodeFunctionResult({ abi: kuruAbi, functionName: 'anyToAnySwap', data });
 }
 
 export function workerUrl(): string {
@@ -117,18 +145,24 @@ export function workerUrl(): string {
   return `${base}/spread-worker.js`;
 }
 
-export async function fetchCalls(rpc: string, calls: QuoteCall[]): Promise<Hex[]> {
-  const rows = await Promise.all(calls.map(async c => {
-    const res = await fetch(rpc, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: c.to, data: c.data }, 'latest'] }),
-    });
-    const json = await res.json() as { result?: Hex; error?: { message?: string } };
-    if (!json.result) throw new Error(json.error?.message || 'Quote failed');
-    return json.result;
+export async function fetchCalls(rpc: string, calls: QuoteCall[], stateOverride?: StateOverride): Promise<CallRow[]> {
+  return Promise.all(calls.map(async (c): Promise<CallRow> => {
+    const tx: { to: Address; data: Hex; value?: Hex; from?: Address } = { to: c.to, data: c.data };
+    if (c.from) tx.from = c.from;
+    if (c.value) tx.value = c.value;
+    try {
+      const res = await fetch(rpc, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: stateOverride ? [tx, 'latest', stateOverride] : [tx, 'latest'] }),
+      });
+      const json = await res.json() as { result?: Hex; error?: { message?: string } };
+      if (!json.result) return { ok: false, error: json.error?.message || 'Quote failed' };
+      return { ok: true, result: json.result };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : 'Quote failed' };
+    }
   }));
-  return rows;
 }
 
 export function spreadDeployData(treasury: Address): Hex {
