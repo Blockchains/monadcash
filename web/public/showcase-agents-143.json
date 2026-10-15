@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T02:48:03.916Z",
+ "updatedAt": "2026-10-15T02:58:10.155Z",
  "totals": {
-  "allowed": 340,
-  "blocked": 136,
+  "allowed": 342,
+  "blocked": 138,
   "ownerTxs": 31,
   "skipped": 14
  },
@@ -75,7 +75,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 119
+   "blocked": 120
   },
   {
    "id": "dca1",
@@ -118,7 +118,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 26,
+   "allowed": 27,
    "blocked": 0
   },
   {
@@ -130,7 +130,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 26,
+   "allowed": 27,
    "blocked": 0
   },
   {
@@ -143,10 +143,44 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 9,
-   "blocked": 17
+   "blocked": 18
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T02:58:10.154Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
+   "status": "blocked",
+   "reason": "RequestAlreadyExecuted(0xfc3903c1f225883f1b12e3396620937e22df653e11f75b2feab3da5440011ab2)",
+   "tx": "0x47832f6873d83f7ec8049b01358690634619e02fd3baa5b403ef2723cc62aed7"
+  },
+  {
+   "ts": "2026-10-15T02:58:09.106Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.002 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0xcd69a08de3304a1d4268dee629496257a0310e5b29cfd9b27254647576f2351d"
+  },
+  {
+   "ts": "2026-10-15T02:58:07.251Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.52 < target 1)",
+   "status": "allowed",
+   "tx": "0x2aac672b0620ebffd3bd1e64116cfb7218dd6775efb79d89020d8eb081ff094e"
+  },
+  {
+   "ts": "2026-10-15T02:58:06.109Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
+   "tx": "0x01ee1e4d14411aa45f1ff65770c354b2f7ade8998e179e6c0686d815ff497075"
+  },
   {
    "ts": "2026-10-15T02:48:03.914Z",
    "persona": "tester",
@@ -615,39 +649,6 @@
    "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.26 < target 1)",
    "status": "allowed",
    "tx": "0x8d35f882937fce97cf5584245ec5ec377b45dbba05b95496d207182b3bd46384"
-  },
-  {
-   "ts": "2026-10-15T00:46:31.937Z",
-   "persona": "mm",
-   "actor": "agent",
-   "label": "Market maker buys 0.0057963709 MON with 0.000138 USDC on Kuru (order book)",
-   "status": "allowed",
-   "tx": "0x7b359ff8be8e3715c655f84c16ef4eea9e8dbc5a660045eac7e7d963d42d8e4d"
-  },
-  {
-   "ts": "2026-10-15T00:46:30.537Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay a stranger (0x…dEaD)",
-   "status": "blocked",
-   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
-   "tx": "0x50efa022d3f3e8b91850cef466efefacba3467352d282df608074e09f1375d9b"
-  },
-  {
-   "ts": "2026-10-15T00:36:27.220Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
-   "status": "allowed",
-   "tx": "0x769148ec2d3fcbd88b334da713f74ce5f6ecf6cc8a7969250bdcded2753c9ee7"
-  },
-  {
-   "ts": "2026-10-15T00:36:25.027Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0023 MON to the Payroll agent",
-   "status": "allowed",
-   "tx": "0xdbde5ca9d750c2bd7f4cd7223049b9abc6a4fdbe846d0421f9a5e750ee6827f2"
   }
  ],
  "status": "running (GitHub Actions)"
