@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T00:16:09.318Z",
+ "updatedAt": "2026-10-15T00:26:17.256Z",
  "totals": {
-  "allowed": 296,
-  "blocked": 112,
+  "allowed": 300,
+  "blocked": 113,
   "ownerTxs": 31,
   "skipped": 11
  },
@@ -75,7 +75,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 104
+   "blocked": 105
   },
   {
    "id": "dca1",
@@ -102,7 +102,7 @@
    "agent": "0x8fdaB828628F211BC10E074Fa550430cf5048462",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 11,
+   "allowed": 12,
    "blocked": 0
   },
   {
@@ -114,7 +114,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 11,
+   "allowed": 12,
    "blocked": 0
   },
   {
@@ -126,7 +126,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 11,
+   "allowed": 12,
    "blocked": 0
   },
   {
@@ -138,11 +138,52 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 3,
+   "allowed": 4,
    "blocked": 8
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T00:26:17.255Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester unwraps 0.05 WMON → MON (allowed)",
+   "status": "allowed",
+   "tx": "0x51368f4a6decd4417597e702176f64ea1f5857fac60bc2338d2eb6a4a2702a04"
+  },
+  {
+   "ts": "2026-10-15T00:26:16.114Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0021 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0xc66ce2fb48cd59ad7b72fbb75389f96d82359873ef432b4e5d92d95848956942"
+  },
+  {
+   "ts": "2026-10-15T00:26:14.426Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.22 < target 1)",
+   "status": "allowed",
+   "tx": "0xc3b20aa641afc53ed2fafb74f76ae4b02982a3b8a00008f02c8580d953698e5f"
+  },
+  {
+   "ts": "2026-10-15T00:26:13.071Z",
+   "persona": "mm",
+   "actor": "agent",
+   "label": "Market maker buys 0.0045873472 MON with 0.00011 USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0xf279be00c7310a879a0c92dbd8ae55b50165d97a9e2e35e248f77f45a3158380"
+  },
+  {
+   "ts": "2026-10-15T00:26:11.850Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to raise its own budget (owner-only)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0x33b45415451ed5a63df3808637975f3be45f0eb1eb6c30aafdd6098b689758e0"
+  },
   {
    "ts": "2026-10-15T00:16:09.317Z",
    "persona": "tester",
@@ -599,47 +640,6 @@
    "label": "Tipper tips 0.0013 MON to the Staker agent",
    "status": "allowed",
    "tx": "0x6a6287755688bc3d3646156863b99c977825f14513d1dfde95fc43b8c6c0ec2f"
-  },
-  {
-   "ts": "2026-10-14T22:44:47.130Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.02 < target 1)",
-   "status": "allowed",
-   "tx": "0x34149e8e41ac5b272673426aafe9fb405ce6561c5891c0ebd6c43e03519707f8"
-  },
-  {
-   "ts": "2026-10-14T22:44:46.024Z",
-   "persona": "mm",
-   "actor": "agent",
-   "label": "Market maker buys 0.0086393088 MON with 0.000208 USDC on Kuru (order book)",
-   "status": "allowed",
-   "tx": "0x645524de7c4e8246b4553edf0551bfc3cecaaf29980f30d6506b79147ac3646a"
-  },
-  {
-   "ts": "2026-10-14T22:44:44.766Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
-   "tx": "0x747505c50b59a1b0387e6b324a4f832eabe74158e7f8268b412cb58023ca2d2e"
-  },
-  {
-   "ts": "2026-10-14T22:44:43.653Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker stakes 0.0073 MON → aprMON (aPriori)",
-   "status": "allowed",
-   "tx": "0x0d5594aac530bd7bae2131aea2dc28178ccc50598e8396e184e0e84f53c4841b"
-  },
-  {
-   "ts": "2026-10-14T22:34:41.554Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
-   "status": "allowed",
-   "tx": "0x096f8d355a0dd9ce3e117fb02230e5c249526327cdf4c6e8a40515a1adb4f0d0"
   }
  ],
  "status": "running (GitHub Actions)"
