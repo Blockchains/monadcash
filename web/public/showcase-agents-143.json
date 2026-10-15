@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T03:48:38.813Z",
+ "updatedAt": "2026-10-15T03:58:44.050Z",
  "totals": {
-  "allowed": 354,
-  "blocked": 143,
+  "allowed": 356,
+  "blocked": 144,
   "ownerTxs": 31,
   "skipped": 15
  },
@@ -122,7 +122,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 32,
+   "allowed": 33,
    "blocked": 0
   },
   {
@@ -134,7 +134,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 32,
+   "allowed": 33,
    "blocked": 0
   },
   {
@@ -147,10 +147,35 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 11,
-   "blocked": 21
+   "blocked": 22
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T03:58:44.049Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
+   "status": "blocked",
+   "reason": "RequestAlreadyExecuted(0xaf78f17378ff08413c0542ca65d06dd6a32fcdb03dbf2fa88aed560425fa30b8)",
+   "tx": "0x81bf7efd4b10549034dad86eacaa520f6ae2ddb62526950775e6cceab84010a1"
+  },
+  {
+   "ts": "2026-10-15T03:58:43.026Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0017 MON to the Payroll agent",
+   "status": "allowed",
+   "tx": "0x76cde38623ff296a4106a06183c577f0610cd30d01b3917dc84723290def2121"
+  },
+  {
+   "ts": "2026-10-15T03:58:41.668Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.64 < target 1)",
+   "status": "allowed",
+   "tx": "0xa58ba0e3668a42062166d5fb7665c408ce42ce91ea34f661c5db9ddb9dae39f4"
+  },
   {
    "ts": "2026-10-15T03:48:38.812Z",
    "persona": "tester",
@@ -626,32 +651,6 @@
    "label": "Tipper tips 0.0019 MON to the Payroll agent",
    "status": "allowed",
    "tx": "0x50d18a5604db622ccdb5c26113c8f55089c7d7c1ea7d2e97a19598da90b6aedf"
-  },
-  {
-   "ts": "2026-10-15T01:27:09.203Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.34 < target 1)",
-   "status": "allowed",
-   "tx": "0xaad8ad4c2d3436bbdf04925f57ee9ecd878c4722161133084fb2a3a6d777115f"
-  },
-  {
-   "ts": "2026-10-15T01:27:07.459Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to stake via Kintsu (not on its allowlist)",
-   "status": "blocked",
-   "reason": "CallNotAllowed(0xA3227C5969757783154C60bF0bC1944180ed81B9, 0x1c3477dd)",
-   "tx": "0xdc1896c97e7873dffbf55d3fe8c655959f58c56c9847da1eb33ec436689e83c8"
-  },
-  {
-   "ts": "2026-10-15T01:17:04.779Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
-   "status": "blocked",
-   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
-   "tx": "0x3064e84f8ada8d542c30ba1d46fc453a10fd5c883e567b3a9689633bd11b3a81"
   }
  ],
  "status": "running (GitHub Actions)"
