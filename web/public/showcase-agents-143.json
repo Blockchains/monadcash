@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T08:56:32.557Z",
+ "updatedAt": "2026-10-15T09:06:34.645Z",
  "totals": {
   "allowed": 414,
-  "blocked": 166,
+  "blocked": 167,
   "ownerTxs": 31,
   "skipped": 23
  },
@@ -155,10 +155,19 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 21,
-   "blocked": 42
+   "blocked": 43
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T09:06:34.644Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
+   "tx": "0x3c722c54b0e26d5eff302591c02411ee1074e5d4a46f515bdaea90eca6e1e8f9"
+  },
   {
    "ts": "2026-10-15T08:56:32.556Z",
    "persona": "tester",
@@ -647,14 +656,6 @@
    "status": "blocked",
    "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
    "tx": "0x872955994131f9a46995f50b548411231d8bbfdc15f6e9d11474fc35a306aee1"
-  },
-  {
-   "ts": "2026-10-15T05:05:14.052Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0028 MON to the DCA bot (v1 vault) agent",
-   "status": "allowed",
-   "tx": "0x578775acdd0c9a30387502e1a7842484be076f7f0ab793abf8f94fabd653733b"
   }
  ],
  "status": "running (GitHub Actions)"
