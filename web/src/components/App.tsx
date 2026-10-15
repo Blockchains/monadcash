@@ -12,6 +12,7 @@ import { TOKENS, type TokenSym } from '@/lib/services';
 import { buildSuper, matchSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
 import VaultReport from './VaultReport';
 import FastDispatch from './FastDispatch';
+import PrimeTerminal from './PrimeTerminal';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 type Tab = 'launch' | 'activity' | 'agents' | 'services' | 'policy';
@@ -259,6 +260,8 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
       </section>
 
       <FastDispatch net={net} pub={pub} account={account} wallet={wallet} bal={bal} vaults={vaults} need={need} send={send} runAgent={runAgent} loadVaults={loadVaults} refreshHist={refreshHist} toast={toast} />
+
+      <PrimeTerminal net={net} pub={pub} account={account} wallet={wallet} bal={bal} need={need} send={send} toast={toast} block={block} />
 
       <details data-testid="custom-rules" className="min-w-0 rounded-[2rem] border border-white/10 bg-white/[0.02] p-4 sm:p-5">
         <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-zinc-200">Custom agent and custom rules</summary>
