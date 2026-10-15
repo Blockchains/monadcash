@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T07:46:13.086Z",
+ "updatedAt": "2026-10-15T07:56:16.492Z",
  "totals": {
-  "allowed": 408,
-  "blocked": 161,
+  "allowed": 409,
+  "blocked": 162,
   "ownerTxs": 31,
   "skipped": 22
  },
@@ -138,7 +138,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 56,
+   "allowed": 57,
    "blocked": 0
   },
   {
@@ -151,10 +151,27 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 19,
-   "blocked": 37
+   "blocked": 38
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T07:56:16.491Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
+   "status": "blocked",
+   "reason": "RequestAlreadyExecuted(0x4831031919e658c9c2783453119495421be04970c7262f5f738d692866ac425f)",
+   "tx": "0xff1f291ca83f7112464b5087679db63ab162bf8dc81e02be580b72b20b490a1d"
+  },
+  {
+   "ts": "2026-10-15T07:56:15.572Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0025 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0x5cd399d72e310b4b9c3f0367668e31aa7a5e706e1f4af9ced3e36b2946246f5a"
+  },
   {
    "ts": "2026-10-15T07:46:13.085Z",
    "persona": "tester",
@@ -633,22 +650,6 @@
    "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
    "status": "allowed",
    "tx": "0x8139afadd4e4b36e29434c63e576e4b255787cf826065fb594328de8ed079f3b"
-  },
-  {
-   "ts": "2026-10-15T04:35:01.944Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0024 MON to the Staker agent",
-   "status": "allowed",
-   "tx": "0x97ae8962c36576726cc7063c8cc86f7fbbaf387c2297132ba95cc6bef8f7b945"
-  },
-  {
-   "ts": "2026-10-15T04:35:01.247Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.72 < target 1)",
-   "status": "allowed",
-   "tx": "0xa18b14d15834cc7deecc7c4b297c35454987c068f9be477885f4ad87469ce5a5"
   }
  ],
  "status": "running (GitHub Actions)"
