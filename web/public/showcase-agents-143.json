@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T00:36:27.221Z",
+ "updatedAt": "2026-10-15T00:46:36.257Z",
  "totals": {
-  "allowed": 304,
-  "blocked": 114,
+  "allowed": 307,
+  "blocked": 116,
   "ownerTxs": 31,
   "skipped": 11
  },
@@ -75,7 +75,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 106
+   "blocked": 107
   },
   {
    "id": "dca1",
@@ -102,7 +102,7 @@
    "agent": "0x8fdaB828628F211BC10E074Fa550430cf5048462",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 13,
+   "allowed": 14,
    "blocked": 0
   },
   {
@@ -114,7 +114,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 13,
+   "allowed": 14,
    "blocked": 0
   },
   {
@@ -126,7 +126,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 13,
+   "allowed": 14,
    "blocked": 0
   },
   {
@@ -139,10 +139,52 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 5,
-   "blocked": 8
+   "blocked": 9
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T00:46:36.256Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps cap + 1 wei (0.050000000000000001 MON): expects PerPaymentCapExceeded",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
+   "tx": "0xa32f67e1449f5629dc496b6c9438ca850474752c786328ef96b9864bbf1b05a4"
+  },
+  {
+   "ts": "2026-10-15T00:46:35.045Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0017 MON to the Rogue agent agent",
+   "status": "allowed",
+   "tx": "0xd5c2c3f8e9c782046b0e2d56bb9566fc828a162668f337402c6a782c5973f092"
+  },
+  {
+   "ts": "2026-10-15T00:46:33.099Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.26 < target 1)",
+   "status": "allowed",
+   "tx": "0x8d35f882937fce97cf5584245ec5ec377b45dbba05b95496d207182b3bd46384"
+  },
+  {
+   "ts": "2026-10-15T00:46:31.937Z",
+   "persona": "mm",
+   "actor": "agent",
+   "label": "Market maker buys 0.0057963709 MON with 0.000138 USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0x7b359ff8be8e3715c655f84c16ef4eea9e8dbc5a660045eac7e7d963d42d8e4d"
+  },
+  {
+   "ts": "2026-10-15T00:46:30.537Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay a stranger (0x…dEaD)",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0x50efa022d3f3e8b91850cef466efefacba3467352d282df608074e09f1375d9b"
+  },
   {
    "ts": "2026-10-15T00:36:27.220Z",
    "persona": "tester",
@@ -597,48 +639,6 @@
    "label": "Market maker buys 0.0052705262 MON with 0.000128 USDC on Kuru (order book)",
    "status": "allowed",
    "tx": "0x628d80b40d056410b53b952636045c81732a7156f25b7b02a7995cc35ff24ef9"
-  },
-  {
-   "ts": "2026-10-14T23:05:00.825Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to stake via Kintsu (not on its allowlist)",
-   "status": "blocked",
-   "reason": "CallNotAllowed(0xA3227C5969757783154C60bF0bC1944180ed81B9, 0x1c3477dd)",
-   "tx": "0xf12e3a717632c9ab71d59d33863396a6be06ba0d3c39ae4436c5eed2716dc12f"
-  },
-  {
-   "ts": "2026-10-14T23:04:59.764Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker wraps 0.0229 MON → WMON",
-   "status": "allowed",
-   "tx": "0x36da3cafa6484a035be1a55392421a2142b57810610515c809fc5983e84f97ce"
-  },
-  {
-   "ts": "2026-10-14T22:54:57.488Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
-   "status": "blocked",
-   "reason": "RequestAlreadyExecuted(0x9366ebad38a79555d94748519502b870871ae2b0f711a4ca7bfb6d207cb8addf)",
-   "tx": "0x93396be5e02240bee5c73f610a3216aebd961d3458e2773b31ad149a59f15ff8"
-  },
-  {
-   "ts": "2026-10-14T22:54:56.474Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0023 MON to the Payroll agent",
-   "status": "allowed",
-   "tx": "0xfa7a43ec065d955401b6024b2d7cd510ef477897ba95ad367dd9a13d40a9fc07"
-  },
-  {
-   "ts": "2026-10-14T22:54:55.042Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.04 < target 1)",
-   "status": "allowed",
-   "tx": "0xca7867160eec3e4a0e22b8492a306043985f88d3d3678015c4cc48db5c904f59"
   }
  ],
  "status": "running (GitHub Actions)"
