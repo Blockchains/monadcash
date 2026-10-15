@@ -10,10 +10,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T18:37:49.489Z",
+ "updatedAt": "2026-10-15T18:47:58.691Z",
  "totals": {
-  "allowed": 557,
-  "blocked": 210,
+  "allowed": 564,
+  "blocked": 212,
   "ownerTxs": 31,
   "skipped": 26
  },
@@ -27,7 +27,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 62,
+   "allowed": 63,
    "blocked": 0
   },
   {
@@ -39,7 +39,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 121,
+   "allowed": 122,
    "blocked": 0
   },
   {
@@ -51,7 +51,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 92,
+   "allowed": 93,
    "blocked": 0
   },
   {
@@ -64,7 +64,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 147
+   "blocked": 148
   },
   {
    "id": "dca1",
@@ -75,7 +75,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 68,
+   "allowed": 69,
    "blocked": 0
   },
   {
@@ -87,7 +87,7 @@
    "agent": "0x8fdaB828628F211BC10E074Fa550430cf5048462",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 40,
+   "allowed": 41,
    "blocked": 0
   },
   {
@@ -99,7 +99,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 73,
+   "allowed": 74,
    "blocked": 0
   },
   {
@@ -111,7 +111,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 70,
+   "allowed": 71,
    "blocked": 0
   },
   {
@@ -124,10 +124,84 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 31,
-   "blocked": 63
+   "blocked": 64
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T18:47:58.689Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0x716f57f4676f7d15da97dd945f29f76db4f5b3e4e8e41a9972defa7acbd0f9ba"
+  },
+  {
+   "ts": "2026-10-15T18:47:57.999Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.5 MON to the DCA bot agent",
+   "status": "allowed",
+   "tx": "0x0e1477f9922b4aa1f483b5369f95cf8b9fe6795ee4b61ce1fc52387c0001dcc6"
+  },
+  {
+   "ts": "2026-10-15T18:47:57.233Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.5 MON → WMON (WMON 1.5 < target 10.5)",
+   "status": "allowed",
+   "tx": "0xa50efbd4930f30a88f29eda3cdfd5f07d4a5f124658f76a9d78f560c18a60880"
+  },
+  {
+   "ts": "2026-10-15T18:47:56.520Z",
+   "persona": "mm",
+   "actor": "agent",
+   "label": "Market maker sells 0.5 MON → USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0x4fa638f8707bd6e20bfb00e9921d2b480bbc4782376392eecc128e8bdbc2c1a6"
+  },
+  {
+   "ts": "2026-10-15T18:47:55.283Z",
+   "persona": "dca1",
+   "actor": "agent",
+   "label": "DCA bot unwraps 0.309146373437466913 WMON → MON",
+   "status": "allowed",
+   "tx": "0x457f81a9fc9cfb1f9647566a3a93eb125f031f400f499c6b0a6bb2823af8a7f2"
+  },
+  {
+   "ts": "2026-10-15T18:47:54.074Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(500000000000000000, 100000000000000000)",
+   "tx": "0xbc92ebc1c2c17e3634532446fb0dc1b0fc5261b1054556777f21d60094c417c0"
+  },
+  {
+   "ts": "2026-10-15T18:47:52.917Z",
+   "persona": "payroll",
+   "actor": "agent",
+   "label": "Payroll pays 0.3 MON to the team treasury",
+   "status": "allowed",
+   "tx": "0xce97b09357da017032a48e5a43e4cf53455b6648d2c1808b284e1a3ad52af2e9"
+  },
+  {
+   "ts": "2026-10-15T18:47:52.030Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker wraps 0.3 MON → WMON",
+   "status": "allowed",
+   "tx": "0x53add4955f5d722db36b2131dbd19fce857c97d6fc1b45407b514a41e561512b"
+  },
+  {
+   "ts": "2026-10-15T18:47:50.863Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot buys USDC with 0.3 MON on PancakeSwap v3",
+   "status": "allowed",
+   "tx": "0xa8326d8b426dd820f3eed69f75cb53f6117f873f935f79e4d3f4e579f868048c"
+  },
   {
    "ts": "2026-10-15T18:37:49.488Z",
    "persona": "tester",
@@ -546,80 +620,6 @@
    "label": "Tipper tips 0.0022 MON to the Rogue agent agent",
    "status": "allowed",
    "tx": "0x885e622a27c49264c53e40b0ba46281faaef6231a0600f8a27ae18602943d2fb"
-  },
-  {
-   "ts": "2026-10-15T17:36:55.607Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer unwraps 0.002 WMON → MON (WMON 1 > target 1)",
-   "status": "allowed",
-   "tx": "0x2996c1fff102efb51ffc2d3e2959e256e048ba321c2fdc72a28c625a5821b69d"
-  },
-  {
-   "ts": "2026-10-15T17:36:54.919Z",
-   "persona": "mm",
-   "actor": "agent",
-   "label": "Market maker buys 0.0073114417 MON with 0.000171 USDC on Kuru (order book)",
-   "status": "allowed",
-   "tx": "0xcd3d21e2f6ae6300849b45ae0154cce1138d0b5170951207f1c513f347855422"
-  },
-  {
-   "ts": "2026-10-15T17:36:53.731Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(500000000000000000, 10000000000000000)",
-   "tx": "0xbff3ba1a38acf69a3b822c23ccccb34e5bc2ad70b0de932259ee30125884ebc5"
-  },
-  {
-   "ts": "2026-10-15T17:36:52.571Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.0149 MON to the Rogue agent agent",
-   "status": "allowed",
-   "tx": "0xc05e31d3ffb18cc9877a23af0b50e0488c1df8eb1a712c21c8458a4ceb0f0e94"
-  },
-  {
-   "ts": "2026-10-15T17:36:51.774Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker stakes 0.0118 MON → gMON (Magma)",
-   "status": "allowed",
-   "tx": "0xa6e15a868e7ad0d3ae14c0371b7e41583fd1b8eb49959aad4557580947e71c59"
-  },
-  {
-   "ts": "2026-10-15T17:36:50.931Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.0197 MON on PancakeSwap v3",
-   "status": "allowed",
-   "tx": "0x1bd57b681f78949e3002471e292b46263e4b01a14715d94eea344d18c59e446f"
-  },
-  {
-   "ts": "2026-10-15T17:26:49.779Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
-   "status": "blocked",
-   "reason": "RequestAlreadyExecuted(0x4378e222bf178a5ced9dcc34ce6992f8dbe659868d177244b504765d408f1b41)",
-   "tx": "0x333e2dc30baf8fb872591cc5c429a95fa2838f7409e9efe40015a1ec6429a59e"
-  },
-  {
-   "ts": "2026-10-15T17:26:48.610Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0011 MON to the Payroll agent",
-   "status": "allowed",
-   "tx": "0x3c984b73ede669b606c48e9fcbb3d9d44dc38edd6d57faac9eab2f2a12e9d06a"
-  },
-  {
-   "ts": "2026-10-15T17:26:47.337Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.002 MON → WMON (WMON 0.998 < target 1)",
-   "status": "allowed",
-   "tx": "0x98303ba9b28a05d5f1f5068dd69bd1d339f0cbc2b3733a8bfe67d80ac4afd164"
   }
  ],
  "status": "running (GitHub Actions)"
