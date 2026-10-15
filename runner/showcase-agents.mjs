@@ -35,6 +35,9 @@ const readCfg = () => JSON.parse(fs.readFileSync(CFG_FILE, 'utf8'));
 const ownerKey = AGENTS_ONLY ? null : (E.OWNER_KEY || Object.fromEntries(fs.readFileSync((E.OWNER_ENV || '~/.policypilot/mainnet-wallet.env').replace('~', HOME), 'utf8').split('\n').filter(l => l.includes('=')).map(l => l.split(/=(.*)/s).slice(0, 2).map(s => s.trim())))['MONAD_MAINNET_PRIVATE_KEY']);
 const chain = { id: CID, name: 'Monad', nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 }, rpcUrls: { default: { http: [RPC] } } };
 const pc = createPublicClient({ chain, transport: http(RPC, { retryCount: 5, retryDelay: 800, timeout: 20_000 }) });
+const SPREAD_RPCS = [RPC, 'https://rpc1.monad.xyz', 'https://rpc3.monad.xyz', 'https://rpc-mainnet.monadinfra.com', 'https://rpc2.monad.xyz'].filter((url, i, all) => all.indexOf(url) === i);
+const quotePcs = SPREAD_RPCS.map(url => createPublicClient({ chain, transport: http(url, { retryCount: 0, timeout: 12_000 }) }));
+let quoteCursor = 0;
 const owner = AGENTS_ONLY ? { address: readCfg().owner } : privateKeyToAccount(ownerKey);
 const ow = AGENTS_ONLY ? null : createWalletClient({ account: owner, chain, transport: http(RPC, { retryCount: 3, timeout: 20_000 }) });
 const log = (...a) => console.log(new Date().toISOString(), ...a);
@@ -356,7 +359,9 @@ const SPREAD_VENUES = [
   { id: 1, quoter: '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997', fee: 500 },
   { id: 2, quoter: '0x661e93cca42afacb172121ef892830ca3b70f08d', fee: 500 },
 ];
-const SPREAD_SIZES = ['0.05', '0.1', '0.2', '0.4', '0.6', '0.8', '1'].map(s => parseEther(s));
+const SPREAD_CAP_WEI = parseEther('10');
+// Same grid as web/src/lib/spread.ts PROFIT_SIZES. The size with the most MON back is used, up to the pool cap.
+const SPREAD_SIZES = ['0.05', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1', '1.5', '2', '3', '5', '8', '10'].map(s => parseEther(s));
 function maskSpreadRuntime(code) {
   const hex = String(code).toLowerCase();
   if (!hex.startsWith('0x')) return hex;
@@ -381,11 +386,12 @@ async function spreadFees() {
 }
 async function quoteLeg(quoter, fee, tokenIn, tokenOut, amountIn) {
   let last;
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < quotePcs.length; i++) {
+    const client = quotePcs[quoteCursor++ % quotePcs.length];
     try {
-      const r = await pc.simulateContract({ address: quoter, abi: quoterAbi, functionName: 'quoteExactInputSingle', args: [{ tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96: 0n }] });
+      const r = await client.simulateContract({ address: quoter, abi: quoterAbi, functionName: 'quoteExactInputSingle', args: [{ tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96: 0n }] });
       return r.result[0];
-    } catch (e) { last = e; }
+    } catch (e) { last = e; await sleep(120); }
   }
   throw last;
 }
@@ -399,6 +405,7 @@ async function bestSpread(maxIn) {
       try { forwards.push({ ...v, usdc: await quoteLeg(v.quoter, v.fee, T.WMON, T.USDC, amount) }); }
       catch { forwards.push({ ...v, usdc: 0n }); }
     }
+    await sleep(40);
     for (const sell of forwards) {
       if (sell.usdc <= 0n) continue;
       for (const buy of forwards) {
@@ -412,17 +419,24 @@ async function bestSpread(maxIn) {
         }
       }
     }
+    await sleep(60);
   }
   return best;
 }
 /**
  * One mainnet deploy of the current spread bytecode, then one capture, from the agent EOA with the most MON.
- * Not part of a persona turn: the fee is outside MAX_FEE_MON. Stops after one capture or three errors.
- * A flat quote is retried next round and is not an error. The gained MON stays in the pool.
+ * Not part of a persona turn: the fee is outside MAX_FEE_MON. Stops after three errors.
+ * A capture is sent only when its size returns more MON than a capture already sent. A flat quote is retried next round.
+ * The gained MON stays in the pool.
  */
+const capturedWei = row => {
+  if (row?.amountWei) { try { return BigInt(row.amountWei); } catch { /* fall through */ } }
+  const m = /Captured ([0-9.]+) MON/.exec(String(row?.label || ''));
+  if (!m) return 0n;
+  try { return parseEther(m[1]); } catch { return 0n; }
+};
 async function proveSpread() {
   const rows = ledger.filter(x => x.persona === 'spread');
-  if (rows.some(x => x.status === 'captured')) return;
   if (rows.filter(x => x.status === 'error').length >= 3) { log('proveSpread: stopped after 3 errors'); return; }
   try { await proveSpreadOnce(); }
   catch (e) { log('proveSpread', errMsg(e)); rec({ persona: 'spread', actor: 'runner', status: 'error', label: `spread proof: ${errMsg(e)}` }); }
@@ -446,13 +460,30 @@ async function proveSpreadOnce() {
   const spendable = payer.bal > keep ? payer.bal - keep : 0n;
   const overhead = pool ? parseEther('0.15') : parseEther('0.4');
   if (spendable <= overhead) { log('proveSpread: keeping 5 MON in', payer.id, `(${formatEther(payer.bal)} MON)`); return; }
-  const room = pool ? await pc.getBalance({ address: pool }) : (spendable - overhead > parseEther('1') ? parseEther('1') : spendable - overhead);
+  const fund = spendable - overhead;
+  const poolBalNow = pool ? await pc.getBalance({ address: pool }) : 0n;
+  const room = pool ? (poolBalNow + fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : poolBalNow + fund) : (fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : fund);
   const trip = await bestSpread(room);
   if (!trip) { log('proveSpread: no round trip returns extra MON'); return; }
+  const prev = ledger.filter(x => x.persona === 'spread' && x.status === 'captured').reduce((m, r) => { const a = capturedWei(r); return a > m ? a : m; }, 0n);
+  if (prev > 0n && trip.amount <= prev) { log('proveSpread: best size', formatEther(trip.amount), 'is not larger than the', formatEther(prev), 'MON already captured'); return; }
   log('proveSpread', payer.id, formatEther(trip.amount), 'MON', 'venues', trip.sell, '→', trip.buy, 'quoted gain', formatEther(trip.profit), 'MON before gas');
   if (DRY_RUN) { log('[dry-run] proveSpread would deploy/capture and send nothing'); return; }
   const wc = wcOf(payer.id);
   const fees = await spreadFees();
+  if (pool) {
+    const held = await pc.getBalance({ address: pool });
+    if (trip.amount > held) {
+      const add = trip.amount - held;
+      const data = encodeFunctionData({ abi: spreadArtifact.abi, functionName: 'deposit' });
+      const est = await pc.estimateGas({ account: payer.account.address, to: pool, data, value: add });
+      const hash = await wc.sendTransaction({ to: pool, data, value: add, gas: cushion(est), ...fees });
+      const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
+      if (r.status !== 'success') throw new Error(`spread top-up ${r.status} ${hash}`);
+      rec({ persona: 'spread', actor: 'runner', status: 'topped', payer: payer.id, pool, tx: r.transactionHash, label: `Added ${formatEther(add)} MON so the pool can run the larger profitable size`, value: formatEther(add), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
+      log('proveSpread topped up', formatEther(add), `${EXP}/tx/${r.transactionHash}`);
+    }
+  }
   if (!pool) {
     const data = encodeDeployData({ abi: spreadArtifact.abi, bytecode: spreadArtifact.bytecode, args: [payer.account.address, parseEther('10'), 0n, 10_000n] });
     const est = await pc.estimateGas({ account: payer.account.address, data, value: trip.amount });
@@ -468,6 +499,7 @@ async function proveSpreadOnce() {
   }
   const live = await bestSpread(await pc.getBalance({ address: pool }));
   if (!live) { log('proveSpread: quote moved before capture; the pool stays and the next round retries'); return; }
+  if (prev > 0n && live.amount <= prev) { log('proveSpread: quote moved to', formatEther(live.amount), 'which is not larger than the capture already sent'); return; }
   const capData = encodeFunctionData({ abi: spreadArtifact.abi, functionName: 'capture', args: [live.sell, live.buy, live.amount, live.minUsdc, live.minWmon] });
   try { await pc.call({ account: payer.account.address, to: pool, data: capData }); }
   catch (e) { log('proveSpread: capture eth_call reverted, nothing sent:', errMsg(e)); return; }
@@ -478,13 +510,13 @@ async function proveSpreadOnce() {
   const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
   if (r.status !== 'success') throw new Error(`spread capture reverted ${hash}`);
   const after = await pc.getBalance({ address: pool });
-  rec({ persona: 'spread', actor: 'runner', status: 'captured', payer: payer.id, pool, tx: r.transactionHash, sell: live.sell, buy: live.buy, label: `Captured ${formatEther(live.amount)} MON across venues ${live.sell} → ${live.buy}. Pool MON ${formatEther(before)} → ${formatEther(after)}. Gas is paid separately and can be larger than the gain.`, quotedProfit: formatEther(live.profit), poolBefore: formatEther(before), poolAfter: formatEther(after), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
+  rec({ persona: 'spread', actor: 'runner', status: 'captured', fullRange: true, amountWei: live.amount.toString(), payer: payer.id, pool, tx: r.transactionHash, sell: live.sell, buy: live.buy, label: `Captured ${formatEther(live.amount)} MON across venues ${live.sell} → ${live.buy}. Pool MON ${formatEther(before)} → ${formatEther(after)}. Gas is paid separately and can be larger than the gain.`, quotedProfit: formatEther(live.profit), poolBefore: formatEther(before), poolAfter: formatEther(after), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
   log('proveSpread captured', `${EXP}/tx/${r.transactionHash}`, 'pool', formatEther(before), '→', formatEther(after));
 }
 /** One round: every persona gets a turn, each isolated by try/catch so one failure never blocks the others. */
 async function runRound() {
   const MAX_FEE = parseEther(E.MAX_FEE_MON || '0.15'); const MIN_GAS = parseEther(E.MIN_AGENT_GAS || '0.08'); let guard = false;
-  await within(proveSpread(), 240_000, 'proveSpread').catch(e => log('proveSpread', errMsg(e)));
+  await within(proveSpread(), 360_000, 'proveSpread').catch(e => log('proveSpread', errMsg(e)));
   await within(resolveVaults(), 120_000, 'resolveVaults').catch(e => log('resolveVaults', errMsg(e)));
   for (const p of PERSONAS) {
     try {

@@ -7,7 +7,7 @@ import { haptic } from '@/lib/wallets';
 import { addLocal, mon, sendFault, short, type Net } from '@/lib/vault';
 import { pricedGas } from '@/lib/fastPath';
 import {
-  clearsFloor, decodeKuru, decodeQuote, explainSpread, fetchCalls, isCurrentSpreadCode, meshQuotes, minOuts, ROUGH_GAS_WEI, roundTripBacks, SETTLEMENT_VENUES, spreadAbi,
+  bestProfitSize, clearsFloor, decodeKuru, decodeQuote, explainSpread, fetchCalls, isCurrentSpreadCode, meshQuotes, minOuts, ROUGH_GAS_WEI, roundTripBacks, SETTLEMENT_VENUES, spreadAbi,
   SPREAD_CAP, spreadCaptureData, spreadDeployData, spreadDepositData, spreadGate, spreadWithdrawData, VENUES, workerUrl, type CallRow, type QuoteCall, type StateOverride, type VenueId,
 } from '@/lib/spread';
 
@@ -51,6 +51,10 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   toast: (m: React.ReactNode, k?: 'ok' | 'bad' | 'info') => void; block: bigint | null;
 }) {
   const [amount, setAmount] = useState('0.2');
+  const [bestSize, setBestSize] = useState<{ amount: bigint; profit: bigint } | null>(null);
+  const [bestBusy, setBestBusy] = useState(false);
+  const amountTouched = useRef(false);
+  const scanning = useRef(false);
   const [topUp, setTopUp] = useState('0.02');
   const [vault, setVault] = useState<Address | null>(null);
   const [snap, setSnap] = useState<{ pool: bigint; shares: bigint; yours: bigint; cap: bigint } | null>(null);
@@ -114,6 +118,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
 
   const quoteOnce = async (force: boolean) => {
+    if (scanning.current) return;
     const { amount: amt, rpc, mainnet } = ctx.current;
     if (!mainnet) { if (alive.current) { setQuote(null); setQuoting(false); } return; }
     let wei = 0n;
@@ -232,7 +237,25 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     if (auto) setAuto(false);
   };
 
+  const useBest = async () => {
+    if (bestBusy) return;
+    const maxIn = vault ? (snap?.pool && snap.pool > 0n ? snap.pool : SPREAD_CAP) : SPREAD_CAP;
+    scanning.current = true;
+    setBestBusy(true);
+    setLine(null);
+    await new Promise(resolve => setTimeout(resolve, 250));
+    try {
+      const found = await bestProfitSize(net.rpcs?.length ? net.rpcs : [net.rpc], maxIn);
+      if (!found) { toast('No size up to the cap returns extra MON right now.', 'info'); return; }
+      setBestSize({ amount: found.amount, profit: found.profit });
+      amountTouched.current = true;
+      setAmount(formatEther(found.amount));
+    } catch (e) { fail(e); }
+    finally { scanning.current = false; setBestBusy(false); }
+  };
   const go = async () => {
+    if (gate.code === 'flat' && bestSize && bestSize.profit > 0n) { amountTouched.current = true; setAmount(formatEther(bestSize.amount)); setLine(null); return; }
+    if (gate.code === 'flat') { await useBest(); return; }
     if (gate.code === 'connect') { try { await need(); } catch (e) { fail(e); } return; }
     if (!gate.ok || !account || !wallet) return;
     setBusy(true); setLine(null);
@@ -348,7 +371,8 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     toast(`Using pool ${short(a)}.`, 'ok');
   };
 
-  const button = gate.code === 'connect' ? 'Connect wallet' : gate.code === 'open' ? `Open pool · ${amount || '0'} MON` : gate.code === 'go' ? 'Submit round trip' : 'Waiting for a spread';
+  const flatBest = gate.code === 'flat' && !!bestSize && bestSize.profit > 0n;
+  const button = gate.code === 'connect' ? 'Connect wallet' : flatBest && bestSize ? `Use ${mon(bestSize.amount)}` : gate.code === 'open' ? `Open pool · ${amount || '0'} MON` : gate.code === 'go' ? 'Submit round trip' : 'Waiting for a spread';
 
   return (
     <section id="desk-spread" data-testid="spread-desk" className="min-w-0 scroll-mt-16 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
@@ -356,7 +380,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-400/15 text-emerald-200"><Radio className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
           <h2 className="text-lg font-semibold text-white">Spread</h2>
-          <p className="break-words text-xs text-zinc-400">This tab quotes Uniswap v3 at 0.30% and 0.05%, PancakeSwap v3 at 0.05%, and Kuru when a new block arrives. A round trip settles on the pair that returns the most MON. Any quoted gain can be submitted. Rough gas is shown and does not block it. There is no promised rate.</p>
+          <p className="break-words text-xs text-zinc-400">This tab quotes Uniswap v3 at 0.30% and 0.05%, PancakeSwap v3 at 0.05%, and Kuru when a new block arrives. It fills the size, up to 10 MON, that returns the most MON. A larger size replaces it when that size returns more. Any quoted gain submits with one signature. Rough gas is shown and does not block it. There is no promised rate.</p>
         </div>
       </div>
 
@@ -373,6 +397,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
           <span>Rough gas {mon(ROUGH_GAS_WEI)}</span>
         </div>
         {quoteForAmount?.ok && !quoteForAmount.coversGas && <p data-testid="spread-gas-note" className="break-words text-amber-200">This gain is smaller than rough gas. Submitting still runs the round trip. You pay the gas.</p>}
+        {bestSize && <p data-testid="spread-best-note" className="break-words text-zinc-300">Most MON back is {mon(bestSize.profit, 6)} at {mon(bestSize.amount)}. A larger size is used when it returns more. A connected wallet sends it with one signature.</p>}
         {quoteError && <p className="break-words text-rose-300">{quoteError}</p>}
       </div>
 
@@ -386,15 +411,15 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
       <p data-testid="spread-mesh" className="mt-2 break-words text-[11px] text-zinc-500">{net.id === 143 ? `Searching this tab${block != null ? ` · block ${block.toString()}` : ''} · ${scans} ${scans === 1 ? 'quote' : 'quotes'}` : 'Mainnet quotes only.'}</p>
 
       <div className="mt-4 grid grid-cols-1 items-end gap-3 md:grid-cols-2">
-        <label className="grid min-w-0 gap-1 text-xs text-zinc-400"><span className="flex min-w-0 items-center justify-between gap-2"><span>{vault ? 'Round trip (MON)' : 'Deposit (MON)'}</span><button type="button" data-testid="spread-max" onClick={() => { const room = vault ? (snap?.pool ?? 0n) : (bal != null && bal < SPREAD_CAP ? bal : SPREAD_CAP); setAmount(formatEther(room)); setLine(null); }} className="shrink-0 rounded-full border border-white/15 px-2 py-1 text-[11px] text-violet-200">Max</button></span>
-          <input data-testid="spread-amount" inputMode="decimal" value={amount} onChange={e => { setAmount(e.target.value); setLine(null); }} className="min-h-12 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 font-mono text-base text-white outline-none focus:border-monad" />
+        <label className="grid min-w-0 gap-1 text-xs text-zinc-400"><span className="flex min-w-0 items-center justify-between gap-2"><span>{vault ? 'Round trip (MON)' : 'Deposit (MON)'}</span><span className="flex shrink-0 gap-1"><button type="button" data-testid="spread-best" disabled={bestBusy} onClick={() => void useBest()} className="rounded-full border border-white/15 px-2 py-1 text-[11px] text-emerald-200 disabled:opacity-40">{bestBusy ? 'Checking…' : 'Best'}</button><button type="button" data-testid="spread-max" onClick={() => { amountTouched.current = true; const room = vault ? (snap?.pool ?? 0n) : (bal != null && bal < SPREAD_CAP ? bal : SPREAD_CAP); setAmount(formatEther(room)); setLine(null); }} className="rounded-full border border-white/15 px-2 py-1 text-[11px] text-violet-200">Max</button></span></span>
+          <input data-testid="spread-amount" inputMode="decimal" value={amount} onChange={e => { amountTouched.current = true; setAmount(e.target.value); setLine(null); }} className="min-h-12 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 font-mono text-base text-white outline-none focus:border-monad" />
         </label>
         <div className="min-w-0">
           <div data-testid="spread-gate" data-code={gate.code} className={`mb-2 flex min-w-0 items-start gap-2 text-sm ${gate.ok ? 'text-emerald-300' : 'text-rose-300'}`}>
             {gate.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}
             <span className="min-w-0"><span className="font-mono text-xs">{gate.label}</span><span className="mt-0.5 block break-words text-[11px] text-zinc-400">{gate.detail}</span></span>
           </div>
-          <Btn kind="pri" data-testid="spread-go" disabled={busy || (!gate.ok && gate.code !== 'connect')} onClick={() => void go()} className="h-14 w-full text-base">{busy ? 'Working…' : button}</Btn>
+          <Btn kind="pri" data-testid="spread-go" disabled={busy || (!gate.ok && gate.code !== 'connect' && !flatBest)} onClick={() => void go()} className="h-14 w-full text-base">{busy ? 'Working…' : button}</Btn>
         </div>
       </div>
 
