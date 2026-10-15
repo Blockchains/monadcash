@@ -354,6 +354,11 @@ async function paceRound() {
 const spreadArtifact = JSON.parse(fs.readFileSync(path.resolve(HERE, '../web/src/lib/spreadArtifact.json'), 'utf8'));
 const SPREAD_RUNTIME = String(spreadArtifact.runtime).toLowerCase();
 const SPREAD_IMMUTABLES = spreadArtifact.immutables;
+const clipArtifact = JSON.parse(fs.readFileSync(path.resolve(HERE, '../web/src/lib/clipArtifact.json'), 'utf8'));
+const CLIP_RUNTIME = String(clipArtifact.runtime).toLowerCase();
+const CLIP_IMMUTABLES = clipArtifact.immutables;
+/** Fork measurement 2026-10-15 was 396,776 gas. 420,000 covers a cold clip. Monad charges the limit. */
+const CLIP_GAS = 420_000n;
 const SPREAD_VENUES = [
   { id: 0, quoter: '0x661e93cca42afacb172121ef892830ca3b70f08d', fee: 3000 },
   { id: 1, quoter: '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997', fee: 500 },
@@ -362,20 +367,29 @@ const SPREAD_VENUES = [
 const SPREAD_CAP_WEI = parseEther('10');
 // Same grid as web/src/lib/spread.ts PROFIT_SIZES. The size with the most MON back is used, up to the pool cap.
 const SPREAD_SIZES = ['0.05', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1', '1.5', '2', '3', '5', '8', '10'].map(s => parseEther(s));
-function maskSpreadRuntime(code) {
+function maskRuntime(code, slots) {
   const hex = String(code).toLowerCase();
   if (!hex.startsWith('0x')) return hex;
   const chars = hex.split('');
-  for (const [start, length] of SPREAD_IMMUTABLES) {
-    const from = 2 + start * 2; const to = from + length * 2;
+  for (const [start, length] of slots) {
+    const from = 2 + start * 2;
+    const to = from + length * 2;
     for (let i = from; i < to && i < chars.length; i++) chars[i] = '0';
   }
   return chars.join('');
+}
+function maskSpreadRuntime(code) {
+  return maskRuntime(code, SPREAD_IMMUTABLES);
 }
 function currentSpreadCode(code) {
   if (!code || code === '0x') return false;
   const live = String(code).toLowerCase();
   return live.length === SPREAD_RUNTIME.length && maskSpreadRuntime(live) === maskSpreadRuntime(SPREAD_RUNTIME);
+}
+function currentClipCode(code) {
+  if (!code || code === '0x') return false;
+  const live = String(code).toLowerCase();
+  return live.length === CLIP_RUNTIME.length && maskRuntime(live, CLIP_IMMUTABLES) === maskRuntime(CLIP_RUNTIME, CLIP_IMMUTABLES);
 }
 const cushion = est => est + (est / 50n > 3000n ? est / 50n : 3000n);
 async function spreadFees() {
@@ -513,9 +527,99 @@ async function proveSpreadOnce() {
   rec({ persona: 'spread', actor: 'runner', status: 'captured', fullRange: true, amountWei: live.amount.toString(), payer: payer.id, pool, tx: r.transactionHash, sell: live.sell, buy: live.buy, label: `Captured ${formatEther(live.amount)} MON across venues ${live.sell} → ${live.buy}. Pool MON ${formatEther(before)} → ${formatEther(after)}. Gas is paid separately and can be larger than the gain.`, quotedProfit: formatEther(live.profit), poolBefore: formatEther(before), poolAfter: formatEther(after), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
   log('proveSpread captured', `${EXP}/tx/${r.transactionHash}`, 'pool', formatEther(before), '→', formatEther(after));
 }
+/**
+ * One clip per round, only when the quoted MON gain is larger than the gas the limit will charge.
+ * Direct pool swaps. The fee is outside MAX_FEE_MON. A quote that does not clear gas is left for the next round.
+ */
+async function proveClip() {
+  const rows = ledger.filter(x => x.persona === 'clip');
+  if (rows.filter(x => x.status === 'error').length >= 3) { log('proveClip: stopped after 3 errors'); return; }
+  try { await proveClipOnce(); }
+  catch (e) { log('proveClip', errMsg(e)); rec({ persona: 'clip', actor: 'runner', status: 'error', label: `clip proof: ${errMsg(e)}` }); }
+}
+async function proveClipOnce() {
+  let payer = null;
+  for (const p of PERSONAS) {
+    if (!hasKey(p.id)) continue;
+    const account = acct(p.id);
+    const bal = await pc.getBalance({ address: account.address });
+    if (!payer || bal > payer.bal) payer = { id: p.id, account, bal };
+  }
+  if (!payer) { log('proveClip: no agent key'); return; }
+  let pool = null;
+  for (const row of [...ledger].reverse()) {
+    if (row.persona !== 'clip' || row.status !== 'deployed' || !row.pool) continue;
+    const code = await pc.getCode({ address: row.pool });
+    if (currentClipCode(code)) { pool = row.pool; break; }
+  }
+  const keep = parseEther('5');
+  const spendable = payer.bal > keep ? payer.bal - keep : 0n;
+  const overhead = pool ? parseEther('0.15') : parseEther('0.4');
+  if (spendable <= overhead) { log('proveClip: keeping 5 MON in', payer.id, `(${formatEther(payer.bal)} MON)`); return; }
+  const fund = spendable - overhead;
+  const poolBalNow = pool ? await pc.getBalance({ address: pool }) : 0n;
+  const room = pool ? (poolBalNow + fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : poolBalNow + fund) : (fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : fund);
+  const trip = await bestSpread(room);
+  if (!trip) { log('proveClip: no round trip returns extra MON'); return; }
+  const block = await pc.getBlock();
+  const minBase = parseGwei('100');
+  const base = block.baseFeePerGas && block.baseFeePerGas > minBase ? block.baseFeePerGas : minBase;
+  const price = base + parseGwei('2');
+  const charge = cushion(CLIP_GAS) * price;
+  if (trip.profit <= charge) {
+    log('proveClip: best gain', formatEther(trip.profit), 'MON at', formatEther(trip.amount), 'does not clear the', formatEther(charge), 'MON gas charge. Nothing sent.');
+    return;
+  }
+  log('proveClip', payer.id, formatEther(trip.amount), 'MON', 'venues', trip.sell, '→', trip.buy, 'quoted gain', formatEther(trip.profit), 'clears', formatEther(charge));
+  if (DRY_RUN) { log('[dry-run] proveClip would deploy/clip and send nothing'); return; }
+  const wc = wcOf(payer.id);
+  const fees = await spreadFees();
+  if (pool) {
+    const held = await pc.getBalance({ address: pool });
+    if (trip.amount > held) {
+      const add = trip.amount - held;
+      const data = encodeFunctionData({ abi: clipArtifact.abi, functionName: 'deposit' });
+      const est = await pc.estimateGas({ account: payer.account.address, to: pool, data, value: add });
+      const hash = await wc.sendTransaction({ to: pool, data, value: add, gas: cushion(est), ...fees });
+      const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
+      if (r.status !== 'success') throw new Error(`clip top-up ${r.status} ${hash}`);
+      rec({ persona: 'clip', actor: 'runner', status: 'topped', payer: payer.id, pool, tx: r.transactionHash, label: `Added ${formatEther(add)} MON so the clip pool can run the larger size`, value: formatEther(add), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
+      log('proveClip topped up', formatEther(add), `${EXP}/tx/${r.transactionHash}`);
+    }
+  }
+  if (!pool) {
+    const data = encodeDeployData({ abi: clipArtifact.abi, bytecode: clipArtifact.bytecode, args: [payer.account.address, parseEther('10')] });
+    const est = await pc.estimateGas({ account: payer.account.address, data, value: trip.amount });
+    const hash = await wc.sendTransaction({ data, value: trip.amount, gas: cushion(est), ...fees });
+    const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
+    if (r.status !== 'success' || !r.contractAddress) throw new Error(`clip deploy ${r.status} ${hash}`);
+    const code = await pc.getCode({ address: r.contractAddress });
+    if (!currentClipCode(code)) throw new Error(`deployed runtime is not the current clip bytecode ${r.contractAddress}`);
+    pool = r.contractAddress;
+    rec({ persona: 'clip', actor: 'runner', status: 'deployed', payer: payer.id, pool, tx: r.transactionHash, label: `Deployed the current clip bytecode with ${formatEther(trip.amount)} MON`, value: formatEther(trip.amount), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
+    log('proveClip deployed', pool, `${EXP}/tx/${r.transactionHash}`);
+  }
+  const live = await bestSpread(await pc.getBalance({ address: pool }));
+  if (!live || live.profit <= charge) { log('proveClip: quote no longer clears the gas charge. The pool stays and the next round retries.'); return; }
+  const minWmon = live.amount + 1n;
+  const clipData = encodeFunctionData({ abi: clipArtifact.abi, functionName: 'clip', args: [live.sell, live.buy, live.amount, live.minUsdc, minWmon] });
+  try { await pc.call({ account: payer.account.address, to: pool, data: clipData }); }
+  catch (e) { log('proveClip: clip eth_call reverted, nothing sent:', errMsg(e)); return; }
+  const est = await pc.estimateGas({ account: payer.account.address, to: pool, data: clipData });
+  const limit = cushion(est);
+  if (limit * price >= live.profit) { log('proveClip: gas limit', limit.toString(), 'costs at least the quoted gain. Nothing sent.'); return; }
+  const before = await pc.getBalance({ address: pool });
+  const hash = await wc.sendTransaction({ to: pool, data: clipData, gas: limit, ...fees });
+  const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
+  if (r.status !== 'success') throw new Error(`clip reverted ${hash}`);
+  const after = await pc.getBalance({ address: pool });
+  rec({ persona: 'clip', actor: 'runner', status: 'captured', amountWei: live.amount.toString(), payer: payer.id, pool, tx: r.transactionHash, sell: live.sell, buy: live.buy, label: `Clipped ${formatEther(live.amount)} MON across venues ${live.sell} → ${live.buy}. Pool MON ${formatEther(before)} → ${formatEther(after)}. Gas is paid separately.`, quotedProfit: formatEther(live.profit), poolBefore: formatEther(before), poolAfter: formatEther(after), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
+  log('proveClip captured', `${EXP}/tx/${r.transactionHash}`, 'pool', formatEther(before), '→', formatEther(after));
+}
 /** One round: every persona gets a turn, each isolated by try/catch so one failure never blocks the others. */
 async function runRound() {
   const MAX_FEE = parseEther(E.MAX_FEE_MON || '0.15'); const MIN_GAS = parseEther(E.MIN_AGENT_GAS || '0.08'); let guard = false;
+  await within(proveClip(), 180_000, 'proveClip').catch(e => log('proveClip', errMsg(e)));
   await within(proveSpread(), 360_000, 'proveSpread').catch(e => log('proveSpread', errMsg(e)));
   await within(resolveVaults(), 120_000, 'resolveVaults').catch(e => log('resolveVaults', errMsg(e)));
   for (const p of PERSONAS) {
@@ -540,7 +644,17 @@ if (E.SPREAD_SELFTEST === '1') {
   if (currentSpreadCode(other.join(''))) { console.error('a code byte change should fail'); process.exit(1); }
   if (currentSpreadCode('0x') || currentSpreadCode(SPREAD_RUNTIME.slice(0, -2))) { console.error('empty or short code should fail'); process.exit(1); }
   if (!currentSpreadCode(SPREAD_RUNTIME)) { console.error('artifact runtime should match itself'); process.exit(1); }
-  console.log('spread bytecode self-test ok', SPREAD_IMMUTABLES.length, 'immutable slots');
+  if (maskRuntime(CLIP_RUNTIME, CLIP_IMMUTABLES) !== CLIP_RUNTIME) { console.error('clip artifact immutables are not zero'); process.exit(1); }
+  const clipChanged = CLIP_RUNTIME.split('');
+  const [clipSlot] = CLIP_IMMUTABLES[0];
+  clipChanged[2 + clipSlot * 2] = 'a';
+  if (!currentClipCode(clipChanged.join(''))) { console.error('clip immutable slot should be ignored'); process.exit(1); }
+  const clipOther = CLIP_RUNTIME.split('');
+  clipOther[2] = clipOther[2] === '6' ? '7' : '6';
+  if (currentClipCode(clipOther.join(''))) { console.error('a clip code byte change should fail'); process.exit(1); }
+  if (currentClipCode('0x') || currentClipCode(CLIP_RUNTIME.slice(0, -2))) { console.error('empty or short clip code should fail'); process.exit(1); }
+  if (!currentClipCode(CLIP_RUNTIME)) { console.error('clip artifact runtime should match itself'); process.exit(1); }
+  console.log('spread bytecode self-test ok', SPREAD_IMMUTABLES.length, 'immutable slots', CLIP_IMMUTABLES.length, 'clip slots');
   process.exit(0);
 }
 if (cmd === 'status') { const { h, used } = await consumed(); console.log(JSON.stringify({ holdings: formatEther(h), used: formatEther(used), stopAt: formatEther(STOP_AT), vaults: PERSONAS.map(p => [p.id, st.agents[p.id].vault, agentAddr(p.id)]) }, null, 1)); process.exit(0); }
