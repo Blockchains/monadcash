@@ -9,12 +9,12 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T09:55:16.149Z",
+ "updatedAt": "2026-10-15T10:05:18.328Z",
  "totals": {
-  "allowed": 408,
-  "blocked": 162,
+  "allowed": 416,
+  "blocked": 171,
   "ownerTxs": 31,
-  "skipped": 23
+  "skipped": 24
  },
  "agents": [
   {
@@ -138,7 +138,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 56,
+   "allowed": 60,
    "blocked": 0,
    "lastSkip": {
     "ts": "2026-10-15T09:55:14.922Z",
@@ -154,11 +154,20 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 19,
-   "blocked": 38
+   "allowed": 23,
+   "blocked": 47
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T10:05:18.325Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
+   "tx": "0xef568ea7e57226d2ff513b7fdd95192219ffd2e2457562e487581f1608d04273"
+  },
   {
    "ts": "2026-10-15T09:55:16.147Z",
    "persona": "tester",
@@ -167,6 +176,142 @@
    "status": "blocked",
    "reason": "RequestAlreadyExecuted(0x4831031919e658c9c2783453119495421be04970c7262f5f738d692866ac425f)",
    "tx": "0xdeb8f578ef23fed59ed2af567a8cb4f944a745c58822cf3dab59d674059c6b76"
+  },
+  {
+   "ts": "2026-10-15T09:46:45.297Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps cap + 1 wei (0.050000000000000001 MON): expects PerPaymentCapExceeded",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
+   "tx": "0x221005cd26a365bfd35c52b65609321ba94d5301f2f0bf53141defc7e54c11be"
+  },
+  {
+   "ts": "2026-10-15T09:36:42.567Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
+   "status": "allowed",
+   "tx": "0x1e38df57e30953f0d8aca5a5c2d06e1a384e35bf3dc1a305cfab14e9afa743f8"
+  },
+  {
+   "ts": "2026-10-15T09:26:40.229Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester unwraps 0.05 WMON → MON (allowed)",
+   "status": "allowed",
+   "tx": "0x40b12cebadb6ea4fce2cf4f4ac1c153ed6ed4de5d8a910bc9baf7a0e6d1700d2"
+  },
+  {
+   "ts": "2026-10-15T09:16:37.646Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0x5333330d36535cb50519e2e7e8f354a8621f9c86bbbb9089915a21e9d1513674"
+  },
+  {
+   "ts": "2026-10-15T09:06:34.644Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
+   "tx": "0x3c722c54b0e26d5eff302591c02411ee1074e5d4a46f515bdaea90eca6e1e8f9"
+  },
+  {
+   "ts": "2026-10-15T08:56:32.556Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
+   "status": "blocked",
+   "reason": "RequestAlreadyExecuted(0x8ea7abef5c2199bdd60c6e4c7783f13d95b97d26412db502eb5faa1cb0a6d5af)",
+   "tx": "0xa68904af5644be48cc1b3d127c8276ad527393106bd6a81b6b116cdf4f2a8b1a"
+  },
+  {
+   "ts": "2026-10-15T08:46:30.276Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps cap + 1 wei (0.050000000000000001 MON): expects PerPaymentCapExceeded",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
+   "tx": "0x4b169d77728b0aaab003758d92cac286027f50f957b957143fd0a68779e46111"
+  },
+  {
+   "ts": "2026-10-15T08:36:28.414Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
+   "status": "allowed",
+   "tx": "0xcb01154e3ba54b74f40f8a914d0f3bc5e435142d0af4a6f30d508391ed0fa415"
+  },
+  {
+   "ts": "2026-10-15T08:26:26.450Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester unwraps 0.05 WMON → MON (allowed)",
+   "status": "allowed",
+   "tx": "0x98e5cce92e52d0d1e08691710293c572974e3658b23aa179fcd18fe9aaefc214"
+  },
+  {
+   "ts": "2026-10-15T08:26:25.522Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.001 MON to the DCA bot (v1 vault) agent",
+   "status": "allowed",
+   "tx": "0xb7eddcc56420061515ab81e19366f0a7a6fe096d9a9ac2702557fc5721ec5107"
+  },
+  {
+   "ts": "2026-10-15T08:16:23.122Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0x85b547c1427308451d3d1858ed0ea8fa33ed4be1f2bd1a4ea83d7879274b188e"
+  },
+  {
+   "ts": "2026-10-15T08:16:22.643Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0011 MON to the Rogue agent agent",
+   "status": "allowed",
+   "tx": "0x22e0c7898e73b3b555f75b2b1d40e0b6e82758dc8d382f6e544b9e19733efd5c"
+  },
+  {
+   "ts": "2026-10-15T08:06:20.036Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
+   "tx": "0x6b5057270a8de1367aaaa1fc760bf056964713fddf90964cd336ba36ee9d5b3a"
+  },
+  {
+   "ts": "2026-10-15T08:06:19.118Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0036 MON to the Payroll agent",
+   "status": "allowed",
+   "tx": "0x5de09e1da546dfdae34270110b46264bf90b0df8f67090dbbc3794b49012f562"
+  },
+  {
+   "ts": "2026-10-15T07:56:16.491Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
+   "status": "blocked",
+   "reason": "RequestAlreadyExecuted(0x4831031919e658c9c2783453119495421be04970c7262f5f738d692866ac425f)",
+   "tx": "0xff1f291ca83f7112464b5087679db63ab162bf8dc81e02be580b72b20b490a1d"
+  },
+  {
+   "ts": "2026-10-15T07:56:15.572Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0025 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0x5cd399d72e310b4b9c3f0367668e31aa7a5e706e1f4af9ced3e36b2946246f5a"
   },
   {
    "ts": "2026-10-15T07:46:13.085Z",
@@ -513,147 +658,6 @@
    "label": "Policy tester unwraps 0.05 WMON → MON (allowed)",
    "status": "allowed",
    "tx": "0x8bf38c220a474ac34c7072f15356cb05b56d97a2df76871a89735679343299dc"
-  },
-  {
-   "ts": "2026-10-15T05:25:20.315Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0032 MON to the Staker agent",
-   "status": "allowed",
-   "tx": "0x887faa81a7d8950326116742cf2bb33d88d31013e7cf7191f37508f4556854be"
-  },
-  {
-   "ts": "2026-10-15T05:25:19.208Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.82 < target 1)",
-   "status": "allowed",
-   "tx": "0x8e4a9271f4ab397d6e7c230f1c5a0d7e8d415ed9fe4ba7fe2fb79d23349b66b6"
-  },
-  {
-   "ts": "2026-10-15T05:15:17.315Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
-   "status": "blocked",
-   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
-   "tx": "0x0f03445524af9d58a866f0e2573c6a64b6d5bfad432a6ecc41459dd7799f6273"
-  },
-  {
-   "ts": "2026-10-15T05:15:16.782Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0024 MON to the DCA bot agent",
-   "status": "allowed",
-   "tx": "0x2ef471d80f291bbb1cab24f4d2fb1b12f984e5a499d4962e1859243d67d8e073"
-  },
-  {
-   "ts": "2026-10-15T05:15:16.080Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.8 < target 1)",
-   "status": "allowed",
-   "tx": "0xec336fcab213d38f354483aab0862380bb4343d5cf6e9bef1d5d59e8062cf37e"
-  },
-  {
-   "ts": "2026-10-15T05:05:14.549Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
-   "tx": "0x872955994131f9a46995f50b548411231d8bbfdc15f6e9d11474fc35a306aee1"
-  },
-  {
-   "ts": "2026-10-15T05:05:14.052Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0028 MON to the DCA bot (v1 vault) agent",
-   "status": "allowed",
-   "tx": "0x578775acdd0c9a30387502e1a7842484be076f7f0ab793abf8f94fabd653733b"
-  },
-  {
-   "ts": "2026-10-15T05:05:12.940Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.78 < target 1)",
-   "status": "allowed",
-   "tx": "0xef040458a85275730aaca2e01b3f15fbeb11329ee3f0f37fd9c376a031607ce2"
-  },
-  {
-   "ts": "2026-10-15T05:05:12.351Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
-   "tx": "0x6ad2ae749964c305de437c64a2cfc2d20d3c2284ab9d7bc8ef9dbd3f27faac87"
-  },
-  {
-   "ts": "2026-10-15T04:55:10.722Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
-   "status": "blocked",
-   "reason": "RequestAlreadyExecuted(0x1affebe7b09172fe8a888b99a1e15d88e6e36ab5e2b8f1c51f0f6509107b3c34)",
-   "tx": "0xf2221cdb858d95550bf88c5b0944f69635ad8b3b05eab3ffbbadcbb382883462"
-  },
-  {
-   "ts": "2026-10-15T04:55:09.786Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0037 MON to the Rogue agent agent",
-   "status": "allowed",
-   "tx": "0x6974ef60017b997f7f04ff8f9af6d57bbe3604bec13778d917626df8db9c2fe2"
-  },
-  {
-   "ts": "2026-10-15T04:55:09.102Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.76 < target 1)",
-   "status": "allowed",
-   "tx": "0x8f1cbbaed0cb18dff0b54909d85588868538d53a904c8830814b8a18386318b6"
-  },
-  {
-   "ts": "2026-10-15T04:45:07.046Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester wraps cap + 1 wei (0.050000000000000001 MON): expects PerPaymentCapExceeded",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
-   "tx": "0x4e6a978bea50fdfdd8afe6feeb015a75b90bb76762b3beba4bf51e005babef2a"
-  },
-  {
-   "ts": "2026-10-15T04:45:06.139Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0019 MON to the Payroll agent",
-   "status": "allowed",
-   "tx": "0x610b6b6c8054e043545c75e6588e0cef6ca38043361044c76070fc2be91bc64d"
-  },
-  {
-   "ts": "2026-10-15T04:45:04.990Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.74 < target 1)",
-   "status": "allowed",
-   "tx": "0xd20026d30a61a60446c9b15891508b7d9a5a3d035afe57521a92c6f8b84fcfdf"
-  },
-  {
-   "ts": "2026-10-15T04:35:02.864Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
-   "status": "allowed",
-   "tx": "0x8139afadd4e4b36e29434c63e576e4b255787cf826065fb594328de8ed079f3b"
-  },
-  {
-   "ts": "2026-10-15T04:35:01.944Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0024 MON to the Staker agent",
-   "status": "allowed",
-   "tx": "0x97ae8962c36576726cc7063c8cc86f7fbbaf387c2297132ba95cc6bef8f7b945"
   }
  ],
  "status": "running (GitHub Actions)"
