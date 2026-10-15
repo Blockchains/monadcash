@@ -1,7 +1,6 @@
 name: showcase-agents
 # PolicyPilot showcase agents (operated by the team). Near-continuous: every hour a job starts and loops one full
-# agent round (ALL vaults). Each round repeats a clip while the quote shows a gain, then the personas. Default gap
-# between rounds is 30s. The concurrency group queues the next job (no cancel), so
+# agent round (ALL vaults) every ~10 minutes for ~5h40m; the concurrency group queues the next job (no cancel), so
 # exactly one loop runs at a time and the demo never stops as long as the agents have gas and vault balance.
 # Uses ONLY the agents' executor keys (encrypted Actions secrets AGENT_KEY_<ID>). The deployer/owner key is never here,
 # so this job cannot withdraw, change policy or top up vaults; every action is still enforced by the vault on-chain.
@@ -12,7 +11,7 @@ on:
     inputs:
       check_only: { description: 'Keyless health check only (no rounds)', type: boolean, default: false }
       duration_minutes: { description: 'How long to loop (max 340)', type: string, default: '340' }
-      interval_seconds: { description: 'Seconds between rounds', type: string, default: '30' }
+      interval_seconds: { description: 'Seconds between rounds', type: string, default: '600' }
 permissions: { contents: write, actions: read }
 concurrency: { group: showcase-agents, cancel-in-progress: false }
 jobs:
@@ -51,7 +50,7 @@ jobs:
         run: cd runner && npm ci
       - name: Health check (keyless)
         run: node runner/showcase-agents.mjs check
-      - name: Agent rounds (all vaults, clip burst then personas, ~5h40m; ledger + snapshot committed after each round)
+      - name: Agent rounds (all vaults, every ~10 min, ~5h40m; ledger + snapshot committed after each round)
         if: ${{ vars.SHOWCASE_ENABLED == 'true' && !(github.event_name == 'workflow_dispatch' && inputs.check_only) }}
         env:
           # scheduled runs leave these empty → defaults from runner/showcase-loop.env (re-read every round, so a merged change applies live)

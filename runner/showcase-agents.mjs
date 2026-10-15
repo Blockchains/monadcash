@@ -359,8 +359,8 @@ const CLIP_RUNTIME = String(clipArtifact.runtime).toLowerCase();
 const CLIP_IMMUTABLES = clipArtifact.immutables;
 /** Fork measurement 2026-10-15 was 396,776 gas. 420,000 covers a cold clip. Monad charges the limit. */
 const CLIP_GAS = 420_000n;
-/** How long each round keeps sending clips. One confirmed transaction, then the next. Stops early if the quote goes flat or the wallet would drop through 5 MON. */
-const CLIP_BURST_MS = 420_000;
+/** Hard cap on confirmed clips in one showcase round. Stops earlier if the quote goes flat or the wallet would drop through 5 MON. */
+const CLIP_MAX_PER_ROUND = 20;
 function clipAffordable(balance, keep, limit, price) {
   return balance > keep + limit * price;
 }
@@ -533,7 +533,7 @@ async function proveSpreadOnce() {
   log('proveSpread captured', `${EXP}/tx/${r.transactionHash}`, 'pool', formatEther(before), '→', formatEther(after));
 }
 /**
- * Repeat the direct-pool clip while the quote shows a MON gain. Gas is paid on every send and can be larger than the gain.
+ * Up to 20 direct-pool clips per round, while the quote shows a MON gain. Gas is paid on every send and can be larger than the gain.
  * The fee is outside MAX_FEE_MON. A flat quote is not sent. The signing wallet keeps 5 MON.
  */
 async function proveClip() {
@@ -596,11 +596,10 @@ async function proveClipOnce() {
     log('proveClip deployed', pool, `${EXP}/tx/${r.transactionHash}`);
   }
   let live = trip;
-  const burstEnd = Date.now() + CLIP_BURST_MS;
   let sent = 0;
   let misses = 0;
   const busyRpc = e => /429|rate|Too Many|timeout|ETIMEDOUT|ECONNRESET|headers/i.test(errMsg(e));
-  while (Date.now() < burstEnd) {
+  while (sent < CLIP_MAX_PER_ROUND) {
     let held;
     try {
       held = await pc.getBalance({ address: pool });
@@ -664,12 +663,12 @@ async function proveClipOnce() {
     rec({ persona: 'clip', actor: 'runner', status: 'captured', amountWei: live.amount.toString(), payer: payer.id, pool, tx: r.transactionHash, sell: live.sell, buy: live.buy, label: `Clipped ${formatEther(live.amount)} MON across venues ${live.sell} → ${live.buy}. Pool MON ${formatEther(before)} → ${formatEther(after)}. Gas is paid separately and can be larger than the gain.`, quotedProfit: formatEther(live.profit), poolBefore: formatEther(before), poolAfter: formatEther(after), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
     log('proveClip', sent, `${EXP}/tx/${r.transactionHash}`, 'pool', formatEther(before), '→', formatEther(after));
   }
-  log('proveClip burst done', sent);
+  log('proveClip round done', sent, 'of', CLIP_MAX_PER_ROUND);
 }
 /** One round: every persona gets a turn, each isolated by try/catch so one failure never blocks the others. */
 async function runRound() {
   const MAX_FEE = parseEther(E.MAX_FEE_MON || '0.15'); const MIN_GAS = parseEther(E.MIN_AGENT_GAS || '0.08'); let guard = false;
-  await within(proveClip(), 600_000, 'proveClip').catch(e => log('proveClip', errMsg(e)));
+  await within(proveClip(), 480_000, 'proveClip').catch(e => log('proveClip', errMsg(e)));
   await within(proveSpread(), 360_000, 'proveSpread').catch(e => log('proveSpread', errMsg(e)));
   await within(resolveVaults(), 120_000, 'resolveVaults').catch(e => log('resolveVaults', errMsg(e)));
   for (const p of PERSONAS) {
@@ -708,6 +707,7 @@ if (E.SPREAD_SELFTEST === '1') {
   const cost = 420_000n * parseGwei('102');
   if (!clipAffordable(parseEther('6'), keep5, 420_000n, parseGwei('102'))) { console.error('6 MON should cover a clip above the 5 MON reserve'); process.exit(1); }
   if (clipAffordable(keep5 + cost, keep5, 420_000n, parseGwei('102'))) { console.error('a balance equal to the reserve plus gas should not send'); process.exit(1); }
+  if (CLIP_MAX_PER_ROUND !== 20) { console.error('clip cap must be 20 per round'); process.exit(1); }
   console.log('spread bytecode self-test ok', SPREAD_IMMUTABLES.length, 'immutable slots', CLIP_IMMUTABLES.length, 'clip slots');
   process.exit(0);
 }
