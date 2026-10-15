@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T03:38:33.922Z",
+ "updatedAt": "2026-10-15T03:48:38.813Z",
  "totals": {
-  "allowed": 352,
-  "blocked": 142,
+  "allowed": 354,
+  "blocked": 143,
   "ownerTxs": 31,
   "skipped": 15
  },
@@ -122,7 +122,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 31,
+   "allowed": 32,
    "blocked": 0
   },
   {
@@ -134,7 +134,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 31,
+   "allowed": 32,
    "blocked": 0
   },
   {
@@ -147,10 +147,35 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 11,
-   "blocked": 20
+   "blocked": 21
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T03:48:38.812Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps cap + 1 wei (0.050000000000000001 MON): expects PerPaymentCapExceeded",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
+   "tx": "0x811ab742e2c004d66e6c833fa64bea35d182685bbe5d42c25a48e2b949351903"
+  },
+  {
+   "ts": "2026-10-15T03:48:37.819Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0037 MON to the Staker agent",
+   "status": "allowed",
+   "tx": "0xbb5a1ab7a72b0feecdbb42473bfbdd88de6039ea291d8777a7ac387fcd46fea8"
+  },
+  {
+   "ts": "2026-10-15T03:48:36.514Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.62 < target 1)",
+   "status": "allowed",
+   "tx": "0x5aad5721e59d5dbc51007f34cca165937cb48a23e3c645c333d1a83f4bc6c576"
+  },
   {
    "ts": "2026-10-15T03:38:33.921Z",
    "persona": "tester",
@@ -627,30 +652,6 @@
    "status": "blocked",
    "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
    "tx": "0x3064e84f8ada8d542c30ba1d46fc453a10fd5c883e567b3a9689633bd11b3a81"
-  },
-  {
-   "ts": "2026-10-15T01:17:03.591Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0025 MON to the Staker agent",
-   "status": "allowed",
-   "tx": "0x9905b22c270890298a81e599f9ed4a54fb90561e3c680f29777114d60e672d8e"
-  },
-  {
-   "ts": "2026-10-15T01:17:02.168Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.32 < target 1)",
-   "status": "allowed",
-   "tx": "0x6af84875ff6e3987028252e5928fa6f0c766856dcac17debe93112630c5fa164"
-  },
-  {
-   "ts": "2026-10-15T01:17:00.567Z",
-   "persona": "mm",
-   "actor": "agent",
-   "label": "Market maker sells 0.0048 MON → USDC on Kuru (order book)",
-   "status": "allowed",
-   "tx": "0x17eb7dd50ab2cf750381fb8aa1d49356896debe7f56ffcf1d7212e8ba4f2fe39"
   }
  ],
  "status": "running (GitHub Actions)"
