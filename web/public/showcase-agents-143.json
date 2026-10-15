@@ -9,9 +9,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T06:15:40.800Z",
+ "updatedAt": "2026-10-15T06:25:44.215Z",
  "totals": {
-  "allowed": 388,
+  "allowed": 391,
   "blocked": 155,
   "ownerTxs": 31,
   "skipped": 18
@@ -122,7 +122,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 47,
+   "allowed": 48,
    "blocked": 0
   },
   {
@@ -134,7 +134,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 47,
+   "allowed": 48,
    "blocked": 0
   },
   {
@@ -146,11 +146,35 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 15,
+   "allowed": 16,
    "blocked": 32
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T06:25:44.214Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester unwraps 0.05 WMON → MON (allowed)",
+   "status": "allowed",
+   "tx": "0x068532c4a28c334f9e72ae91afac2b656b3fe2524f30fa4ccfa9303ff5ca498c"
+  },
+  {
+   "ts": "2026-10-15T06:25:43.297Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0036 MON to the Payroll agent",
+   "status": "allowed",
+   "tx": "0x37177c0f1193c5d5297ae812ea597665cdc35f82f6a5a4939e9b3915f5327cd0"
+  },
+  {
+   "ts": "2026-10-15T06:25:42.597Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.94 < target 1)",
+   "status": "allowed",
+   "tx": "0x12bd4a222d7b129004f48c9322729af71de0c6a9a54de5cc4bd8f740a339937e"
+  },
   {
    "ts": "2026-10-15T06:15:40.799Z",
    "persona": "tester",
@@ -620,32 +644,6 @@
    "label": "Tipper tips 0.0032 MON to the Rogue agent agent",
    "status": "allowed",
    "tx": "0x5f84dbe8c88f6fb71a0d530dd665bfe3e7d80f415e77488b0ced242359cc997c"
-  },
-  {
-   "ts": "2026-10-15T03:18:19.678Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.56 < target 1)",
-   "status": "allowed",
-   "tx": "0x339765ad3448cf25020311844e34e914e53617f824437e548abb9115261cfe13"
-  },
-  {
-   "ts": "2026-10-15T03:18:18.530Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
-   "status": "blocked",
-   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
-   "tx": "0xd215a38ef52aad6cccdaa45776b97b3cef089bfd95659491472dbae5c04d3878"
-  },
-  {
-   "ts": "2026-10-15T03:08:15.893Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
-   "tx": "0x6dc1d0de2d1dea50803bad7883e38432ceef0dc69b8529a0ec96e6fe397b5627"
   }
  ],
  "status": "running (GitHub Actions)"
