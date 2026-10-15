@@ -14,6 +14,7 @@ import VaultReport from './VaultReport';
 import FastDispatch from './FastDispatch';
 import PrimeTerminal from './PrimeTerminal';
 import SpreadDesk from './SpreadDesk';
+import ClipDesk from './ClipDesk';
 import { chainIdNumber, ensureWalletChain, evaluateVault, fixedOwnerGas, GAS, isConnectorDead, isPromptTimeout, isUserReject, pendingReceiptError, planWalletReload, pricedGas, queueWallet, receiptWaitMs, revertedReceiptError, sendViaWallet, sendWithKey, watchHeads, withDeadline } from '@/lib/fastPath';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
@@ -353,7 +354,7 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
 
   const [desk, setDesk] = useState('desk-dispatch');
   useEffect(() => {
-    const ids = ['desk-dispatch', 'desk-prime', 'desk-spread', 'desk-rules'];
+    const ids = ['desk-dispatch', 'desk-prime', 'desk-spread', 'desk-clip', 'desk-rules'];
     const obs = new IntersectionObserver(entries => {
       const hit = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (hit?.target.id) setDesk(hit.target.id);
@@ -372,12 +373,13 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
     { id: 'desk-dispatch', label: 'Dispatch', title: 'Stake, swap, or pay yourself. The button sends one real transaction.' },
     { id: 'desk-prime', label: 'Prime', title: 'Open your two-tranche pool. Capped at 10 MON. No promised rate.' },
     { id: 'desk-spread', label: 'Spread', title: 'Quotes Uniswap 0.30%, Uniswap 0.05%, PancakeSwap, and Kuru. Settles when the pool gains MON.' },
+    { id: 'desk-clip', label: 'Clip', title: 'Low-gas round trip on the pools directly. Sends when the gain clears the gas limit.' },
     { id: 'desk-rules', label: 'Rules', title: 'Custom agent, budget, cap, and which services are allowed.' },
   ];
 
   return (
     <div className="grid gap-4">
-      <nav data-testid="product-rail" aria-label="Products" className="sticky top-16 z-30 grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-zinc-950 p-1 shadow-[0_12px_30px_-12px_rgba(0,0,0,0.9)]">
+      <nav data-testid="product-rail" aria-label="Products" className="sticky top-16 z-30 grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-zinc-950 p-1 shadow-[0_12px_30px_-12px_rgba(0,0,0,0.9)] sm:grid-cols-5">
         {products.map(item => (
           <button key={item.id} type="button" data-testid={`jump-${item.id}`} title={item.title} aria-current={desk === item.id ? 'true' : undefined} onClick={() => jump(item.id)} className={`flex min-h-11 min-w-0 items-center justify-center rounded-xl px-1 text-[11px] font-semibold transition active:scale-95 sm:text-sm ${desk === item.id ? 'bg-white/10 text-white' : 'text-zinc-400'}`}>{item.label}</button>
         ))}
@@ -401,6 +403,8 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
       <PrimeTerminal net={net} pub={pub} account={account} wallet={wallet} bal={bal} need={need} send={send} toast={toast} block={block} />
 
       <SpreadDesk net={net} pub={pub} account={account} wallet={wallet} bal={bal} need={need} send={send} toast={toast} block={block} />
+
+      <ClipDesk net={net} pub={pub} account={account} wallet={wallet} bal={bal} need={need} send={send} toast={toast} block={block} />
 
       <details id="desk-rules" data-testid="custom-rules" className="min-w-0 scroll-mt-16 rounded-[2rem] border border-white/10 bg-white/[0.02] p-4 sm:p-5">
         <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-zinc-200">Custom agent and custom rules</summary>
