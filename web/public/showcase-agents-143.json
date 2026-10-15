@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T05:35:25.191Z",
+ "updatedAt": "2026-10-15T05:45:28.906Z",
  "totals": {
-  "allowed": 380,
-  "blocked": 151,
+  "allowed": 382,
+  "blocked": 152,
   "ownerTxs": 31,
   "skipped": 18
  },
@@ -122,7 +122,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 43,
+   "allowed": 44,
    "blocked": 0
   },
   {
@@ -134,7 +134,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 43,
+   "allowed": 44,
    "blocked": 0
   },
   {
@@ -147,10 +147,35 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 15,
-   "blocked": 28
+   "blocked": 29
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T05:45:28.904Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps cap + 1 wei (0.050000000000000001 MON): expects PerPaymentCapExceeded",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
+   "tx": "0x38b17fb68b18c680d31416bc4c902d4a6e9a542024535b89be2f6f3949fa0af5"
+  },
+  {
+   "ts": "2026-10-15T05:45:28.426Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0018 MON to the Rogue agent agent",
+   "status": "allowed",
+   "tx": "0xfe66bd68ffee4046cbd60878416b7fb33384f025f7c19cf00427c9d57cf1d637"
+  },
+  {
+   "ts": "2026-10-15T05:45:26.506Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.86 < target 1)",
+   "status": "allowed",
+   "tx": "0x97ffcd0b21d767aeeda4e7c325db822e2049e03077a02709291f405c0760e416"
+  },
   {
    "ts": "2026-10-15T05:35:25.190Z",
    "persona": "tester",
@@ -622,31 +647,6 @@
    "label": "Tipper tips 0.0018 MON to the DCA bot agent",
    "status": "allowed",
    "tx": "0xfbc5c18a8292070a12ae288f7dbb5f9d974bf668f9ef98af7c90581ec8fbf94f"
-  },
-  {
-   "ts": "2026-10-15T02:48:01.523Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.5 < target 1)",
-   "status": "allowed",
-   "tx": "0x7215f89daa830b65e0d6cb5654fd755b5b81a92d413721c1a23b1450201f4beb"
-  },
-  {
-   "ts": "2026-10-15T02:48:00.365Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to raise its own budget (owner-only)",
-   "status": "blocked",
-   "reason": "NotOwner",
-   "tx": "0x1d7567f12eb51fd85bd4a46f4152ecc3724d46b7edf2cc3c81e243c330d2203e"
-  },
-  {
-   "ts": "2026-10-15T02:37:58.251Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
-   "status": "allowed",
-   "tx": "0xb4dba163244c047750541b20eaf26fc4b209318d2e0d7928ce4fc1ff0fc20a08"
   }
  ],
  "status": "running (GitHub Actions)"
