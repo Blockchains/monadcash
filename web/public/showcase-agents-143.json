@@ -9,9 +9,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T12:15:43.550Z",
+ "updatedAt": "2026-10-15T12:25:45.769Z",
  "totals": {
-  "allowed": 420,
+  "allowed": 421,
   "blocked": 180,
   "ownerTxs": 31,
   "skipped": 24
@@ -154,11 +154,19 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 27,
+   "allowed": 28,
    "blocked": 56
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T12:25:45.767Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester unwraps 0.05 WMON → MON (allowed)",
+   "status": "allowed",
+   "tx": "0xc8104dfb8918f061890b345bc836d0d3641208da3257cbffc8ec91a66f59c1ce"
+  },
   {
    "ts": "2026-10-15T12:15:43.549Z",
    "persona": "tester",
@@ -656,14 +664,6 @@
    "label": "Tipper tips 0.0028 MON to the Staker agent",
    "status": "allowed",
    "tx": "0x63843357cc64138d9dee9d5de883a0f617ad4de957890aa425d9ed910ee05c08"
-  },
-  {
-   "ts": "2026-10-15T06:15:38.763Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.92 < target 1)",
-   "status": "allowed",
-   "tx": "0xe2c0cff14fb7106f592855f2a71dd0e2b55f2ace2d105d4890f4601acff218b9"
   }
  ],
  "status": "running (GitHub Actions)"
