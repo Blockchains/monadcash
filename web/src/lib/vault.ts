@@ -10,7 +10,7 @@ export const ZERO = '0x0000000000000000000000000000000000000000' as Address;
 export type Net = { id: 143 | 10143; key: 'mainnet' | 'testnet'; name: string; hex: Hex; rpc: string; exp: string; factory: Address; legacy?: Address[]; faucet?: string; publicRpc: string; rpcs?: string[] };
 export const NETS: Record<'mainnet' | 'testnet', Net> = {
   mainnet: { id: 143, key: 'mainnet', name: 'Mainnet', hex: '0x8f', rpc: 'https://rpc.monad.xyz', publicRpc: 'https://rpc.monad.xyz', exp: 'https://monadvision.com', factory: '0x0342d29055d77ba155c50233f550539E3029BA6a', legacy: ['0x8738B74778502ff3623A8319837A819d8dBdEeB7'], rpcs: ['https://rpc.monad.xyz', 'https://rpc1.monad.xyz', 'https://rpc3.monad.xyz', 'https://rpc-mainnet.monadinfra.com', 'https://rpc2.monad.xyz'] },
-  testnet: { id: 10143, key: 'testnet', name: 'Testnet', hex: '0x279f', rpc: 'https://testnet-rpc.monad.xyz', publicRpc: 'https://testnet-rpc.monad.xyz', exp: 'https://testnet.monadexplorer.com', factory: '0x2E40E06C0B864caF87cCB00f31e6EE2d0689cDd7', faucet: 'https://faucet.monad.xyz' },
+  testnet: { id: 10143, key: 'testnet', name: 'Testnet', hex: '0x279f', rpc: 'https://testnet-rpc.monad.xyz', publicRpc: 'https://testnet-rpc.monad.xyz', exp: 'https://testnet.monadexplorer.com', factory: '0x2E40E06C0B864caF87cCB00f31e6EE2d0689cDd7', faucet: 'https://faucet.monad.xyz', rpcs: ['https://testnet-rpc.monad.xyz'] },
 };
 /** ?net=mainnet|testnet, plus ?rpc= & ?factory= overrides used for local fork testing. */
 export function resolveNet(): Net {

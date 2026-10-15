@@ -13,6 +13,7 @@ import { buildSuper, matchSuper, SUPER_VAULTS, type SuperVault } from '@/lib/sup
 import VaultReport from './VaultReport';
 import FastDispatch from './FastDispatch';
 import PrimeTerminal from './PrimeTerminal';
+import { evaluateVault, feeCaps, fixedOwnerGas, GAS, isUserReject, pricedGas, sendWithKey, shouldRetryWithoutFees, watchHeads } from '@/lib/fastPath';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 type Tab = 'launch' | 'activity' | 'agents' | 'services' | 'policy';
@@ -33,6 +34,7 @@ export default function App() {
   const [bal, setBal] = useState<bigint | null>(null);
   const [connectOpen, setConnectOpen] = useState(false);
   const [block, setBlock] = useState<bigint | null>(null);
+  const [heads, setHeads] = useState<'socket' | 'polling'>('polling');
   const [vaults, setVaults] = useState<VaultState[] | null>(null);
   const [hist, setHist] = useState<{ events: Ev[]; showcase: any } | null>(null);
   const [kpi, setKpi] = useState<{ vaults: number; tvl: bigint; note: string } | null>(null);
@@ -47,8 +49,17 @@ export default function App() {
   const setTab = (t: Tab) => { haptic(6); setTabState(t); history.replaceState(null, '', `${location.pathname}${location.search}#${t}`); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   const switchNet = (key: 'mainnet' | 'testnet') => { localStorage.setItem('pp.netkey', key); const u = new URL(location.href); u.searchParams.set('net', key); u.searchParams.delete('rpc'); u.searchParams.delete('factory'); location.href = u.toString(); };
 
-  // live block
-  useEffect(() => { if (!pub) return; let on = true; const tick = () => pub.getBlockNumber().then(b => on && setBlock(b)).catch(() => {}); tick(); const t = setInterval(tick, 6000); return () => { on = false; clearInterval(t); }; }, [pub]);
+  // WebSocket heads when a public endpoint connects; HTTP poll until then, and whenever ?rpc= replaced the public list.
+  useEffect(() => {
+    if (!pub || !net) return;
+    let on = true; let live = false;
+    const tick = () => pub.getBlockNumber().then(b => { if (on && !live) setBlock(b); }).catch(() => {});
+    tick();
+    const http = setInterval(tick, 6000);
+    setHeads('polling');
+    const stop = watchHeads(net, n => { if (!on) return; live = true; clearInterval(http); setBlock(n); setHeads('socket'); });
+    return () => { on = false; clearInterval(http); stop(); };
+  }, [pub, net]);
 
   const refreshHist = useCallback(async () => {
     if (!pub || !net) return;
@@ -102,8 +113,11 @@ export default function App() {
   const autoTried = useRef(false);
   useEffect(() => { if (autoTried.current || !net || !wallets.length) return; const r = localStorage.getItem('pp.wallet'); const d = wallets.find(w => w.info.rdns === r); if (d) { autoTried.current = true; connectWith(d, true); } }, [wallets, net]); // eslint-disable-line
   const need = async () => { if (account && wallet && prov) { await ensureChain(prov); return true; } setConnectOpen(true); return false; };
-  const send = async (w: WalletClient, req: { to: Address; data?: Hex; value?: bigint; gas?: bigint }) => {
-    const hash = await w.sendTransaction({ ...req, account: w.account!, chain: chainOf(net!) } as any);
+  const send = async (w: WalletClient, req: { to?: Address; data?: Hex; value?: bigint; gas?: bigint }) => {
+    const once = (fees: boolean) => w.sendTransaction({ ...req, account: w.account!, chain: chainOf(net!), ...(fees && req.gas ? feeCaps() : {}) } as any);
+    let hash: Hex;
+    try { hash = await once(!!req.gas); }
+    catch (e) { if (!req.gas || !shouldRetryWithoutFees(e)) throw e; hash = await once(false); }
     const rc = await pub!.waitForTransactionReceipt({ hash, timeout: 180_000 }); if (rc.status !== 'success') throw Object.assign(new Error('Transaction reverted'), { hash }); return rc;
   };
   const refreshBal = () => account && pub?.getBalance({ address: account }).then(setBal).catch(() => {});
@@ -111,22 +125,47 @@ export default function App() {
   // ---------- agent actions ----------
   const agentWallet = (s: VaultState) => (s.key ? createWalletClient({ account: privateKeyToAccount(s.key as Hex), chain: chainOf(net!), transport: http(net!.rpc) }) : s.executor === account ? wallet : null);
   const runAgent = async (s: VaultState, kind: string, amount: bigint, extra: { to?: Address; venues?: ('uniswap' | 'pancake')[] } = {}): Promise<{ ok: boolean; msg: React.ReactNode; detail: string }> => {
+    const blocked = (label: string, detail: string, revertReason: string, value: bigint, dapp = 'Vault', icon = '🛡️') => {
+      addLocal(net!, { label, kind: 'blocked', dapp, icon, revertReason, simulated: true, value });
+      refreshHist();
+      return { ok: false as const, detail, msg: <>🛡️ <b>Blocked by the vault:</b> {detail} Nothing was sent and no gas was spent.</> };
+    };
+    const local = evaluateVault(s, s.executor, kind, amount, extra.to);
+    if (!local.ok) return blocked(`Blocked: ${kind}`, plain({ name: local.name, args: local.args }), `${local.name}(${(local.args ?? []).map(String).join(', ')})`, amount);
     const a = await buildAction(pub!, kind, s.v, s.owner, s.executor, amount, s.cap, extra);
-    try { await pub!.call({ account: s.executor, ...a.req }); }
-    catch (e) {
-      const r = reasonOf(e); const detail = plain(r); addLocal(net!, { label: `Blocked: ${a.label}`, kind: 'blocked', dapp: a.dapp, icon: a.icon, revertReason: r.name ? `${r.name}(${(r.args ?? []).map(String).join(', ')})` : r.raw, simulated: true, value: a.value });
-      refreshHist(); return { ok: false, detail, msg: <>🛡️ <b>Blocked by the vault:</b> {detail} Nothing was sent and no gas was spent.</> };
-    }
+    const fromChain = (e: unknown) => { const r = reasonOf(e); return blocked(`Blocked: ${a.label}`, plain(r), r.name ? `${r.name}(${(r.args ?? []).map(String).join(', ')})` : (r.raw ?? plain(r)), a.value, a.dapp, a.icon); };
     const w = agentWallet(s);
-    if (!w) return { ok: true, detail: 'Passes the policy. The agent key is not in this browser, so nothing was sent.', msg: <>✅ This passes the policy. Your agent {short(s.executor)} signs it with its own key (not in this browser).</> };
-    const gas = ((await pub!.estimateGas({ account: w.account!, ...a.req })) * 13n) / 10n;
-    const rc = await send(w, { ...a.req, gas }); addLocal(net!, { label: a.label, kind: 'allowed', tx: rc.transactionHash, from: w.account!.address });
+    if (!w) {
+      try { await pub!.call({ account: s.executor, ...a.req }); }
+      catch (e) { return fromChain(e); }
+      return { ok: true, detail: 'Passes the policy. The agent key is not in this browser, so nothing was sent.', msg: <>✅ This passes the policy. Your agent {short(s.executor)} signs it with its own key (not in this browser).</> };
+    }
+    let gas: bigint;
+    if (kind === 'pay') gas = GAS.pay;
+    else if (kind === 'payto') {
+      try { await pub!.call({ account: s.executor, ...a.req }); }
+      catch (e) { return fromChain(e); }
+      gas = GAS.pay;
+    } else { try { gas = await pricedGas(pub!, w.account!.address, a.req); } catch (e) { return fromChain(e); } }
+    let rc;
+    if (s.key) {
+      try {
+        const hash = await sendWithKey(net!, s.key as Hex, { ...a.req, gas }, pub!);
+        rc = await pub!.waitForTransactionReceipt({ hash, timeout: 180_000 });
+        if (rc.status !== 'success') throw Object.assign(new Error('Transaction reverted'), { hash });
+      } catch (e) {
+        if ((e as { hash?: Hex }).hash || isUserReject(e)) throw e;
+        rc = await send(w, { ...a.req, gas });
+      }
+    } else rc = await send(w, { ...a.req, gas });
+    addLocal(net!, { label: a.label, kind: 'allowed', tx: rc.transactionHash, from: w.account!.address });
     refreshHist(); loadVaults();
     return { ok: true, detail: a.label, msg: <>✅ <b>Done:</b> {a.label}. <a className="underline" href={`${net!.exp}/tx/${rc.transactionHash}`} target="_blank" rel="noreferrer">View tx ↗</a></> };
   };
-  const ownerTx = async (label: string, req: { to: Address; data: Hex; value?: bigint }) => {
+  const ownerTx = async (label: string, req: { to: Address; data: Hex; value?: bigint; gas?: bigint }) => {
     if (!(await need())) throw new Error('Connect your wallet first');
-    const rc = await send(wallet!, req); addLocal(net!, { label, kind: 'owner', tx: rc.transactionHash, from: account }); refreshHist(); loadVaults(); refreshBal();
+    const gas = req.gas ?? fixedOwnerGas(req.data) ?? await pricedGas(pub!, account!, { to: req.to, data: req.data, value: req.value });
+    const rc = await send(wallet!, { ...req, gas }); addLocal(net!, { label, kind: 'owner', tx: rc.transactionHash, from: account }); refreshHist(); loadVaults(); refreshBal();
     return { ok: true, msg: <>✅ {label}. <a className="underline" href={`${net!.exp}/tx/${rc.transactionHash}`} target="_blank" rel="noreferrer">View tx ↗</a></> };
   };
 
@@ -142,7 +181,7 @@ export default function App() {
           <button onClick={() => setTab('launch')} className="flex min-h-11 min-w-0 items-center gap-2" aria-label="PolicyPilot home"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-monad/20"><ShieldCheck className="h-5 w-5 text-monad" /></span><span className="truncate text-base font-semibold text-zinc-50">PolicyPilot</span></button>
           <nav className="ml-4 hidden items-center gap-1 lg:flex">{TABS.map(t => <button key={t.id} onClick={() => setTab(t.id)} className={`min-h-11 rounded-xl px-3 text-sm transition ${tab === t.id ? 'bg-white/10 text-white' : 'text-zinc-400 hover:text-white'}`}>{t.label}</button>)}</nav>
           <div className="ml-auto flex min-w-0 items-center gap-2">
-            <button data-testid="net" aria-label={`Network: Monad ${net.name}. Tap to switch.`} onClick={() => switchNet(net.id === 143 ? 'testnet' : 'mainnet')} className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl border border-white/10 px-2 text-xs text-zinc-300 sm:px-3" title="Switch network"><span className={`h-2.5 w-2.5 rounded-full ${block ? (net.id === 143 ? 'bg-emerald-400' : 'bg-amber-400') : 'bg-zinc-600'}`} /><span className="hidden sm:inline">{net.id === 143 ? 'Mainnet' : 'Testnet'}</span></button>
+            <button data-testid="net" data-heads={heads} aria-label={`Network: Monad ${net.name}. Tap to switch.`} onClick={() => switchNet(net.id === 143 ? 'testnet' : 'mainnet')} className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl border border-white/10 px-2 text-xs text-zinc-300 sm:px-3" title={heads === 'socket' ? 'Live blocks over WebSocket. Tap to switch network.' : 'Blocks by polling. Tap to switch network.'}><span className={`h-2.5 w-2.5 rounded-full ${block ? (net.id === 143 ? 'bg-emerald-400' : 'bg-amber-400') : 'bg-zinc-600'}`} /><span className="hidden sm:inline">{net.id === 143 ? 'Mainnet' : 'Testnet'}</span></button>
             <Btn kind={account ? 'ghost' : 'pri'} data-testid="connect" className="shrink-0 px-3" onClick={() => setConnectOpen(true)}>{conn}</Btn>
           </div>
         </div>
@@ -237,10 +276,11 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
       const c = buildCreate(exec, account, { ...p, payees });
       cur = add('Creating your vault with every rule baked in (1 signature)');
       await pub.call({ account, to: net.factory, data: c.data, value: c.value });
-      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value }); cur.ok(rc.transactionHash);
+      const gas = await pricedGas(pub, account, { to: net.factory, data: c.data, value: c.value });
+      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas }); cur.ok(rc.transactionHash);
       addLocal(net, { label: 'Harness on: vault created with limits + services', kind: 'owner', tx: rc.transactionHash, from: account });
       const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [account] }) as Address[]; const v = list[list.length - 1];
-      if (p.startPaused) { cur = add('Starting paused'); const r = await send(wallet, vcall(v, 'setPaused', [true])); cur.ok(r.transactionHash); addLocal(net, { label: 'Owner pauses the agent', kind: 'owner', tx: r.transactionHash, from: account }); }
+      if (p.startPaused) { cur = add('Starting paused'); const r = await send(wallet, { ...vcall(v, 'setPaused', [true]), gas: GAS.pause }); cur.ok(r.transactionHash); addLocal(net, { label: 'Owner pauses the agent', kind: 'owner', tx: r.transactionHash, from: account }); }
       if (key && p.gas > 0) { cur = add(`Sending ${p.gas} MON of gas to your agent`); const r = await send(wallet, { to: exec, value: parseEther(String(p.gas)) }); cur.ok(r.transactionHash); addLocal(net, { label: 'Gas sent to agent key', kind: 'owner', tx: r.transactionHash, from: account }); }
       setDoneVault(v); haptic([10, 40, 10] as any); toast('🚀 Your agent is out in the wild, with a harness on.', 'ok'); loadVaults(); refreshHist();
     } catch (e) { const m = plain(reasonOf(e)); cur ? cur.err(m) : toast(m, 'bad'); }
@@ -430,7 +470,7 @@ function ActionSheet({ s, kind, onClose, runAgent, net, pub, account, ownerTx, r
   };
   return (
     <Sheet open={!!kind} onClose={onClose} title={kind === 'break' ? '😈 Try to break the harness' : `Agent: ${a?.label ?? ''}`}>
-      {kind === 'break' ? <div className="grid gap-2" data-testid="attacks">{ATTACKS.filter(([k]) => net.id === 143 || !['x-drain', 'x-self'].includes(k)).map(([k, l]) => <button key={k} data-testid={`atk-${k}`} onClick={() => setAtk(k)} className={`min-h-12 rounded-2xl border px-3 text-left text-sm ${atk === k ? 'border-red-400 bg-red-500/10' : 'border-white/10'}`}>{l}</button>)}<p className="text-xs text-zinc-400">Runs as a free eth_call, so no gas is spent and nothing moves.</p></div>
+      {kind === 'break' ? <div className="grid gap-2" data-testid="attacks">{ATTACKS.filter(([k]) => net.id === 143 || !['x-drain', 'x-self'].includes(k)).map(([k, l]) => <button key={k} data-testid={`atk-${k}`} onClick={() => setAtk(k)} className={`min-h-12 rounded-2xl border px-3 text-left text-sm ${atk === k ? 'border-red-400 bg-red-500/10' : 'border-white/10'}`}>{l}</button>)}<p className="text-xs text-zinc-400">Checked before anything is sent, so no gas is spent and nothing moves.</p></div>
         : <div className="grid gap-3">
           {kind === 'payto' && <label className="grid gap-1 text-sm text-zinc-300">Pay to (0x address)<input data-testid="payto" value={to} onChange={e => setTo(e.target.value)} placeholder="0x…" className="min-h-12 w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 font-mono text-sm outline-none focus:border-monad" /><span className="text-xs text-zinc-500">Must be an approved payee. If you own this vault and it isn’t yet, you’ll be asked to approve it first (1 extra signature).</span></label>}
           <label className="grid gap-1 text-sm text-zinc-300">Amount ({kind === 'unwrap' ? 'WMON' : 'MON'})<input data-testid="amt" inputMode="decimal" value={amt} onChange={e => setAmt(e.target.value)} className="min-h-12 w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 font-mono text-base outline-none focus:border-monad" /></label>
@@ -498,7 +538,8 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
       try { const [gc, td] = await Promise.all([pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'globalCap' }), pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'totalDeposited' })]) as [bigint, bigint]; if (gc - td < dep) { dep = 0n; twoStep = true; } } catch { /* older factory */ }
       const c = buildStarter(account, Number(formatEther(dep)));
       await pub.call({ account, to: net.factory, data: c.data, value: c.value });
-      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value });
+      const gas = await pricedGas(pub, account, { to: net.factory, data: c.data, value: c.value });
+      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas });
       addLocal(net, { label: `Starter vault created${dep > 0n ? ` + ${STARTER.deposit} MON deposited` : ''} (1 tx)`, kind: 'owner', tx: rc.transactionHash, from: account });
       const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [account] }) as Address[]; const v = list[list.length - 1];
       haptic([10, 40, 10] as any); toast(<>⚡ Starter vault ready. Your wallet is its agent, so every action below is real. <a className="underline" href={`${net.exp}/tx/${rc.transactionHash}`} target="_blank" rel="noreferrer">tx ↗</a></>, 'ok');
@@ -515,7 +556,8 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
       try { const [gc, td] = await Promise.all([pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'globalCap' }), pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'totalDeposited' })]) as [bigint, bigint]; const room = gc > td ? gc - td : 0n; if (dep > room) { dep = room > parseEther('0.020001') ? room - parseEther('0.000001') : 0n; shortDeposit = true; } } catch { /* older factory */ }
       const c = buildSuper(t, account, t.payees ? extras : [], Number(formatEther(dep)));
       await pub.call({ account, to: net.factory, data: c.data, value: c.value });
-      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value });
+      const gas = await pricedGas(pub, account, { to: net.factory, data: c.data, value: c.value });
+      const rc = await send(wallet, { to: net.factory, data: c.data, value: c.value, gas });
       addLocal(net, { label: `${t.name} created${dep > 0n ? ` + ${formatEther(dep)} MON deposited` : ''} (1 tx)`, kind: 'owner', tx: rc.transactionHash, from: account });
       const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [account] }) as Address[]; const v = list[list.length - 1];
       localStorage.setItem(`pp.super.${v.toLowerCase()}`, t.id);
