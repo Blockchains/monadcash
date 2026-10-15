@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T04:55:10.723Z",
+ "updatedAt": "2026-10-15T05:05:14.550Z",
  "totals": {
-  "allowed": 370,
-  "blocked": 148,
+  "allowed": 372,
+  "blocked": 150,
   "ownerTxs": 31,
   "skipped": 17
  },
@@ -75,11 +75,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 122,
-   "lastSkip": {
-    "ts": "2026-10-15T04:14:53.334Z",
-    "reason": "agent gas 0.07952 MON < 0.08 MON (owner must top up the agent wallet)"
-   }
+   "blocked": 123
   },
   {
    "id": "dca1",
@@ -122,7 +118,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 39,
+   "allowed": 40,
    "blocked": 0
   },
   {
@@ -134,7 +130,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 39,
+   "allowed": 40,
    "blocked": 0
   },
   {
@@ -147,10 +143,44 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 13,
-   "blocked": 26
+   "blocked": 27
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T05:05:14.549Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
+   "tx": "0x872955994131f9a46995f50b548411231d8bbfdc15f6e9d11474fc35a306aee1"
+  },
+  {
+   "ts": "2026-10-15T05:05:14.052Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0028 MON to the DCA bot (v1 vault) agent",
+   "status": "allowed",
+   "tx": "0x578775acdd0c9a30387502e1a7842484be076f7f0ab793abf8f94fabd653733b"
+  },
+  {
+   "ts": "2026-10-15T05:05:12.940Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.78 < target 1)",
+   "status": "allowed",
+   "tx": "0xef040458a85275730aaca2e01b3f15fbeb11329ee3f0f37fd9c376a031607ce2"
+  },
+  {
+   "ts": "2026-10-15T05:05:12.351Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
+   "tx": "0x6ad2ae749964c305de437c64a2cfc2d20d3c2284ab9d7bc8ef9dbd3f27faac87"
+  },
   {
    "ts": "2026-10-15T04:55:10.722Z",
    "persona": "tester",
@@ -615,40 +645,6 @@
    "status": "blocked",
    "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
    "tx": "0x6f7194d793b2ae0119e46b9a54a1e4fe9e9553e0a29548a8ea129f776370e63f"
-  },
-  {
-   "ts": "2026-10-15T02:17:43.294Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0022 MON to the Payroll agent",
-   "status": "allowed",
-   "tx": "0x226b8f9de5fd73829ece6bd00f65bd02184c47f77feefd5d1dc28019799f2472"
-  },
-  {
-   "ts": "2026-10-15T02:17:42.261Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.44 < target 1)",
-   "status": "allowed",
-   "tx": "0x066186beb7cdb7b71f1f9a92cff5294d04d5441e2de2c7a18977b22ed6677284"
-  },
-  {
-   "ts": "2026-10-15T02:17:41.094Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
-   "tx": "0x1bb4fcf46437880fd45577da64d29397546a1d2f096e1b91545752ba43edb814"
-  },
-  {
-   "ts": "2026-10-15T02:07:38.761Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
-   "tx": "0x61cf8b3d536934d7a5ac616ba6480fade4a9239830939042ab0bf8bd6349c83c"
   }
  ],
  "status": "running (GitHub Actions)"
