@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T14:36:00.752Z",
+ "updatedAt": "2026-10-15T14:46:03.402Z",
  "totals": {
-  "allowed": 421,
+  "allowed": 423,
   "blocked": 180,
   "ownerTxs": 31,
   "skipped": 25
@@ -27,12 +27,8 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 38,
-   "blocked": 0,
-   "lastSkip": {
-    "ts": "2026-10-15T07:46:11.121Z",
-    "reason": "agent gas 0.039513754 MON < 0.08 MON (owner must top up the agent wallet)"
-   }
+   "allowed": 39,
+   "blocked": 0
   },
   {
    "id": "staker",
@@ -43,12 +39,8 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 97,
-   "blocked": 0,
-   "lastSkip": {
-    "ts": "2026-10-15T00:05:55.986Z",
-    "reason": "agent gas 0.001968468 MON < 0.08 MON (owner must top up the agent wallet)"
-   }
+   "allowed": 98,
+   "blocked": 0
   },
   {
    "id": "payroll",
@@ -164,6 +156,22 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T14:46:03.256Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker wraps 0.0199 MON → WMON",
+   "status": "allowed",
+   "tx": "0xb22983b02bbb87f0a765ce586a6d57961d54f3996aa593fb5681a6359541f340"
+  },
+  {
+   "ts": "2026-10-15T14:46:02.411Z",
+   "persona": "dca",
+   "actor": "agent",
+   "label": "DCA bot takes profit: swaps 0.001008 USDC → WMON",
+   "status": "allowed",
+   "tx": "0xa3ad3c2cb38df2d64c02341a5eba66d34eff3840edac89142524a1c6470396dd"
+  },
   {
    "ts": "2026-10-15T12:25:45.767Z",
    "persona": "tester",
@@ -652,23 +660,6 @@
    "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.94 < target 1)",
    "status": "allowed",
    "tx": "0x12bd4a222d7b129004f48c9322729af71de0c6a9a54de5cc4bd8f740a339937e"
-  },
-  {
-   "ts": "2026-10-15T06:15:40.799Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
-   "status": "blocked",
-   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
-   "tx": "0xfd6100bc50c12ea5da5bd6395dbdb37e097bdc4e03f4832fb6d5d125790fe8ec"
-  },
-  {
-   "ts": "2026-10-15T06:15:39.877Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0028 MON to the Staker agent",
-   "status": "allowed",
-   "tx": "0x63843357cc64138d9dee9d5de883a0f617ad4de957890aa425d9ed910ee05c08"
   }
  ],
  "status": "running (GitHub Actions)"
