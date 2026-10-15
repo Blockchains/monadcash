@@ -7,17 +7,26 @@ import { haptic } from '@/lib/wallets';
 import { addLocal, mon, plain, reasonOf, short, type Net } from '@/lib/vault';
 import { pricedGas } from '@/lib/fastPath';
 import {
-  backQuote, chooseSell, clearsFloor, decodeQuote, explainSpread, fetchCalls, forwardQuotes, minOuts, ROUGH_GAS_WEI, spreadAbi,
-  spreadCaptureData, spreadDeployData, spreadGate, spreadWithdrawData, VENUES, workerUrl, type QuoteCall, type VenueId,
+  backQuote, chooseSell, clearsFloor, decodeKuru, decodeQuote, explainSpread, fetchCalls, meshQuotes, minOuts, ROUGH_GAS_WEI, spreadAbi,
+  spreadCaptureData, spreadDeployData, spreadGate, spreadWithdrawData, VENUES, workerUrl, type CallRow, type QuoteCall, type StateOverride, type VenueId,
 } from '@/lib/spread';
 
 type Quote = {
-  amount: bigint; uni: bigint; cake: bigint; sell: VenueId | null; buy: VenueId | null;
+  amount: bigint; uni: bigint; cake: bigint; kuru: bigint | null; sell: VenueId | null; buy: VenueId | null;
   usdc: bigint; back: bigint; profit: bigint; bounty: bigint; fee: bigint; poolCut: bigint; ok: boolean;
 };
 
-function ask(worker: Worker | null, rpc: string, calls: QuoteCall[]): Promise<Hex[]> {
-  if (!worker) return fetchCalls(rpc, calls);
+function asRows(rows: unknown): CallRow[] {
+  if (!Array.isArray(rows)) throw new Error('Quote failed');
+  return rows.map((r) => {
+    if (typeof r === 'string') return { ok: true, result: r as Hex };
+    if (r && typeof r === 'object' && 'ok' in r) return r as CallRow;
+    return { ok: false, error: 'Quote failed' };
+  });
+}
+
+function ask(worker: Worker | null, rpc: string, calls: QuoteCall[], stateOverride?: StateOverride): Promise<CallRow[]> {
+  if (!worker) return fetchCalls(rpc, calls, stateOverride);
   const id = `${Date.now()}-${Math.random()}`;
   return new Promise((resolve, reject) => {
     const timer = window.setTimeout(() => { worker.removeEventListener('message', onMsg); reject(new Error('Quote timed out')); }, 8_000);
@@ -26,10 +35,10 @@ function ask(worker: Worker | null, rpc: string, calls: QuoteCall[]): Promise<He
       window.clearTimeout(timer);
       worker.removeEventListener('message', onMsg);
       if (!ev.data.ok) reject(new Error(ev.data.error || 'Quote failed'));
-      else resolve(ev.data.rows as Hex[]);
+      else resolve(asRows(ev.data.rows));
     };
     worker.addEventListener('message', onMsg);
-    worker.postMessage({ id, rpc, calls });
+    worker.postMessage({ id, rpc, calls, stateOverride });
   });
 }
 
@@ -85,43 +94,93 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     return () => { on = false; };
   }, [vault, pub, account, block, key]);
 
-  const [tick, setTick] = useState(0);
-  useEffect(() => { const t = window.setInterval(() => setTick(n => n + 1), 2_000); return () => window.clearInterval(t); }, []);
-  useEffect(() => {
-    if (net.id !== 143) { setQuote(null); setQuoting(false); return; }
+  const [scans, setScans] = useState(0);
+  const [bounty, setBounty] = useState<{ paid: bigint; last: Hex | null } | null>(null);
+  const [bountyError, setBountyError] = useState(false);
+  const ctx = useRef({ amount, rpc: net.rpc, mainnet: net.id === 143 });
+  ctx.current = { amount, rpc: net.rpc, mainnet: net.id === 143 };
+  const lastAt = useRef(0);
+  const inflight = useRef(false);
+  const again = useRef(false);
+  const alive = useRef(true);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+
+  const quoteOnce = async (force: boolean) => {
+    const { amount: amt, rpc, mainnet } = ctx.current;
+    if (!mainnet) { if (alive.current) { setQuote(null); setQuoting(false); } return; }
     let wei = 0n;
-    try { wei = parseEther(amount || '0'); } catch { setQuote(null); return; }
-    if (wei <= 0n) { setQuote(null); setQuoting(false); return; }
+    try { wei = parseEther(amt || '0'); } catch { if (alive.current) setQuote(null); return; }
+    if (wei <= 0n) { if (alive.current) { setQuote(null); setQuoting(false); } return; }
+    if (inflight.current) { again.current = true; return; }
+    if (!force && Date.now() - lastAt.current < 1_000) return;
+    inflight.current = true;
+    lastAt.current = Date.now();
+    if (alive.current) { setQuoting(true); setQuoteError(null); }
+    try {
+      const mesh = meshQuotes(wei);
+      const rows = await ask(workerRef.current, rpc, mesh.calls, mesh.stateOverride);
+      if (!alive.current) return;
+      const uniRow = rows[0];
+      const cakeRow = rows[1];
+      const kuruRow = rows[2];
+      if (!uniRow?.ok) throw new Error(uniRow?.error || 'Quote failed');
+      if (!cakeRow?.ok) throw new Error(cakeRow?.error || 'Quote failed');
+      const uni = decodeQuote(uniRow.result);
+      const cake = decodeQuote(cakeRow.result);
+      const kuru = kuruRow?.ok ? decodeKuru(kuruRow.result) : null;
+      const choice = chooseSell(uni, cake);
+      if (!choice) {
+        setQuote({ amount: wei, uni, cake, kuru, sell: null, buy: null, usdc: 0n, back: 0n, profit: 0n, bounty: 0n, fee: 0n, poolCut: 0n, ok: false });
+        setScans(n => n + 1);
+        return;
+      }
+      const backRows = await ask(workerRef.current, rpc, [backQuote(choice.buy, choice.usdc)]);
+      if (!alive.current) return;
+      if (!backRows[0]?.ok) throw new Error(backRows[0]?.error || 'Quote failed');
+      const back = decodeQuote(backRows[0].result);
+      const cleared = clearsFloor(wei, back);
+      setQuote({ amount: wei, uni, cake, kuru, sell: choice.sell, buy: choice.buy, usdc: choice.usdc, back, profit: cleared.profit, bounty: cleared.bounty, fee: cleared.fee, poolCut: cleared.pool, ok: cleared.ok });
+      setScans(n => n + 1);
+    } catch (e) {
+      if (!alive.current) return;
+      setQuote(null);
+      setQuoteError(e instanceof Error ? e.message : 'Quote failed');
+    } finally {
+      inflight.current = false;
+      if (alive.current) setQuoting(false);
+      if (again.current) { again.current = false; void quoteOnce(true); }
+    }
+  };
+
+  useEffect(() => { const t = window.setTimeout(() => void quoteOnce(true), 200); return () => window.clearTimeout(t); }, [amount, net.id, net.rpc]);
+  useEffect(() => { const t = window.setInterval(() => void quoteOnce(false), 1_000); return () => window.clearInterval(t); }, [net.id, net.rpc]);
+  useEffect(() => { if (block != null) void quoteOnce(false); }, [block]);
+
+  const bountyAt = useRef(0);
+  const bountyWho = useRef('');
+  useEffect(() => {
+    const who = `${vault ?? ''}:${account ?? ''}`;
+    if (bountyWho.current !== who) { bountyWho.current = who; bountyAt.current = 0; }
+    if (!vault || !account || block == null) { setBounty(null); setBountyError(false); return; }
+    if (Date.now() - bountyAt.current < 5_000) return;
+    bountyAt.current = Date.now();
     let on = true;
-    setQuoting(true);
-    setQuoteError(null);
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        try {
-          const worker = workerRef.current;
-          const [uniRaw, cakeRaw] = await ask(worker, net.rpc, forwardQuotes(wei));
-          if (!on) return;
-          const uni = decodeQuote(uniRaw);
-          const cake = decodeQuote(cakeRaw);
-          const choice = chooseSell(uni, cake);
-          if (!choice) {
-            setQuote({ amount: wei, uni, cake, sell: null, buy: null, usdc: 0n, back: 0n, profit: 0n, bounty: 0n, fee: 0n, poolCut: 0n, ok: false });
-            return;
-          }
-          const [backRaw] = await ask(worker, net.rpc, [backQuote(choice.buy, choice.usdc)]);
-          if (!on) return;
-          const back = decodeQuote(backRaw);
-          const cleared = clearsFloor(wei, back);
-          setQuote({ amount: wei, uni, cake, sell: choice.sell, buy: choice.buy, usdc: choice.usdc, back, profit: cleared.profit, bounty: cleared.bounty, fee: cleared.fee, poolCut: cleared.pool, ok: cleared.ok });
-        } catch (e) {
-          if (!on) return;
-          setQuote(null);
-          setQuoteError(e instanceof Error ? e.message : 'Quote failed');
-        } finally { if (on) setQuoting(false); }
-      })();
-    }, 200);
-    return () => { on = false; window.clearTimeout(timer); };
-  }, [amount, tick, net.id, net.rpc]);
+    const fromBlock = block > 99n ? block - 99n : 0n;
+    pub.getContractEvents({ address: vault, abi: spreadAbi, eventName: 'Captured', fromBlock, toBlock: block }).then(logs => {
+      if (!on) return;
+      let paid = 0n;
+      let last: Hex | null = null;
+      for (const log of logs) {
+        const args = log.args as { caller?: Address; bounty?: bigint };
+        if (!args.caller || args.caller.toLowerCase() !== account.toLowerCase()) continue;
+        paid += args.bounty ?? 0n;
+        last = log.transactionHash ?? last;
+      }
+      setBounty({ paid, last });
+      setBountyError(false);
+    }).catch(() => { if (on) { setBounty(null); setBountyError(true); } });
+    return () => { on = false; };
+  }, [vault, account, block, pub]);
 
   let wei = 0n;
   try { wei = parseEther(amount || '0'); } catch { wei = 0n; }
@@ -173,14 +232,36 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     setBusy(false);
   };
 
+  const tabId = useRef(Math.random().toString(36).slice(2));
   useEffect(() => {
-    if (!auto || busy || gate.code !== 'go' || block == null || !quoteForAmount?.ok) return;
+    if (!auto || busy || gate.code !== 'go' || block == null || !quoteForAmount?.ok || !vault) return;
     if (tried.current === block) return;
     tried.current = block;
-    void go();
+    let sent = false;
+    let lost = false;
+    let ch: BroadcastChannel | null = null;
+    try {
+      ch = new BroadcastChannel('pp-spread-mesh');
+      ch.onmessage = (ev) => {
+        const m = ev.data;
+        if (m?.type === 'claim' && m.vault === vault && m.block === String(block) && m.tabId < tabId.current) lost = true;
+      };
+      ch.postMessage({ type: 'claim', tabId: tabId.current, vault, block: String(block) });
+    } catch { /* this browser has one tab */ }
+    const timer = window.setTimeout(() => {
+      ch?.close();
+      if (lost) { tried.current = null; return; }
+      sent = true;
+      void go();
+    }, 180);
+    return () => {
+      window.clearTimeout(timer);
+      ch?.close();
+      if (!sent) tried.current = null;
+    };
     // go is recreated each render; the block guard keeps this to one send per head.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auto, busy, gate.code, block, quoteForAmount?.ok]);
+  }, [auto, busy, gate.code, block, quoteForAmount?.ok, vault]);
 
   const withdraw = async () => {
     if (!vault || !wallet || !account || !snap || snap.shares === 0n) return;
@@ -216,13 +297,14 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-400/15 text-emerald-200"><Radio className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
           <h2 className="text-lg font-semibold text-white">Spread</h2>
-          <p className="break-words text-xs text-zinc-400">This tab asks Uniswap v3 and PancakeSwap v3 every couple of seconds. A round trip is sent only when the quote clears a 0.05% floor and a rough gas cost. There is no promised rate.</p>
+          <p className="break-words text-xs text-zinc-400">This tab quotes Uniswap v3, PancakeSwap v3, and Kuru when a new block arrives. A round trip settles only between the two v3 pools, and only when it clears a 0.05% floor and a rough gas cost. There is no promised rate.</p>
         </div>
       </div>
 
       <div data-testid="spread-quote" className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs text-zinc-300">
         <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0">Uniswap</span><span className="shrink-0 font-mono">{quoteForAmount ? usdc(quoteForAmount.uni) : quoting ? '…' : '—'}</span></div>
         <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0">PancakeSwap</span><span className="shrink-0 font-mono">{quoteForAmount ? usdc(quoteForAmount.cake) : quoting ? '…' : '—'}</span></div>
+        <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0">Kuru <span className="text-zinc-500">price only</span></span><span data-testid="spread-kuru" className="shrink-0 font-mono">{quoteForAmount ? (quoteForAmount.kuru != null ? usdc(quoteForAmount.kuru) : 'unavailable') : quoting ? '…' : '—'}</span></div>
         <div className="flex min-w-0 justify-between gap-3"><span className="min-w-0 break-words">{quoteForAmount?.sell ? `Back via ${VENUES[quoteForAmount.buy!].name}` : 'Round trip'}</span><span className="shrink-0 font-mono">{quoteForAmount?.sell ? mon(quoteForAmount.back) : '—'}</span></div>
         <div className="flex min-w-0 flex-wrap justify-between gap-x-3 gap-y-1 text-zinc-400">
           <span>Quoted profit {quoteForAmount ? mon(quoteForAmount.profit) : '—'}</span>
@@ -238,7 +320,9 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         <span className="rounded-full bg-black/30 px-2 py-1">Yours {mon(snap?.yours ?? 0n)}</span>
         <span className="rounded-full bg-black/30 px-2 py-1">Cap 1 MON</span>
         {vault && <span className="max-w-full break-all rounded-full bg-black/30 px-2 py-1 font-mono">{short(vault)}</span>}
+        {vault && account && <span data-testid="spread-bounty" title="Keeper bounty paid to this wallet by this pool over the last 100 blocks." className="rounded-full bg-black/30 px-2 py-1">Bounty {bounty ? mon(bounty.paid) : bountyError ? 'unavailable' : '…'}</span>}
       </div>
+      <p data-testid="spread-mesh" className="mt-2 break-words text-[11px] text-zinc-500">{net.id === 143 ? `Searching this tab${block != null ? ` · block ${block.toString()}` : ''} · ${scans} ${scans === 1 ? 'quote' : 'quotes'}` : 'Mainnet quotes only.'}</p>
 
       <div className="mt-4 grid grid-cols-1 items-end gap-3 md:grid-cols-2">
         <label className="grid min-w-0 gap-1 text-xs text-zinc-400">{vault ? 'Round trip (MON)' : 'Deposit (MON)'}
