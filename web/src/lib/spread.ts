@@ -52,6 +52,9 @@ export const VENUES: Record<VenueId, { name: string; router: Address; quoter: Ad
 
 export const SETTLEMENT_VENUES: VenueId[] = ['uniswap', 'pancake', 'uniswap-thin'];
 
+/** Sizes checked for the largest MON increase, up to the 10 MON pool cap. A bigger size is used only when it returns more. */
+export const PROFIT_SIZES = ['0.05', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1', '1.5', '2', '3', '5', '8', '10'] as const;
+
 export const venueIndex = (id: VenueId): 0 | 1 | 2 => VENUES[id].index;
 
 export function floorProfit(amount: bigint): bigint {
@@ -207,6 +210,76 @@ export async function fetchCalls(rpc: string, calls: QuoteCall[], stateOverride?
       return { ok: false, error: e instanceof Error ? e.message : 'Quote failed' };
     }
   }));
+}
+
+const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+let rpcCursor = 0;
+
+/** One eth_call, walking the public endpoints so a 429 on one host does not drop the size. */
+async function ethCallRotating(rpcs: readonly string[], call: QuoteCall): Promise<Hex | null> {
+  const start = rpcCursor % rpcs.length;
+  rpcCursor += 1;
+  const tx = { to: call.to, data: call.data };
+  for (let n = 0; n < rpcs.length; n++) {
+    const rpc = rpcs[(start + n) % rpcs.length];
+    try {
+      const res = await fetch(rpc, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [tx, 'latest'] }),
+      });
+      if (res.status === 429 || res.status >= 500) { await pause(200); continue; }
+      const json = await res.json() as { result?: Hex };
+      if (json.result && json.result !== '0x') return json.result;
+    } catch { /* the next endpoint */ }
+    await pause(80);
+  }
+  return null;
+}
+
+async function profitAt(rpcs: readonly string[], amount: bigint): Promise<{ quoted: boolean; best: { amount: bigint; profit: bigint; sell: VenueId; buy: VenueId } | null }> {
+  const wmon = TOKENS.WMON.address;
+  const usdc = TOKENS.USDC.address;
+  const forwards: { id: VenueId; usdc: bigint }[] = [];
+  for (const id of SETTLEMENT_VENUES) {
+    const data = await ethCallRotating(rpcs, quoteCall(id, wmon, usdc, amount));
+    let out = 0n;
+    if (data) { try { out = decodeQuote(data); } catch { out = 0n; } }
+    forwards.push({ id, usdc: out });
+  }
+  if (forwards.filter(row => row.usdc > 0n).length < 2) return { quoted: false, best: null };
+  const backs = roundTripBacks(forwards);
+  let best: { amount: bigint; profit: bigint; sell: VenueId; buy: VenueId } | null = null;
+  let sawBack = false;
+  for (const leg of backs) {
+    const data = await ethCallRotating(rpcs, leg.call);
+    if (!data) continue;
+    let back = 0n;
+    try { back = decodeQuote(data); } catch { continue; }
+    sawBack = true;
+    const cleared = clearsFloor(amount, back);
+    if (cleared.ok && (!best || cleared.profit > best.profit)) best = { amount, profit: cleared.profit, sell: leg.sell, buy: leg.buy };
+  }
+  return { quoted: sawBack, best };
+}
+
+/** The size at or below `maxIn` whose quoted round trip returns the most MON. Each leg uses the next public endpoint. A flat size is skipped. An unread size is tried once more. */
+export async function bestProfitSize(rpc: string | readonly string[], maxIn: bigint): Promise<{ amount: bigint; profit: bigint; sell: VenueId; buy: VenueId } | null> {
+  const rpcs = (Array.isArray(rpc) ? rpc : [rpc]).filter(Boolean);
+  if (!rpcs.length) return null;
+  let best: { amount: bigint; profit: bigint; sell: VenueId; buy: VenueId } | null = null;
+  for (const size of PROFIT_SIZES) {
+    const amount = parseEther(size);
+    if (amount <= 0n || amount > maxIn) continue;
+    let row = await profitAt(rpcs, amount).catch(() => ({ quoted: false, best: null }));
+    if (!row.quoted) {
+      await pause(300);
+      row = await profitAt(rpcs, amount).catch(() => ({ quoted: false, best: null }));
+    }
+    if (row.best && (!best || row.best.profit > best.profit)) best = row.best;
+    await pause(60);
+  }
+  return best;
 }
 
 export function spreadDeployData(treasury: Address): Hex {
