@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T10:55:28.836Z",
+ "updatedAt": "2026-10-15T11:05:30.859Z",
  "totals": {
   "allowed": 418,
-  "blocked": 174,
+  "blocked": 175,
   "ownerTxs": 31,
   "skipped": 24
  },
@@ -155,10 +155,19 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 25,
-   "blocked": 50
+   "blocked": 51
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T11:05:30.858Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
+   "tx": "0xb6769cbd117639430dfe331fe4d084455382598ed6424c1d5d455532161740af"
+  },
   {
    "ts": "2026-10-15T10:55:28.834Z",
    "persona": "tester",
@@ -653,14 +662,6 @@
    "status": "blocked",
    "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
    "tx": "0x38b17fb68b18c680d31416bc4c902d4a6e9a542024535b89be2f6f3949fa0af5"
-  },
-  {
-   "ts": "2026-10-15T05:45:28.426Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0018 MON to the Rogue agent agent",
-   "status": "allowed",
-   "tx": "0xfe66bd68ffee4046cbd60878416b7fb33384f025f7c19cf00427c9d57cf1d637"
   }
  ],
  "status": "running (GitHub Actions)"
