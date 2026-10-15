@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T08:06:20.037Z",
+ "updatedAt": "2026-10-15T08:16:23.124Z",
  "totals": {
-  "allowed": 410,
-  "blocked": 163,
+  "allowed": 411,
+  "blocked": 164,
   "ownerTxs": 31,
   "skipped": 22
  },
@@ -138,7 +138,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 58,
+   "allowed": 59,
    "blocked": 0
   },
   {
@@ -151,10 +151,27 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 19,
-   "blocked": 39
+   "blocked": 40
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T08:16:23.122Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0x85b547c1427308451d3d1858ed0ea8fa33ed4be1f2bd1a4ea83d7879274b188e"
+  },
+  {
+   "ts": "2026-10-15T08:16:22.643Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0011 MON to the Rogue agent agent",
+   "status": "allowed",
+   "tx": "0x22e0c7898e73b3b555f75b2b1d40e0b6e82758dc8d382f6e544b9e19733efd5c"
+  },
   {
    "ts": "2026-10-15T08:06:20.036Z",
    "persona": "tester",
@@ -634,23 +651,6 @@
    "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.76 < target 1)",
    "status": "allowed",
    "tx": "0x8f1cbbaed0cb18dff0b54909d85588868538d53a904c8830814b8a18386318b6"
-  },
-  {
-   "ts": "2026-10-15T04:45:07.046Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester wraps cap + 1 wei (0.050000000000000001 MON): expects PerPaymentCapExceeded",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
-   "tx": "0x4e6a978bea50fdfdd8afe6feeb015a75b90bb76762b3beba4bf51e005babef2a"
-  },
-  {
-   "ts": "2026-10-15T04:45:06.139Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0019 MON to the Payroll agent",
-   "status": "allowed",
-   "tx": "0x610b6b6c8054e043545c75e6588e0cef6ca38043361044c76070fc2be91bc64d"
   }
  ],
  "status": "running (GitHub Actions)"
