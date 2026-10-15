@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T08:36:28.415Z",
+ "updatedAt": "2026-10-15T08:46:30.277Z",
  "totals": {
   "allowed": 414,
-  "blocked": 164,
+  "blocked": 165,
   "ownerTxs": 31,
   "skipped": 23
  },
@@ -155,10 +155,19 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 21,
-   "blocked": 40
+   "blocked": 41
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T08:46:30.276Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps cap + 1 wei (0.050000000000000001 MON): expects PerPaymentCapExceeded",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
+   "tx": "0x4b169d77728b0aaab003758d92cac286027f50f957b957143fd0a68779e46111"
+  },
   {
    "ts": "2026-10-15T08:36:28.414Z",
    "persona": "tester",
@@ -645,15 +654,6 @@
    "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.78 < target 1)",
    "status": "allowed",
    "tx": "0xef040458a85275730aaca2e01b3f15fbeb11329ee3f0f37fd9c376a031607ce2"
-  },
-  {
-   "ts": "2026-10-15T05:05:12.351Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
-   "tx": "0x6ad2ae749964c305de437c64a2cfc2d20d3c2284ab9d7bc8ef9dbd3f27faac87"
   }
  ],
  "status": "running (GitHub Actions)"
