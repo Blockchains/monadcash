@@ -5,6 +5,29 @@ import { KURU, QUOTERS, SERVICES, TOKENS } from './services';
 
 export const spreadAbi = artifact.abi as Abi;
 export const SPREAD_BYTECODE = artifact.bytecode as Hex;
+/** Deployed runtime from this compile. Immutable words are zero here and filled in at construction. */
+export const SPREAD_RUNTIME = (artifact.runtime as string).toLowerCase();
+const SPREAD_IMMUTABLES = artifact.immutables as unknown as readonly (readonly [number, number])[];
+
+/** Zero the constructor-filled immutable words so two deployments of this compile compare equal. */
+export function maskSpreadRuntime(code: string): string {
+  const hex = code.toLowerCase();
+  if (!hex.startsWith('0x')) return hex;
+  const chars = hex.split('');
+  for (const [start, length] of SPREAD_IMMUTABLES) {
+    const from = 2 + start * 2;
+    const to = from + length * 2;
+    for (let i = from; i < to && i < chars.length; i++) chars[i] = '0';
+  }
+  return chars.join('');
+}
+
+/** True only for a pool deployed from the current spread artifact. */
+export function isCurrentSpreadCode(code: string | null | undefined): boolean {
+  if (!code || code === '0x') return false;
+  const live = code.toLowerCase();
+  return live.length === SPREAD_RUNTIME.length && maskSpreadRuntime(live) === maskSpreadRuntime(SPREAD_RUNTIME);
+}
 
 /** New pools accept any increase in MON. A positive floor is still allowed, up to 500 bps. */
 export const MIN_PROFIT_BPS = 0;

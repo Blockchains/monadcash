@@ -10,7 +10,7 @@
 // public config. `run` performs ONE round over ALL personas (each in its own try/catch), `check` is a keyless health
 // check, `publish` rebuilds the public snapshot from the ledger. Looping is done by runner/showcase-loop.sh.
 import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path';
-import { createPublicClient, createWalletClient, http, parseEther, formatEther, encodeFunctionData, decodeFunctionResult, decodeAbiParameters, parseAbi, keccak256, toHex } from 'viem';
+import { createPublicClient, createWalletClient, http, parseEther, formatEther, encodeFunctionData, decodeFunctionResult, decodeAbiParameters, parseAbi, keccak256, toHex, encodeDeployData, parseGwei } from 'viem';
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { VaultAgent, agentVaultAbi, agentVaultFactoryAbi, ZERO_ADDRESS } from '../packages/agent-kit/dist/index.js';
 
@@ -346,9 +346,145 @@ async function paceRound() {
   const wait = Math.min(spacing * 1000 - (Date.now() - last), spacing * 1000);
   if (wait > 0) { log(`pacing: last round ${Math.round((Date.now() - last) / 1000)}s ago; waiting ${Math.ceil(wait / 1000)}s to keep ${spacing}s between rounds`); await sleep(wait); }
 }
+// Current spread compile. Immutable words (treasury, cap, floors) are zero in the artifact and filled at construction,
+// so a live getCode matches only after those words are masked. Anything else is refused.
+const spreadArtifact = JSON.parse(fs.readFileSync(path.resolve(HERE, '../web/src/lib/spreadArtifact.json'), 'utf8'));
+const SPREAD_RUNTIME = String(spreadArtifact.runtime).toLowerCase();
+const SPREAD_IMMUTABLES = spreadArtifact.immutables;
+const SPREAD_VENUES = [
+  { id: 0, quoter: '0x661e93cca42afacb172121ef892830ca3b70f08d', fee: 3000 },
+  { id: 1, quoter: '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997', fee: 500 },
+  { id: 2, quoter: '0x661e93cca42afacb172121ef892830ca3b70f08d', fee: 500 },
+];
+const SPREAD_SIZES = ['0.05', '0.1', '0.2', '0.4', '0.6', '0.8', '1'].map(s => parseEther(s));
+function maskSpreadRuntime(code) {
+  const hex = String(code).toLowerCase();
+  if (!hex.startsWith('0x')) return hex;
+  const chars = hex.split('');
+  for (const [start, length] of SPREAD_IMMUTABLES) {
+    const from = 2 + start * 2; const to = from + length * 2;
+    for (let i = from; i < to && i < chars.length; i++) chars[i] = '0';
+  }
+  return chars.join('');
+}
+function currentSpreadCode(code) {
+  if (!code || code === '0x') return false;
+  const live = String(code).toLowerCase();
+  return live.length === SPREAD_RUNTIME.length && maskSpreadRuntime(live) === maskSpreadRuntime(SPREAD_RUNTIME);
+}
+const cushion = est => est + (est / 50n > 3000n ? est / 50n : 3000n);
+async function spreadFees() {
+  const block = await pc.getBlock();
+  const min = parseGwei('100');
+  const base = block.baseFeePerGas && block.baseFeePerGas > min ? block.baseFeePerGas : min;
+  return { maxFeePerGas: base * 2n + parseGwei('2'), maxPriorityFeePerGas: parseGwei('2') };
+}
+async function quoteLeg(quoter, fee, tokenIn, tokenOut, amountIn) {
+  let last;
+  for (let i = 0; i < 2; i++) {
+    try {
+      const r = await pc.simulateContract({ address: quoter, abi: quoterAbi, functionName: 'quoteExactInputSingle', args: [{ tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96: 0n }] });
+      return r.result[0];
+    } catch (e) { last = e; }
+  }
+  throw last;
+}
+/** Largest quoted MON increase at or below maxIn. Quotes are sequential so a burst does not drop a venue. Kuru is not a settlement leg. */
+async function bestSpread(maxIn) {
+  let best = null;
+  for (const amount of SPREAD_SIZES) {
+    if (amount > maxIn) continue;
+    const forwards = [];
+    for (const v of SPREAD_VENUES) {
+      try { forwards.push({ ...v, usdc: await quoteLeg(v.quoter, v.fee, T.WMON, T.USDC, amount) }); }
+      catch { forwards.push({ ...v, usdc: 0n }); }
+    }
+    for (const sell of forwards) {
+      if (sell.usdc <= 0n) continue;
+      for (const buy of forwards) {
+        if (buy.id === sell.id) continue;
+        let back = 0n;
+        try { back = await quoteLeg(buy.quoter, buy.fee, T.USDC, T.WMON, sell.usdc); } catch { back = 0n; }
+        const profit = back > amount ? back - amount : 0n;
+        if (profit > 0n && (!best || profit > best.profit)) {
+          const slipped = (sell.usdc * 95n) / 100n;
+          best = { amount, sell: sell.id, buy: buy.id, usdc: sell.usdc, back, profit, minUsdc: slipped > 0n ? slipped : 1n, minWmon: amount };
+        }
+      }
+    }
+  }
+  return best;
+}
+/**
+ * One mainnet deploy of the current spread bytecode, then one capture, from the agent EOA with the most MON.
+ * Not part of a persona turn: the fee is outside MAX_FEE_MON. Stops after one capture or three errors.
+ * A flat quote is retried next round and is not an error. The gained MON stays in the pool.
+ */
+async function proveSpread() {
+  const rows = ledger.filter(x => x.persona === 'spread');
+  if (rows.some(x => x.status === 'captured')) return;
+  if (rows.filter(x => x.status === 'error').length >= 3) { log('proveSpread: stopped after 3 errors'); return; }
+  try { await proveSpreadOnce(); }
+  catch (e) { log('proveSpread', errMsg(e)); rec({ persona: 'spread', actor: 'runner', status: 'error', label: `spread proof: ${errMsg(e)}` }); }
+}
+async function proveSpreadOnce() {
+  let payer = null;
+  for (const p of PERSONAS) {
+    if (!hasKey(p.id)) continue;
+    const account = acct(p.id);
+    const bal = await pc.getBalance({ address: account.address });
+    if (!payer || bal > payer.bal) payer = { id: p.id, account, bal };
+  }
+  if (!payer) { log('proveSpread: no agent key'); return; }
+  let pool = null;
+  for (const row of [...ledger].reverse()) {
+    if (row.persona !== 'spread' || row.status !== 'deployed' || !row.pool) continue;
+    const code = await pc.getCode({ address: row.pool });
+    if (currentSpreadCode(code)) { pool = row.pool; break; }
+  }
+  const keep = parseEther('5');
+  const spendable = payer.bal > keep ? payer.bal - keep : 0n;
+  const overhead = pool ? parseEther('0.15') : parseEther('0.4');
+  if (spendable <= overhead) { log('proveSpread: keeping 5 MON in', payer.id, `(${formatEther(payer.bal)} MON)`); return; }
+  const room = pool ? await pc.getBalance({ address: pool }) : (spendable - overhead > parseEther('1') ? parseEther('1') : spendable - overhead);
+  const trip = await bestSpread(room);
+  if (!trip) { log('proveSpread: no round trip returns extra MON'); return; }
+  log('proveSpread', payer.id, formatEther(trip.amount), 'MON', 'venues', trip.sell, '→', trip.buy, 'quoted gain', formatEther(trip.profit), 'MON before gas');
+  if (DRY_RUN) { log('[dry-run] proveSpread would deploy/capture and send nothing'); return; }
+  const wc = wcOf(payer.id);
+  const fees = await spreadFees();
+  if (!pool) {
+    const data = encodeDeployData({ abi: spreadArtifact.abi, bytecode: spreadArtifact.bytecode, args: [payer.account.address, parseEther('10'), 0n, 10_000n] });
+    const est = await pc.estimateGas({ account: payer.account.address, data, value: trip.amount });
+    const gas = cushion(est);
+    const hash = await wc.sendTransaction({ data, value: trip.amount, gas, ...fees });
+    const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
+    if (r.status !== 'success' || !r.contractAddress) throw new Error(`spread deploy ${r.status} ${hash}`);
+    const code = await pc.getCode({ address: r.contractAddress });
+    if (!currentSpreadCode(code)) throw new Error(`deployed runtime is not the current spread bytecode ${r.contractAddress}`);
+    pool = r.contractAddress;
+    rec({ persona: 'spread', actor: 'runner', status: 'deployed', payer: payer.id, pool, tx: r.transactionHash, label: `Deployed the current spread bytecode with ${formatEther(trip.amount)} MON`, value: formatEther(trip.amount), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
+    log('proveSpread deployed', pool, `${EXP}/tx/${r.transactionHash}`);
+  }
+  const live = await bestSpread(await pc.getBalance({ address: pool }));
+  if (!live) { log('proveSpread: quote moved before capture; the pool stays and the next round retries'); return; }
+  const capData = encodeFunctionData({ abi: spreadArtifact.abi, functionName: 'capture', args: [live.sell, live.buy, live.amount, live.minUsdc, live.minWmon] });
+  try { await pc.call({ account: payer.account.address, to: pool, data: capData }); }
+  catch (e) { log('proveSpread: capture eth_call reverted, nothing sent:', errMsg(e)); return; }
+  const before = await pc.getBalance({ address: pool });
+  const est = await pc.estimateGas({ account: payer.account.address, to: pool, data: capData });
+  const gas = cushion(est);
+  const hash = await wc.sendTransaction({ to: pool, data: capData, gas, ...fees });
+  const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
+  if (r.status !== 'success') throw new Error(`spread capture reverted ${hash}`);
+  const after = await pc.getBalance({ address: pool });
+  rec({ persona: 'spread', actor: 'runner', status: 'captured', payer: payer.id, pool, tx: r.transactionHash, sell: live.sell, buy: live.buy, label: `Captured ${formatEther(live.amount)} MON across venues ${live.sell} → ${live.buy}. Pool MON ${formatEther(before)} → ${formatEther(after)}. Gas is paid separately and can be larger than the gain.`, quotedProfit: formatEther(live.profit), poolBefore: formatEther(before), poolAfter: formatEther(after), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
+  log('proveSpread captured', `${EXP}/tx/${r.transactionHash}`, 'pool', formatEther(before), '→', formatEther(after));
+}
 /** One round: every persona gets a turn, each isolated by try/catch so one failure never blocks the others. */
 async function runRound() {
   const MAX_FEE = parseEther(E.MAX_FEE_MON || '0.15'); const MIN_GAS = parseEther(E.MIN_AGENT_GAS || '0.08'); let guard = false;
+  await within(proveSpread(), 240_000, 'proveSpread').catch(e => log('proveSpread', errMsg(e)));
   await within(resolveVaults(), 120_000, 'resolveVaults').catch(e => log('resolveVaults', errMsg(e)));
   for (const p of PERSONAS) {
     try {
@@ -361,6 +497,20 @@ async function runRound() {
   return guard;
 }
 
+if (E.SPREAD_SELFTEST === '1') {
+  if (maskSpreadRuntime(SPREAD_RUNTIME) !== SPREAD_RUNTIME) { console.error('artifact immutables are not zero'); process.exit(1); }
+  const changed = SPREAD_RUNTIME.split('');
+  const [slot] = SPREAD_IMMUTABLES[0];
+  changed[2 + slot * 2] = 'a';
+  if (!currentSpreadCode(changed.join(''))) { console.error('immutable slot should be ignored'); process.exit(1); }
+  const other = SPREAD_RUNTIME.split('');
+  other[2] = other[2] === '6' ? '7' : '6';
+  if (currentSpreadCode(other.join(''))) { console.error('a code byte change should fail'); process.exit(1); }
+  if (currentSpreadCode('0x') || currentSpreadCode(SPREAD_RUNTIME.slice(0, -2))) { console.error('empty or short code should fail'); process.exit(1); }
+  if (!currentSpreadCode(SPREAD_RUNTIME)) { console.error('artifact runtime should match itself'); process.exit(1); }
+  console.log('spread bytecode self-test ok', SPREAD_IMMUTABLES.length, 'immutable slots');
+  process.exit(0);
+}
 if (cmd === 'status') { const { h, used } = await consumed(); console.log(JSON.stringify({ holdings: formatEther(h), used: formatEther(used), stopAt: formatEther(STOP_AT), vaults: PERSONAS.map(p => [p.id, st.agents[p.id].vault, agentAddr(p.id)]) }, null, 1)); process.exit(0); }
 if (cmd === 'recover') { await recover(); const { used } = await consumed(); publish({ used, status: 'stopped' }); log('final consumed', formatEther(used)); process.exit(0); }
 
