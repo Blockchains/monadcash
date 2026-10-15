@@ -59,8 +59,9 @@ export function reasonOf(e: any): Reason {
     if (x.data?.errorName) return { name: x.data.errorName, args: x.data.args };
     x = x.cause;
   }
-  const m = e?.shortMessage || e?.message || String(e);
-  if (e?.code === 4001 || /reject|denied|cancel/i.test(m)) return { name: 'UserRejected' };
+  const m = e?.details || e?.shortMessage || e?.message || String(e);
+  const feeish = /fee|underpriced|intrinsic gas|maxfee|max fee|priority fee|base fee/i.test(m);
+  if (!feeish && (e?.code === 4001 || e?.code === 5000 || /user rejected the request|user denied transaction signature|user (?:cancelled|canceled)/i.test(m))) return { name: 'UserRejected' };
   return { name: null, raw: String(m).split('\n')[0] };
 }
 export const plain = (r?: Reason | null) => (r?.name && PLAIN[r.name] ? PLAIN[r.name](r.args ?? []) : r?.raw || r?.name || 'Reverted');

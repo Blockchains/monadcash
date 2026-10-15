@@ -14,7 +14,7 @@ import VaultReport from './VaultReport';
 import FastDispatch from './FastDispatch';
 import PrimeTerminal from './PrimeTerminal';
 import SpreadDesk from './SpreadDesk';
-import { evaluateVault, feeCaps, fixedOwnerGas, GAS, isUserReject, pricedGas, sendWithKey, shouldRetryWithoutFees, watchHeads } from '@/lib/fastPath';
+import { evaluateVault, fixedOwnerGas, GAS, isUserReject, pricedGas, queueWallet, sendViaWallet, sendWithKey, watchHeads } from '@/lib/fastPath';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 type Tab = 'launch' | 'activity' | 'agents' | 'services' | 'policy';
@@ -102,7 +102,7 @@ export default function App() {
     try {
       const accs: string[] = await d.provider.request({ method: silent ? 'eth_accounts' : 'eth_requestAccounts' }); if (!accs?.length) return false;
       await ensureChain(d.provider); const a = getAddress(accs[0]);
-      setProv(d.provider); setAccount(a); setWallet(createWalletClient({ account: a, chain: chainOf(net), transport: custom(d.provider) }));
+      setProv(d.provider); setAccount(a); setWallet(createWalletClient({ account: a, chain: chainOf(net), transport: custom(d.provider, { retryCount: 0 }) }));
       localStorage.setItem('pp.wallet', d.info.rdns); setConnectOpen(false);
       const b = await pub.getBalance({ address: a }); setBal(b);
       if (!silent) toast(<>Connected <b>{d.info.name}</b> · {short(a)}</>, 'ok');
@@ -115,11 +115,17 @@ export default function App() {
   useEffect(() => { if (autoTried.current || !net || !wallets.length) return; const r = localStorage.getItem('pp.wallet'); const d = wallets.find(w => w.info.rdns === r); if (d) { autoTried.current = true; connectWith(d, true); } }, [wallets, net]); // eslint-disable-line
   const need = async () => { if (account && wallet && prov) { await ensureChain(prov); return true; } setConnectOpen(true); return false; };
   const send = async (w: WalletClient, req: { to?: Address; data?: Hex; value?: bigint; gas?: bigint }) => {
-    const once = (fees: boolean) => w.sendTransaction({ ...req, account: w.account!, chain: chainOf(net!), ...(fees && req.gas ? feeCaps() : {}) } as any);
-    let hash: Hex;
-    try { hash = await once(!!req.gas); }
-    catch (e) { if (!req.gas || !shouldRetryWithoutFees(e)) throw e; hash = await once(false); }
-    const rc = await pub!.waitForTransactionReceipt({ hash, timeout: 180_000 }); if (rc.status !== 'success') throw Object.assign(new Error('Transaction reverted'), { hash }); return rc;
+    if (!w?.account) throw new Error('Connect your wallet first.');
+    if (prov) await ensureChain(prov);
+    const hash = await queueWallet(() => sendViaWallet(w, async () => (await pub!.getBlock()).baseFeePerGas ?? null, req));
+    try {
+      const rc = await pub!.waitForTransactionReceipt({ hash, timeout: 60_000, pollingInterval: 500 });
+      if (rc.status !== 'success') throw Object.assign(new Error(`The transaction was included and reverted. Gas was still charged. ${hash}`), { hash });
+      return rc;
+    } catch (e) {
+      if ((e as { hash?: Hex }).hash) throw e;
+      throw Object.assign(new Error(`Your wallet submitted this transaction. It is not in a block yet. ${hash}`), { hash });
+    }
   };
   const refreshBal = () => account && pub?.getBalance({ address: account }).then(setBal).catch(() => {});
 
@@ -282,7 +288,7 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
       addLocal(net, { label: 'Harness on: vault created with limits + services', kind: 'owner', tx: rc.transactionHash, from: account });
       const list = await pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'vaultsOf', args: [account] }) as Address[]; const v = list[list.length - 1];
       if (p.startPaused) { cur = add('Starting paused'); const r = await send(wallet, { ...vcall(v, 'setPaused', [true]), gas: GAS.pause }); cur.ok(r.transactionHash); addLocal(net, { label: 'Owner pauses the agent', kind: 'owner', tx: r.transactionHash, from: account }); }
-      if (key && p.gas > 0) { cur = add(`Sending ${p.gas} MON of gas to your agent`); const r = await send(wallet, { to: exec, value: parseEther(String(p.gas)) }); cur.ok(r.transactionHash); addLocal(net, { label: 'Gas sent to agent key', kind: 'owner', tx: r.transactionHash, from: account }); }
+      if (key && p.gas > 0) { cur = add(`Sending ${p.gas} MON of gas to your agent`); const r = await send(wallet, { to: exec, value: parseEther(String(p.gas)), gas: 21_000n }); cur.ok(r.transactionHash); addLocal(net, { label: 'Gas sent to agent key', kind: 'owner', tx: r.transactionHash, from: account }); }
       setDoneVault(v); haptic([10, 40, 10] as any); toast('🚀 Your agent is out in the wild, with a harness on.', 'ok'); loadVaults(); refreshHist();
     } catch (e) { const m = plain(reasonOf(e)); cur ? cur.err(m) : toast(m, 'bad'); }
     setBusy(false);

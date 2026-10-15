@@ -1,5 +1,5 @@
 'use client';
-import { createPublicClient, http, keccak256, parseGwei, toFunctionSelector, webSocket, type Address, type Hex, type PublicClient } from 'viem';
+import { createPublicClient, http, keccak256, parseGwei, toFunctionSelector, webSocket, type Address, type Hex, type PublicClient, type WalletClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { SERVICES, TOKENS } from './services';
 import { chainOf, type Net, type VaultState } from './vault';
@@ -103,7 +103,19 @@ function noteBaseFee(fee: bigint) { if (fee > 0n) lastBaseFee = fee; }
 
 /** What the user can be charged up to. They pay base + priority, and the cost lever on Monad is the gas limit. */
 export function feeCaps() {
-  return { maxFeePerGas: lastBaseFee * 2n + parseGwei('2'), maxPriorityFeePerGas: parseGwei('2') };
+  const floor = parseGwei('100');
+  const base = lastBaseFee > floor ? lastBaseFee : floor;
+  const priority = parseGwei('2');
+  return { maxFeePerGas: base * 2n + priority, maxPriorityFeePerGas: priority };
+}
+
+/** Read the latest base fee, then build caps. A stale socket must not underprice the next send. */
+export async function freshFeeCaps(readBaseFee: () => Promise<bigint | null | undefined>) {
+  try {
+    const fee = await readBaseFee();
+    if (fee && fee > 0n) noteBaseFee(fee);
+  } catch { /* the cached base fee still produces a usable cap */ }
+  return feeCaps();
 }
 
 const clients = new Map<string, PublicClient>();
@@ -149,17 +161,54 @@ export function watchHeads(net: Net, onHead: (block: bigint) => void): () => voi
 }
 
 function blob(e: unknown): string {
-  const x = e as { shortMessage?: string; details?: string; message?: string };
-  return `${x?.shortMessage ?? ''} ${x?.details ?? ''} ${x?.message ?? ''}`.toLowerCase();
+  const parts: string[] = [];
+  const seen = new Set<unknown>();
+  let x: unknown = e;
+  while (x && typeof x === 'object' && !seen.has(x)) {
+    seen.add(x);
+    const rec = x as { shortMessage?: string; details?: string; message?: string; cause?: unknown; data?: unknown; code?: number };
+    parts.push(rec.shortMessage ?? '', rec.details ?? '', rec.message ?? '');
+    const data = rec.data;
+    if (typeof data === 'string') parts.push(data);
+    else if (data && typeof data === 'object') {
+      const inner = data as { message?: string; cause?: unknown };
+      if (inner.message) parts.push(inner.message);
+    }
+    x = rec.cause;
+  }
+  return parts.join(' ').toLowerCase();
 }
+
+function errorCode(e: unknown): number | undefined {
+  let x: unknown = e;
+  const seen = new Set<unknown>();
+  while (x && typeof x === 'object' && !seen.has(x)) {
+    seen.add(x);
+    const rec = x as { code?: number; cause?: unknown };
+    if (typeof rec.code === 'number') return rec.code;
+    x = rec.cause;
+  }
+  return undefined;
+}
+
+/** A person closed the wallet prompt. Fee and gas failures are not cancellations, even when a wallet uses code 4001. */
 export function isUserReject(e: unknown): boolean {
-  const code = (e as { code?: number })?.code;
-  return code === 4001 || /reject|denied|cancel/i.test(blob(e));
+  const text = blob(e);
+  if (/fee|underpriced|intrinsic gas|maxfee|max fee|priority fee|base fee/.test(text)) return false;
+  if (errorCode(e) === 4001 || errorCode(e) === 5000) return true;
+  return /user rejected the request|user denied transaction signature|user (?:cancelled|canceled)|rejected the request|denied transaction signature/.test(text);
 }
-/** Second attempt keeps the gas limit and drops fee caps. Reverts and cancellations are not retried. */
+
+/**
+ * One more wallet prompt, same gas limit, no fee fields, so the wallet can price it.
+ * A contract revert and a cancellation are not retried.
+ */
 export function shouldRetryWithoutFees(e: unknown): boolean {
   if (isUserReject(e)) return false;
-  return !/revert|insufficient funds|exceeds the balance|nonce too low|replacement transaction/.test(blob(e));
+  const text = blob(e);
+  if (/insufficient funds|exceeds the balance|nonce too low|already known/.test(text)) return false;
+  if (/revert|execution reverted/.test(text) && !/fee|underpriced|gas price/.test(text)) return false;
+  return true;
 }
 
 function isKnown(e: unknown): boolean {
@@ -182,6 +231,39 @@ async function broadcastRaw(net: Net, serialized: Hex): Promise<Hex> {
   }
 }
 
+export type WalletSendRequest = { to?: Address; data?: Hex; value?: bigint; gas?: bigint };
+
+let walletLane: Promise<unknown> = Promise.resolve();
+
+/** One wallet prompt at a time. A second click waits instead of stacking nonces. */
+export function queueWallet<T>(fn: () => Promise<T>): Promise<T> {
+  const run = walletLane.catch(() => undefined).then(fn);
+  walletLane = run.then(() => undefined, () => undefined);
+  return run;
+}
+
+/**
+ * Ask the wallet once with a fresh fee cap and the known gas limit.
+ * If the wallet rejects the cap, ask once more with the same gas and no fee fields.
+ * The connector must be created with retryCount 0, or viem will re-prompt on its own.
+ */
+export async function sendViaWallet(w: WalletClient, readBaseFee: () => Promise<bigint | null | undefined>, req: WalletSendRequest): Promise<Hex> {
+  if (!w.account) throw new Error('Connect your wallet first.');
+  const gas = req.gas;
+  const body: Record<string, unknown> = { account: w.account, chain: w.chain };
+  if (req.to) body.to = req.to;
+  if (req.data) body.data = req.data;
+  if (req.value != null) body.value = req.value;
+  if (gas) body.gas = gas;
+  const once = async (fees: boolean) => w.sendTransaction((fees && gas ? { ...body, ...(await freshFeeCaps(readBaseFee)) } : { ...body }) as Parameters<WalletClient['sendTransaction']>[0]);
+  try {
+    return await once(!!gas);
+  } catch (e) {
+    if (!gas || !shouldRetryWithoutFees(e)) throw e;
+    return await once(false);
+  }
+}
+
 const nonceNext = new Map<string, number>();
 const lane = new Map<string, Promise<unknown>>();
 
@@ -199,7 +281,7 @@ export function sendWithKey(net: Net, key: Hex, req: { to: Address; data?: Hex; 
       nonce = await nonceSource.getTransactionCount({ address: account.address, blockTag: 'pending' });
       nonceNext.set(id, nonce);
     }
-    const fees = feeCaps();
+    const fees = await freshFeeCaps(() => nonceSource.getBlock().then(b => b.baseFeePerGas));
     const serialized = await account.signTransaction({
       chainId: net.id, to: req.to, data: req.data, value: req.value ?? 0n, gas: req.gas, nonce,
       maxFeePerGas: fees.maxFeePerGas, maxPriorityFeePerGas: fees.maxPriorityFeePerGas, type: 'eip1559',
