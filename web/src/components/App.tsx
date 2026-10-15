@@ -7,14 +7,14 @@ import { Btn, Card, Pill, Sheet, Slider, Switch, useToasts } from './ui';
 import PolicyDashboard from './Dashboard';
 import ShowcaseAgents from './ShowcaseAgents';
 import { discoverWallets, deepLinks, INSTALL, isMobile, haptic, type Discovered, type Eip1193 } from '@/lib/wallets';
-import { addLocal, buildAction, buildCreate, buildStarter, chainOf, decodeInput, erc20, factoryAbi, fetchTeamSnapshot, loadHistory, mon, plain, pubOf, quoteAll, readVault, reasonOf, resolveNet, services, short, STARTER, TEAM_LABEL, vaultAbi, vcall, type Quote, type Ev, type Net, type Policy, type TeamAgent, type TeamSnapshot, type VaultState } from '@/lib/vault';
+import { addLocal, buildAction, buildCreate, buildStarter, chainOf, decodeInput, erc20, factoryAbi, fetchTeamSnapshot, loadHistory, mon, plain, pubOf, quoteAll, readVault, reasonOf, resolveNet, sendFault, services, short, STARTER, TEAM_LABEL, vaultAbi, vcall, type Quote, type Ev, type Net, type Policy, type TeamAgent, type TeamSnapshot, type VaultState } from '@/lib/vault';
 import { TOKENS, type TokenSym } from '@/lib/services';
 import { buildSuper, matchSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
 import VaultReport from './VaultReport';
 import FastDispatch from './FastDispatch';
 import PrimeTerminal from './PrimeTerminal';
 import SpreadDesk from './SpreadDesk';
-import { evaluateVault, fixedOwnerGas, GAS, isUserReject, pricedGas, queueWallet, sendViaWallet, sendWithKey, watchHeads } from '@/lib/fastPath';
+import { chainIdNumber, ensureWalletChain, evaluateVault, fixedOwnerGas, GAS, isConnectorDead, isPromptTimeout, isUserReject, pendingReceiptError, planWalletReload, pricedGas, queueWallet, receiptWaitMs, revertedReceiptError, sendViaWallet, sendWithKey, watchHeads, withDeadline } from '@/lib/fastPath';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 type Tab = 'launch' | 'activity' | 'agents' | 'services' | 'policy';
@@ -88,43 +88,101 @@ export default function App() {
   }, [pub, net, account]);
 
   // ---------- wallet ----------
-  const ensureChain = async (p: Eip1193) => {
-    if (!net) return; const cid = parseInt(await p.request({ method: 'eth_chainId' }), 16); if (cid === net.id) return;
-    try { await p.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: net.hex }] }); }
-    catch (e: any) {
-      if (e?.code === 4902 || /Unrecognized|not added|unknown chain/i.test(e?.message ?? '')) await p.request({ method: 'wallet_addEthereumChain', params: [{ chainId: net.hex, chainName: `Monad${net.id === 143 ? '' : ' Testnet'}`, nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 }, rpcUrls: [net.publicRpc], blockExplorerUrls: [net.exp] }] });
-      else throw e;
-    }
-    if (parseInt(await p.request({ method: 'eth_chainId' }), 16) !== net.id) throw new Error(`Switch your wallet to Monad ${net.name}.`);
+  // A prompt, a chain switch, or a receipt wait must not reload the page out from under itself.
+  const sendsInFlight = useRef(0);
+  const deferredReload = useRef(false);
+  const watched = useRef(new WeakSet<object>());
+  const session = useRef({ account: null as Address | null, wallet: null as WalletClient | null, prov: null as Eip1193 | null, net, pub, wallets });
+  session.current = { account, wallet, prov, net, pub, wallets };
+  const endFlight = () => {
+    sendsInFlight.current = Math.max(0, sendsInFlight.current - 1);
+    if (sendsInFlight.current === 0 && deferredReload.current) location.reload();
+  };
+  const onWalletEvent = (changed: boolean) => {
+    const plan = planWalletReload(sendsInFlight.current, changed);
+    if (plan === 'reload') location.reload();
+    else if (plan === 'defer') deferredReload.current = true;
+  };
+  const arm = (p: Eip1193) => {
+    if (watched.current.has(p)) return;
+    watched.current.add(p);
+    p.on?.('accountsChanged', (accs: string[]) => {
+      const next = (accs?.[0] ?? '').toLowerCase();
+      onWalletEvent(next !== (session.current.account ?? '').toLowerCase());
+    });
+    p.on?.('chainChanged', (id: string) => onWalletEvent(chainIdNumber(id) !== session.current.net?.id));
   };
   const connectWith = async (d: Discovered, silent = false) => {
-    if (!net || !pub) return false;
+    const live = session.current;
+    if (!live.net || !live.pub) return false;
+    sendsInFlight.current += 1;
     try {
-      const accs: string[] = await d.provider.request({ method: silent ? 'eth_accounts' : 'eth_requestAccounts' }); if (!accs?.length) return false;
-      await ensureChain(d.provider); const a = getAddress(accs[0]);
-      setProv(d.provider); setAccount(a); setWallet(createWalletClient({ account: a, chain: chainOf(net), transport: custom(d.provider, { retryCount: 0 }) }));
+      const accs: string[] = await withDeadline(d.provider.request({ method: silent ? 'eth_accounts' : 'eth_requestAccounts' }), 45_000, () => new Error("Your wallet didn't answer. Try connecting again."));
+      if (!accs?.length) return false;
+      await ensureWalletChain(d.provider, live.net);
+      const a = getAddress(accs[0]);
+      const client = createWalletClient({ account: a, chain: chainOf(live.net), transport: custom(d.provider, { retryCount: 0 }) });
+      session.current = { ...session.current, account: a, prov: d.provider, wallet: client };
+      setProv(d.provider); setAccount(a); setWallet(client);
       localStorage.setItem('pp.wallet', d.info.rdns); setConnectOpen(false);
-      const b = await pub.getBalance({ address: a }); setBal(b);
+      const b = await live.pub.getBalance({ address: a }); setBal(b);
       if (!silent) toast(<>Connected <b>{d.info.name}</b> · {short(a)}</>, 'ok');
-      if (b === 0n && !silent) toast(net.faucet ? <>0 MON. Get test MON at the <a className="underline" href={net.faucet} target="_blank" rel="noreferrer">faucet</a>.</> : 'Your wallet has 0 MON on Monad.', 'bad');
-      d.provider.on?.('accountsChanged', () => location.reload()); d.provider.on?.('chainChanged', () => location.reload());
-      loadVaults(a); return true;
+      if (b === 0n && !silent) toast(live.net.faucet ? <>0 MON. Get test MON at the <a className="underline" href={live.net.faucet} target="_blank" rel="noreferrer">faucet</a>.</> : 'Your wallet has 0 MON on Monad.', 'bad');
+      arm(d.provider);
+      loadVaults(a);
+      session.current = { ...session.current, account: a, prov: d.provider, wallet: client, net: live.net, pub: live.pub };
+      return true;
     } catch (e) { if (!silent) toast(plain(reasonOf(e)), 'bad'); return false; }
+    finally { endFlight(); }
   };
   const autoTried = useRef(false);
   useEffect(() => { if (autoTried.current || !net || !wallets.length) return; const r = localStorage.getItem('pp.wallet'); const d = wallets.find(w => w.info.rdns === r); if (d) { autoTried.current = true; connectWith(d, true); } }, [wallets, net]); // eslint-disable-line
-  const need = async () => { if (account && wallet && prov) { await ensureChain(prov); return true; } setConnectOpen(true); return false; };
-  const send = async (w: WalletClient, req: { to?: Address; data?: Hex; value?: bigint; gas?: bigint }) => {
-    if (!w?.account) throw new Error('Connect your wallet first.');
-    if (prov) await ensureChain(prov);
-    const hash = await queueWallet(() => sendViaWallet(w, async () => (await pub!.getBlock()).baseFeePerGas ?? null, req));
+  const need = async () => {
+    const live = session.current;
+    if (live.account && live.wallet && live.prov && live.net) {
+      sendsInFlight.current += 1;
+      try { await ensureWalletChain(live.prov, live.net); return true; }
+      finally { endFlight(); }
+    }
+    setConnectOpen(true); return false;
+  };
+  const waitReceipt = async (hash: Hex, deploy: boolean) => {
+    const ms = receiptWaitMs(deploy);
     try {
-      const rc = await pub!.waitForTransactionReceipt({ hash, timeout: 60_000, pollingInterval: 500 });
-      if (rc.status !== 'success') throw Object.assign(new Error(`The transaction was included and reverted. Gas was still charged. ${hash}`), { hash });
+      const rc = await withDeadline(
+        session.current.pub!.waitForTransactionReceipt({ hash, timeout: ms, pollingInterval: 400 }),
+        ms + 3_000,
+        () => pendingReceiptError(hash),
+      );
+      if (rc.status !== 'success') throw revertedReceiptError(hash);
       return rc;
     } catch (e) {
       if ((e as { hash?: Hex }).hash) throw e;
-      throw Object.assign(new Error(`Your wallet submitted this transaction. It is not in a block yet. ${hash}`), { hash });
+      throw pendingReceiptError(hash);
+    }
+  };
+  const submit = async (client: WalletClient, req: { to?: Address; data?: Hex; value?: bigint; gas?: bigint }) => {
+    if (!client?.account) throw new Error('Connect your wallet first.');
+    const live = session.current;
+    sendsInFlight.current += 1;
+    try {
+      if (live.prov && live.net) await ensureWalletChain(live.prov, live.net);
+      const hash = await queueWallet(() => sendViaWallet(client, async () => (await session.current.pub!.getBlock()).baseFeePerGas ?? null, req));
+      return await waitReceipt(hash, !req.to);
+    } finally { endFlight(); }
+  };
+  const send = async (w: WalletClient, req: { to?: Address; data?: Hex; value?: bigint; gas?: bigint }) => {
+    try {
+      return await submit(w, req);
+    } catch (e) {
+      if (isUserReject(e) || isPromptTimeout(e) || !isConnectorDead(e)) throw e;
+      const rdns = localStorage.getItem('pp.wallet');
+      const d = session.current.wallets.find(x => x.info.rdns === rdns);
+      if (!d) throw e;
+      const ok = await connectWith(d, true);
+      const next = session.current.wallet;
+      if (!ok || !next) throw e;
+      return await submit(next, req);
     }
   };
   const refreshBal = () => account && pub?.getBalance({ address: account }).then(setBal).catch(() => {});
@@ -158,10 +216,9 @@ export default function App() {
     if (s.key) {
       try {
         const hash = await sendWithKey(net!, s.key as Hex, { ...a.req, gas }, pub!);
-        rc = await pub!.waitForTransactionReceipt({ hash, timeout: 180_000 });
-        if (rc.status !== 'success') throw Object.assign(new Error('Transaction reverted'), { hash });
+        rc = await waitReceipt(hash, false);
       } catch (e) {
-        if ((e as { hash?: Hex }).hash || isUserReject(e)) throw e;
+        if ((e as { hash?: Hex }).hash || isUserReject(e) || isPromptTimeout(e)) throw e;
         rc = await send(w, { ...a.req, gas });
       }
     } else rc = await send(w, { ...a.req, gas });
@@ -211,7 +268,7 @@ export default function App() {
         </div>
       </nav>
 
-      <ConnectSheet open={connectOpen} onClose={() => setConnectOpen(false)} wallets={wallets} onPick={d => connectWith(d)} account={account} onDisconnect={() => { localStorage.removeItem('pp.wallet'); location.reload(); }} />
+      <ConnectSheet open={connectOpen} onClose={() => setConnectOpen(false)} wallets={wallets} onPick={d => connectWith(d)} account={account} onDisconnect={() => { localStorage.removeItem('pp.wallet'); onWalletEvent(true); }} />
     </div>
   );
 }
@@ -272,7 +329,8 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
   useEffect(() => { let on = true; (async () => { try { const [gc, td] = await Promise.all([pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'globalCap' }), pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'totalDeposited' })]) as [bigint, bigint]; if (on) setRoom(gc > td ? gc - td : 0n); } catch { /* older factory */ } })(); return () => { on = false; }; }, [pub, net, block]);
   const depWei = BigInt(Math.round(p.deposit * 1e6)) * 10n ** 12n; const overRoom = room != null && depWei > room;
   const launch = async () => {
-    if (!(await need())) return; setBusy(true); setProg([]); setDoneVault(null);
+    try { if (!(await need())) return; } catch (e) { const f = sendFault(e); toast(f.text, 'bad'); return; }
+    setBusy(true); setProg([]); setDoneVault(null);
     const add = (t: string) => { setProg(l => [...l, { t, s: 'run' }]); return { ok: (h?: string) => setProg(l => l.map((x, i) => (i === l.length - 1 ? { ...x, s: 'ok', h } : x))), err: (m: string) => setProg(l => l.map((x, i) => (i === l.length - 1 ? { ...x, s: 'err', t: `${x.t} – ${m}` } : x))) }; };
     let cur: any;
     try {
@@ -290,7 +348,7 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
       if (p.startPaused) { cur = add('Starting paused'); const r = await send(wallet, { ...vcall(v, 'setPaused', [true]), gas: GAS.pause }); cur.ok(r.transactionHash); addLocal(net, { label: 'Owner pauses the agent', kind: 'owner', tx: r.transactionHash, from: account }); }
       if (key && p.gas > 0) { cur = add(`Sending ${p.gas} MON of gas to your agent`); const r = await send(wallet, { to: exec, value: parseEther(String(p.gas)), gas: 21_000n }); cur.ok(r.transactionHash); addLocal(net, { label: 'Gas sent to agent key', kind: 'owner', tx: r.transactionHash, from: account }); }
       setDoneVault(v); haptic([10, 40, 10] as any); toast('🚀 Your agent is out in the wild, with a harness on.', 'ok'); loadVaults(); refreshHist();
-    } catch (e) { const m = plain(reasonOf(e)); cur ? cur.err(m) : toast(m, 'bad'); }
+    } catch (e) { const f = sendFault(e); cur ? cur.err(f.text) : toast(f.text, f.pending ? 'info' : 'bad'); }
     setBusy(false);
   };
 
@@ -507,7 +565,7 @@ function ActionSheet({ s, kind, onClose, runAgent, net, pub, account, ownerTx, r
         if (!allowed && live && account && s.owner.toLowerCase() === account.toLowerCase() && ownerTx) { setStep(`Allowlisting ${short(extra.to)} as a payee (owner signature 1 of 2)…`); await ownerTx(`Owner allows payee ${short(extra.to)}`, vcall(s.v, 'setRecipient', [extra.to, true])); setStep('Paying (signature 2 of 2)…'); }
       }
       setRes(await runAgent(s, kind === 'break' ? atk : kind, kind === 'break' ? 0n : parseEther(amt || '0'), extra));
-    } catch (e) { setRes({ ok: false, msg: plain(reasonOf(e)) }); }
+    } catch (e) { setRes({ ok: false, msg: sendFault(e).text }); }
     setStep(''); setBusy(false);
   };
   return (
@@ -574,7 +632,8 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
   const refreshTeam = (v: string) => readVault(pub, net, v as Address).then(s => setTeamState(x => ({ ...x, [v]: s }))).catch(() => {});
 
   const starter = async () => {
-    if (!(await need())) return; setStarting(true);
+    try { if (!(await need())) return; } catch (e) { toast(sendFault(e).text, 'bad'); return; }
+    setStarting(true);
     try {
       let dep = parseEther(String(STARTER.deposit)); let twoStep = false;
       try { const [gc, td] = await Promise.all([pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'globalCap' }), pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'totalDeposited' })]) as [bigint, bigint]; if (gc - td < dep) { dep = 0n; twoStep = true; } } catch { /* older factory */ }
@@ -587,11 +646,12 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
       haptic([10, 40, 10] as any); toast(<>⚡ Starter vault ready. Your wallet is its agent, so every action below is real. <a className="underline" href={`${net.exp}/tx/${rc.transactionHash}`} target="_blank" rel="noreferrer">tx ↗</a></>, 'ok');
       if (twoStep) toast('The alpha deposit cap is full right now, so the vault was created empty. Deposit later from the Owner section.', 'info');
       await loadVaults(); pick(v); refreshHist();
-    } catch (e) { toast(plain(reasonOf(e)), 'bad'); }
+    } catch (e) { const f = sendFault(e); toast(f.text, f.pending ? 'info' : 'bad'); }
     setStarting(false);
   };
   const createSuper = async (t: SuperVault) => {
-    if (!(await need())) return; setSuperBusy(true);
+    try { if (!(await need())) return; } catch (e) { toast(sendFault(e).text, 'bad'); return; }
+    setSuperBusy(true);
     try {
       const extras = superPayees.split(/[\s,]+/).filter(Boolean).map(a => { if (!isAddress(a)) throw new Error(`Bad payee address ${a}`); return getAddress(a); });
       let dep = parseEther(String(t.deposit)); let shortDeposit = false;
@@ -608,7 +668,7 @@ function Agents({ net, pub, account, wallet, need, send, vaults, loadVaults, run
       toast(<>{t.emoji} <b>{t.name}</b> is live. Run its playbook below. <a className="underline" href={`${net.exp}/tx/${rc.transactionHash}`} target="_blank" rel="noreferrer">tx ↗</a></>, 'ok');
       if (shortDeposit) toast(dep === 0n ? 'The alpha deposit cap is full, so the vault was created empty. Deposit from the Owner section before running the playbook.' : `Deposit was reduced to ${formatEther(dep)} MON to fit the alpha cap.`, 'info');
       setSuperOpen(null); setSuperPayees(''); await loadVaults(); pick(v); refreshHist();
-    } catch (e) { toast(plain(reasonOf(e)), 'bad'); }
+    } catch (e) { const f = sendFault(e); toast(f.text, f.pending ? 'info' : 'bad'); }
     setSuperBusy(false);
   };
 
@@ -679,7 +739,7 @@ function OwnVault({ s, net, pub, account, runAgent, ownerTx, toast, teamName, te
         <div className="min-w-0 flex-1"><div className="break-words font-semibold text-white">{teamName ?? template?.name ?? `Vault ${short(s.v)}`}</div><a className="block truncate text-xs text-violet-300" href={`${net.exp}/address/${s.v}`} target="_blank" rel="noreferrer">{s.v} ↗</a>{template && <p className="mt-1 break-words text-xs text-zinc-400">{template.tagline}</p>}{teamName && <div className="mt-1 min-w-0 max-w-full"><Pill tone="zinc">{TEAM_LABEL}</Pill></div>}</div>
         <Pill tone={s.paused ? 'warn' : 'ok'}>{s.paused ? 'Paused' : 'Active'}</Pill></div>
       <VaultReport key={s.v} s={s} net={net} pub={pub} account={account} template={template} runAgent={runAgent} ownerTx={ownerTx} reload={reload} canSign={signer !== null} isOwner readOnly={false} />
-      <Switch testid="sw-pause-vault" on={!s.paused} onChange={async v => { try { await ownerTx(v ? 'Owner resumes the agent' : 'Owner pauses the agent', vcall(s.v, 'setPaused', [!v])); toast(v ? '▶️ Agent resumed' : '⏸ Agent paused', 'ok'); } catch (e) { toast(plain(reasonOf(e)), 'bad'); } }} label={s.paused ? 'Agent is paused' : 'Agent is live'} sub="Instant kill-switch, one signature" />
+      <Switch testid="sw-pause-vault" on={!s.paused} onChange={async v => { try { await ownerTx(v ? 'Owner resumes the agent' : 'Owner pauses the agent', vcall(s.v, 'setPaused', [!v])); toast(v ? '▶️ Agent resumed' : '⏸ Agent paused', 'ok'); } catch (e) { const f = sendFault(e); toast(f.text, f.pending ? 'info' : 'bad'); } }} label={s.paused ? 'Agent is paused' : 'Agent is live'} sub="Instant kill-switch, one signature" />
       {template && <Playbook s={s} template={template} pub={pub} runAgent={runAgent} canSign={signer !== null} reload={reload} />}
       <div className="mt-2 text-[11px] uppercase tracking-wider text-zinc-500">Agent actions · {signer === 'wallet' ? 'real, signed by your wallet' : signer === 'key' ? 'real, signed by the key in this browser' : 'simulate only'}</div>
       <p className="mt-1 break-words text-xs text-zinc-400">{signer === 'wallet' ? <>Your wallet <span className="font-mono">{short(s.executor)}</span> is this vault’s agent. Every button sends a real transaction that the vault checks against your policy first.</> : signer === 'key' ? <>Agent key <span className="font-mono">{short(s.executor)}</span> is stored in this browser. Buttons send real transactions through the vault’s policy.</> : <>Agent <span className="font-mono">{short(s.executor)}</span> signs elsewhere, so buttons here run a free policy check (eth_call) and send nothing. To act from this wallet, make it the agent below (owner signature).</>}</p>
@@ -688,9 +748,9 @@ function OwnVault({ s, net, pub, account, runAgent, ownerTx, toast, teamName, te
       <div className="mt-3 text-[11px] uppercase tracking-wider text-zinc-500">Owner</div>
       <div className="mt-2 grid grid-cols-2 gap-2">
         <Btn onClick={() => setOwn({ s, kind: 'deposit' })}><Coins className="h-4 w-4" />Deposit</Btn><Btn onClick={() => setOwn({ s, kind: 'withdraw' })}>Withdraw</Btn>
-        {signer !== 'wallet' && <Btn data-testid="take-seat" className="col-span-2" onClick={async () => { try { const r = await ownerTx('Owner makes this wallet the agent', vcall(s.v, 'setExecutor', [account])); toast(r.msg, 'ok'); } catch (e) { toast(plain(reasonOf(e)), 'bad'); } }}><KeyRound className="h-4 w-4" />Make my wallet the agent</Btn>}
-        <Btn kind="danger" data-testid="pull-back" className="col-span-2" disabled={s.bal === 0n} onClick={async () => { try { const r = await ownerTx(`Owner pulls ${mon(s.bal)} back`, vcall(s.v, 'withdraw', [account, s.bal])); toast(r.msg, 'ok'); } catch (e) { toast(plain(reasonOf(e)), 'bad'); } }}>Pull all MON back (no pause)</Btn>
-        {toks.length > 0 && <Btn data-testid="tokens" className="col-span-2" onClick={async () => { try { for (const [kk, b] of toks) await ownerTx(`Withdraw ${kk}`, vcall(s.v, 'withdrawToken', [TOKENS[kk].address, account, b])); toast('Tokens sent to your wallet', 'ok'); } catch (e) { toast(plain(reasonOf(e)), 'bad'); } }}>Withdraw tokens ({toks.map(t => t[0]).join(', ')})</Btn>}
+        {signer !== 'wallet' && <Btn data-testid="take-seat" className="col-span-2" onClick={async () => { try { const r = await ownerTx('Owner makes this wallet the agent', vcall(s.v, 'setExecutor', [account])); toast(r.msg, 'ok'); } catch (e) { const f = sendFault(e); toast(f.text, f.pending ? 'info' : 'bad'); } }}><KeyRound className="h-4 w-4" />Make my wallet the agent</Btn>}
+        <Btn kind="danger" data-testid="pull-back" className="col-span-2" disabled={s.bal === 0n} onClick={async () => { try { const r = await ownerTx(`Owner pulls ${mon(s.bal)} back`, vcall(s.v, 'withdraw', [account, s.bal])); toast(r.msg, 'ok'); } catch (e) { const f = sendFault(e); toast(f.text, f.pending ? 'info' : 'bad'); } }}>Pull all MON back (no pause)</Btn>
+        {toks.length > 0 && <Btn data-testid="tokens" className="col-span-2" onClick={async () => { try { for (const [kk, b] of toks) await ownerTx(`Withdraw ${kk}`, vcall(s.v, 'withdrawToken', [TOKENS[kk].address, account, b])); toast('Tokens sent to your wallet', 'ok'); } catch (e) { const f = sendFault(e); toast(f.text, f.pending ? 'info' : 'bad'); } }}>Withdraw tokens ({toks.map(t => t[0]).join(', ')})</Btn>}
         {s.key && <Btn className="col-span-2 text-xs" onClick={() => { if (confirm('Show the agent key? Anyone holding it can act as this agent, though only within the vault limits.')) prompt('Agent key (keep it secret):', s.key!); }}>Export agent key</Btn>}
       </div>
       <ActionSheet s={s} kind={k} onClose={() => setK(null)} runAgent={runAgent} net={net} pub={pub} account={account} ownerTx={ownerTx} />
@@ -734,7 +794,7 @@ function Playbook({ s, template, pub, runAgent, canSign, reload }: { s: VaultSta
         await step(st.kind, amount, st.label);
       }
       if (!stopped) { push(true, 'Playbook finished. Receipts stay in the vault until you withdraw them.'); setDone(true); }
-    } catch (e) { push(false, plain(reasonOf(e))); }
+    } catch (e) { push(false, sendFault(e).text); }
     setBusy(false); reload();
   };
   return (
@@ -776,7 +836,7 @@ function OwnerSheet({ x, onClose, ownerTx, account }: any) {
   const [amt, setAmt] = useState('0.05'); const [res, setRes] = useState<any>(null); const [busy, setBusy] = useState(false);
   useEffect(() => { setRes(null); if (x) setAmt(x.kind === 'withdraw' ? formatEther(x.s.bal) : '0.05'); }, [x]);
   if (!x) return null;
-  const go = async () => { setBusy(true); try { const v = parseEther(amt || '0'); setRes(await (x.kind === 'deposit' ? ownerTx(`Deposit ${amt} MON`, { ...vcall(x.s.v, 'deposit', []), value: v }) : ownerTx(`Withdraw ${amt} MON`, vcall(x.s.v, 'withdraw', [account, v])))); } catch (e) { setRes({ ok: false, msg: plain(reasonOf(e)) }); } setBusy(false); };
+  const go = async () => { setBusy(true); try { const v = parseEther(amt || '0'); setRes(await (x.kind === 'deposit' ? ownerTx(`Deposit ${amt} MON`, { ...vcall(x.s.v, 'deposit', []), value: v }) : ownerTx(`Withdraw ${amt} MON`, vcall(x.s.v, 'withdraw', [account, v])))); } catch (e) { setRes({ ok: false, msg: sendFault(e).text }); } setBusy(false); };
   return <Sheet open onClose={onClose} title={x.kind === 'deposit' ? 'Deposit MON' : 'Withdraw MON'}><label className="grid gap-1 text-sm text-zinc-300">Amount (MON)<input inputMode="decimal" value={amt} onChange={e => setAmt(e.target.value)} className="min-h-12 w-full min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 font-mono text-base outline-none focus:border-monad" /></label>{x.kind === 'deposit' && <p className="mt-2 text-xs text-zinc-400">Max 1 MON per vault (alpha).</p>}<Btn kind="pri" disabled={busy} onClick={go} className="mt-4 w-full">{busy ? 'Working…' : 'Confirm'}</Btn>{res && <div className={`mt-3 break-words rounded-2xl border p-3 text-sm ${res.ok ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-red-500/40 bg-red-500/10'}`}>{res.msg}</div>}</Sheet>;
 }
 

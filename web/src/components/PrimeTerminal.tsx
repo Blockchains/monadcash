@@ -2,9 +2,9 @@
 import { useEffect, useState } from 'react';
 import { getAddress, isAddress, parseEther, type Address, type PublicClient, type WalletClient } from 'viem';
 import { AlertTriangle, CheckCircle2, Lock, Shield, Zap } from 'lucide-react';
-import { Btn } from './ui';
+import { Btn, receiptClass } from './ui';
 import { haptic } from '@/lib/wallets';
-import { addLocal, mon, plain, reasonOf, short, type Net } from '@/lib/vault';
+import { addLocal, mon, sendFault, short, type Net } from '@/lib/vault';
 import { BREAKER_BPS, explainPrime, FEE_BPS, HOP_BPS, primeAbi, primeDeployData, primeDepositData, primeGate, primeWithdrawData, PRIME_CAP, PRIME_HOP, SENIOR_PROFIT_BPS, trancheAssets, type TrancheId } from '@/lib/prime';
 import { GAS, pricedGas } from '@/lib/fastPath';
 
@@ -30,7 +30,7 @@ export default function PrimeTerminal({ net, pub, account, wallet, bal, need, se
   const [snap, setSnap] = useState<Snap | null>(null);
   const [busy, setBusy] = useState(false);
   const [paste, setPaste] = useState('');
-  const [line, setLine] = useState<{ ok: boolean; text: string; href?: string } | null>(null);
+  const [line, setLine] = useState<{ ok: boolean; pending?: boolean; text: string; href?: string } | null>(null);
   const key = account ? `pp.prime.${net.id}.${account.toLowerCase()}` : '';
 
   useEffect(() => {
@@ -87,10 +87,15 @@ export default function PrimeTerminal({ net, pub, account, wallet, bal, need, se
   const status = !vault ? 'Not opened' : halted ? 'Halted' : low ? 'Near the floor' : 'Live';
 
   const remember = (a: Address) => { if (key) localStorage.setItem(key, a); setVault(a); };
-  const fail = (e: unknown) => { const text = explainPrime(e, plain(reasonOf(e))); setLine({ ok: false, text }); toast(text, 'bad'); };
+  const fail = (e: unknown) => {
+    const f = sendFault(e);
+    const text = explainPrime(e, f.text);
+    setLine({ ok: false, pending: f.pending, text });
+    toast(text, f.pending ? 'info' : 'bad');
+  };
 
   const go = async () => {
-    if (gate.code === 'connect') { await need(); return; }
+    if (gate.code === 'connect') { try { await need(); } catch (e) { fail(e); } return; }
     if (!gate.ok || !account || !wallet) return;
     setBusy(true); setLine(null);
     const wei = parseEther(amount);
@@ -99,7 +104,7 @@ export default function PrimeTerminal({ net, pub, account, wallet, bal, need, se
         const data = primeDeployData(account, account, account, tranche);
         const gas = await pricedGas(pub, account, { data, value: wei });
         const rc = await send(wallet, { data, value: wei, gas });
-        if (!rc.contractAddress) throw new Error('The vault address was missing from the receipt.');
+        if (!rc.contractAddress) throw new Error(`The transaction was included, but the vault address was not in the receipt. Open it and paste the contract here. ${rc.transactionHash}`);
         remember(rc.contractAddress);
         addLocal(net, { label: `Opened a prime vault and deposited ${amount} MON into ${choice.take}`, kind: 'owner', tx: rc.transactionHash, from: account });
         const href = `${net.exp}/tx/${rc.transactionHash}`;
@@ -119,7 +124,7 @@ export default function PrimeTerminal({ net, pub, account, wallet, bal, need, se
 
   const withdraw = async () => {
     if (!vault || !wallet || !account || !snap || snap.shares[tranche] === 0n) return;
-    if (!(await need())) return;
+    try { if (!(await need())) return; } catch (e) { fail(e); return; }
     setBusy(true); setLine(null);
     try {
       const rc = await send(wallet, { to: vault, data: primeWithdrawData(tranche, snap.shares[tranche]), gas: GAS.primeWithdraw });
@@ -214,7 +219,7 @@ export default function PrimeTerminal({ net, pub, account, wallet, bal, need, se
         <Btn kind="ghost" data-testid="prime-withdraw" disabled={busy} onClick={withdraw} className="mt-3 w-full">Withdraw {mon(snap.yours[tranche])} from {choice.take}</Btn>
       )}
 
-      {line && <div data-testid="prime-receipt" className={`mt-3 break-words rounded-2xl border p-3 text-xs ${line.ok ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100' : 'border-red-500/40 bg-red-500/10 text-red-100'}`}>{line.text}{line.href && <> <a className="underline" href={line.href} target="_blank" rel="noreferrer">tx ↗</a></>}</div>}
+      {line && <div data-testid="prime-receipt" className={`mt-3 break-words rounded-2xl border p-3 text-xs ${receiptClass(line)}`}>{line.text}{line.href && <> <a className="underline" href={line.href} target="_blank" rel="noreferrer">tx ↗</a></>}</div>}
 
       <details className="mt-4 min-w-0 rounded-2xl bg-black/20 p-3 text-xs text-zinc-400">
         <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-zinc-300"><Lock className="h-3.5 w-3.5 shrink-0" />How the pool protects the two tranches</summary>

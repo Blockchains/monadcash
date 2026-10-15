@@ -51,6 +51,22 @@ const PLAIN: Record<string, (a: readonly any[]) => string> = {
   InsufficientBalance: a => `The vault only holds ${mon(a[1] ?? 0n)}.`, ForbiddenSelector: () => 'Approve/transfer functions can never be allowlisted.', ForbiddenTarget: () => "That address can't be a service target.",
   UserRejected: () => 'You cancelled in your wallet.',
 };
+function faultParts(e: any): { parts: string[]; code?: number } {
+  const parts: string[] = [];
+  const seen = new Set<any>();
+  let x = e;
+  let code: number | undefined;
+  while (x && typeof x === 'object' && !seen.has(x)) {
+    seen.add(x);
+    if (code == null && typeof x.code === 'number') code = x.code;
+    for (const s of [x.details, x.shortMessage, x.message]) if (typeof s === 'string' && s.trim()) parts.push(s);
+    const data = x.data;
+    if (typeof data === 'string') parts.push(data);
+    else if (data && typeof data === 'object' && typeof data.message === 'string') parts.push(data.message);
+    x = x.cause;
+  }
+  return { parts, code };
+}
 export function reasonOf(e: any): Reason {
   let x = e;
   while (x) {
@@ -59,12 +75,20 @@ export function reasonOf(e: any): Reason {
     if (x.data?.errorName) return { name: x.data.errorName, args: x.data.args };
     x = x.cause;
   }
-  const m = e?.details || e?.shortMessage || e?.message || String(e);
-  const feeish = /fee|underpriced|intrinsic gas|maxfee|max fee|priority fee|base fee/i.test(m);
-  if (!feeish && (e?.code === 4001 || e?.code === 5000 || /user rejected the request|user denied transaction signature|user (?:cancelled|canceled)/i.test(m))) return { name: 'UserRejected' };
-  return { name: null, raw: String(m).split('\n')[0] };
+  const { parts, code } = faultParts(e);
+  const text = parts.join('\n');
+  const feeish = /fee|underpriced|intrinsic gas|maxfee|max fee|priority fee|base fee/i.test(text);
+  if (!feeish && (code === 4001 || code === 5000 || /user rejected the request|user denied transaction signature|user (?:cancelled|canceled)/i.test(text))) return { name: 'UserRejected' };
+  const generic = /^(an unknown rpc error occurred\.?|an internal error was received\.?|http request failed\.?)$/i;
+  const raw = parts.map(p => p.split('\n')[0].trim()).find(p => p && !generic.test(p)) ?? parts[0]?.split('\n')[0] ?? 'The wallet did not complete that request.';
+  return { name: null, raw };
 }
 export const plain = (r?: Reason | null) => (r?.name && PLAIN[r.name] ? PLAIN[r.name](r.args ?? []) : r?.raw || r?.name || 'Reverted');
+/** A hash that is still waiting is not a revert. Callers use `pending` to keep the button honest. */
+export function sendFault(e: unknown): { pending: boolean; text: string } {
+  const pending = !!e && typeof e === 'object' && (e as { pending?: boolean }).pending === true;
+  return { pending, text: plain(reasonOf(e)) };
+}
 export const parseRecorded = (s?: string): Reason => { const m = /^(\w+)\((.*)\)$/.exec(s || ''); if (!m) return { name: null, raw: s }; return { name: m[1], args: m[2] ? m[2].split(', ').map(x => (/^\d+$/.test(x) ? BigInt(x) : x)) : [] }; };
 
 // ---------- policy -> createVault args ----------
