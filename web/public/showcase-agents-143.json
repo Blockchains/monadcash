@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T12:05:41.761Z",
+ "updatedAt": "2026-10-15T12:15:43.550Z",
  "totals": {
   "allowed": 420,
-  "blocked": 179,
+  "blocked": 180,
   "ownerTxs": 31,
   "skipped": 24
  },
@@ -155,10 +155,19 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 27,
-   "blocked": 55
+   "blocked": 56
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T12:15:43.549Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
+   "status": "blocked",
+   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
+   "tx": "0xe4f471ad6e3e7a0ef52093dce832578d704a09020993ef7632b1b190ba65c2dd"
+  },
   {
    "ts": "2026-10-15T12:05:41.759Z",
    "persona": "tester",
@@ -655,15 +664,6 @@
    "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.92 < target 1)",
    "status": "allowed",
    "tx": "0xe2c0cff14fb7106f592855f2a71dd0e2b55f2ace2d105d4890f4601acff218b9"
-  },
-  {
-   "ts": "2026-10-15T06:05:37.236Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
-   "tx": "0x601397fd44ba004415fbf945d29121589dc0faf64360097f09f5d5da580bbbdf"
   }
  ],
  "status": "running (GitHub Actions)"
