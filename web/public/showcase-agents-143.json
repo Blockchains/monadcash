@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T03:58:44.050Z",
+ "updatedAt": "2026-10-15T04:08:48.713Z",
  "totals": {
-  "allowed": 356,
-  "blocked": 144,
+  "allowed": 358,
+  "blocked": 145,
   "ownerTxs": 31,
   "skipped": 15
  },
@@ -122,7 +122,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 33,
+   "allowed": 34,
    "blocked": 0
   },
   {
@@ -134,7 +134,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 33,
+   "allowed": 34,
    "blocked": 0
   },
   {
@@ -147,10 +147,35 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 11,
-   "blocked": 22
+   "blocked": 23
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T04:08:48.712Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
+   "tx": "0x5a5b21acffd39d22dbaaf21d9429183ace9d7b8f06670eb89aad5e23ff970879"
+  },
+  {
+   "ts": "2026-10-15T04:08:47.705Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0028 MON to the Rogue agent agent",
+   "status": "allowed",
+   "tx": "0xae424e5fa3ac10d8b3648afbae8205735fb49ec69abea775da590700693418ec"
+  },
+  {
+   "ts": "2026-10-15T04:08:46.680Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.66 < target 1)",
+   "status": "allowed",
+   "tx": "0x0f9d3ff88d568447408e92837d6e6100831a5b4866d17fa046e35a10a3a452a1"
+  },
   {
    "ts": "2026-10-15T03:58:44.049Z",
    "persona": "tester",
@@ -626,31 +651,6 @@
    "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.36 < target 1)",
    "status": "allowed",
    "tx": "0x224ab83e18e8c5c385c2bbbdb0b15c25debf130e49440312897a1c6782f642e7"
-  },
-  {
-   "ts": "2026-10-15T01:37:14.049Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to raise its own budget (owner-only)",
-   "status": "blocked",
-   "reason": "NotOwner",
-   "tx": "0xb9fca2673c3728c42c12ed7108de669c8ef94feb36da93d49e33c21ab797f73a"
-  },
-  {
-   "ts": "2026-10-15T01:27:11.712Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester unwraps 0.05 WMON → MON (allowed)",
-   "status": "allowed",
-   "tx": "0x9cc02ab43e882fec525a08dba60831dc4a92051993156784700c0142abfbaa07"
-  },
-  {
-   "ts": "2026-10-15T01:27:10.627Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0019 MON to the Payroll agent",
-   "status": "allowed",
-   "tx": "0x50d18a5604db622ccdb5c26113c8f55089c7d7c1ea7d2e97a19598da90b6aedf"
   }
  ],
  "status": "running (GitHub Actions)"
