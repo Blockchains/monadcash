@@ -10,7 +10,7 @@ export const SPREAD_BYTECODE = artifact.bytecode as Hex;
 export const MIN_PROFIT_BPS = 5;
 export const KEEPER_BPS = 1_000;
 export const PROTOCOL_BPS = 1_000;
-export const SPREAD_CAP = parseEther('1');
+export const SPREAD_CAP = parseEther('10');
 export const MAX_TRADE_BPS = 10_000;
 /** 500,000 gas at the 100 gwei minimum base fee. A revert still costs the gas limit. */
 export const ROUGH_GAS_WEI = 500_000n * 100_000_000_000n;
@@ -71,7 +71,7 @@ export function spreadGate(o: {
   }
   if (wei <= 0n) return { ok: false, code: 'amount', label: 'ENTER AN AMOUNT', detail: 'The amount needs to be more than 0 MON.' };
   if (!o.mainnet) return { ok: false, code: 'net', label: 'MAINNET ONLY', detail: 'These quotes are Uniswap v3, PancakeSwap v3, and Kuru on Monad mainnet.' };
-  if (!o.vault && wei > SPREAD_CAP) return { ok: false, code: 'cap', label: 'EXCEEDS CAP', detail: 'A spread pool holds at most 1 MON.' };
+  if (!o.vault && wei > SPREAD_CAP) return { ok: false, code: 'cap', label: 'EXCEEDS CAP', detail: 'A new spread pool holds at most 10 MON.' };
   if (o.vault && wei > o.pool) return { ok: false, code: 'bal', label: 'LARGER THAN THE POOL', detail: 'A round trip cannot sell more MON than the pool holds.' };
   if (!o.account) return { ok: false, code: 'connect', label: 'CONNECT WALLET', detail: 'One wallet connection opens the pool or submits a round trip.' };
   if (!o.vault) {
@@ -186,7 +186,7 @@ const SPREAD_PLAIN: Record<string, string> = {
   Unprofitable: 'The swap came back short, so the whole round trip reverted.',
   SameVenue: 'The two legs have to be different pools.',
   TradeTooLarge: 'That size is larger than this pool allows.',
-  VaultCapExceeded: 'That deposit would pass the 1 MON cap.',
+  VaultCapExceeded: 'That deposit would pass this pool’s cap.',
   InsufficientShares: 'Those shares are not in this wallet.',
   WrongNetwork: 'This pool only deploys on Monad mainnet.',
   ZeroAmount: 'The amount needs to be more than 0.',

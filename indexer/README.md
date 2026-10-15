@@ -61,4 +61,4 @@ Evidence of a verified run: see `../docs/envio-indexer-check.txt`.
 
 ## Mainnet factory
 
-This indexer covers the testnet PolicyPilot contract. The mainnet AgentVaultFactory is v2 `0x0342d29055d77ba155c50233f550539E3029BA6a` (legacy v1: `0x8738B74778502ff3623A8319837A819d8dBdEeB7`); see `deployments/monad-mainnet.json`. The web app reads mainnet vault state directly over RPC. It isn't indexed here yet.
+This indexer covers the testnet PolicyPilot contract. New mainnet vaults use factory v3 `0x52727226aF0efe2bfe3E5c97e46B704613344a92` (legacy v2 `0x0342d29055d77ba155c50233f550539E3029BA6a`, v1 `0x8738B74778502ff3623A8319837A819d8dBdEeB7`); see `deployments/monad-mainnet.json`. The web app reads mainnet vault state directly over RPC. It isn't indexed here yet.

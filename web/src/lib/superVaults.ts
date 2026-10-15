@@ -10,21 +10,21 @@ export type SuperVault = {
   playbook: PlaybookStep[];
 };
 
-/** Curated, one-click vault templates on the live v2 factory. Each is created (+ deposited) in ONE transaction with
+/** Curated, one-click vault templates. Each is created (+ deposited) in ONE transaction with
  *  your wallet as the agent, so the playbook below runs for real from the browser, through the vault's policy. */
 export const SUPER_VAULTS: SuperVault[] = [
   { id: 'yield', name: 'Yield Super Vault', emoji: '🥩', tagline: 'Diversified liquid staking across Kintsu, aPriori and Magma.',
     value: ['Spreads stake over three live Monad LSTs (sMON, aprMON, gMON) in one tap', 'Receipt tokens land in the vault; only you can pull them out', 'Wrap/unwrap WMON for apps that need the ERC-20'],
-    services: ['kintsu', 'apriori', 'magma', 'wmon'], cap: 0.05, budget: 0.5, deposit: 0.3,
-    playbook: [{ kind: 'kintsu', amount: '0.03', label: 'Stake 0.03 MON → sMON (Kintsu)' }, { kind: 'apriori', amount: '0.03', label: 'Stake 0.03 MON → aprMON (aPriori)' }, { kind: 'magma', amount: '0.03', label: 'Stake 0.03 MON → gMON (Magma)' }] },
+    services: ['kintsu', 'apriori', 'magma', 'wmon'], cap: 0.5, budget: 5, deposit: 3,
+    playbook: [{ kind: 'kintsu', amount: '0.3', label: 'Stake 0.3 MON → sMON (Kintsu)' }, { kind: 'apriori', amount: '0.3', label: 'Stake 0.3 MON → aprMON (aPriori)' }, { kind: 'magma', amount: '0.3', label: 'Stake 0.3 MON → gMON (Magma)' }] },
   { id: 'trader', name: 'Best-Execution Super Vault', emoji: '🎯', tagline: 'Quotes Uniswap v3, PancakeSwap v3 and Kuru, then swaps at the best price.',
     value: ['Every swap is quoted live on all three venues and routed to the best USDC out', 'Slippage guard (minOut = best quote − 3%) enforced by the vault itself', 'USDC/WMON approvals capped; output must come back to the vault'],
-    services: ['uniswap', 'pancake', 'kuru', 'wmon'], cap: 0.05, budget: 0.5, deposit: 0.3,
-    playbook: [{ kind: 'bestswap', amount: '0.02', label: 'Swap 0.02 MON → USDC at the best of 3 venues' }, { kind: 'bestswap', amount: '0.02', label: 'Swap another 0.02 MON → USDC (re-quoted)' }, { kind: 'unwrap', amount: 'wmon-all', label: 'Unwrap any WMON back to MON' }] },
-  { id: 'payments', name: 'Payments Super Vault', emoji: '💸', tagline: 'Payroll, tips and subscriptions to an allowlist, with a tiny per-payment cap.',
-    value: ['Only addresses you approve can ever be paid', 'Per-payment cap of 0.01 MON and a 0.2 MON total budget', 'Add or remove payees any time; pause with one signature'],
-    services: ['pay'], cap: 0.01, budget: 0.2, deposit: 0.1, payees: true,
-    playbook: [{ kind: 'pay-each', amount: '0.002', label: 'Pay 0.002 MON to every approved payee' }] },
+    services: ['uniswap', 'pancake', 'kuru', 'wmon'], cap: 0.5, budget: 5, deposit: 3,
+    playbook: [{ kind: 'bestswap', amount: '0.2', label: 'Swap 0.2 MON → USDC at the best of 3 venues' }, { kind: 'bestswap', amount: '0.2', label: 'Swap another 0.2 MON → USDC (re-quoted)' }, { kind: 'unwrap', amount: 'wmon-all', label: 'Unwrap any WMON back to MON' }] },
+  { id: 'payments', name: 'Payments Super Vault', emoji: '💸', tagline: 'Payroll, tips and subscriptions to an allowlist, with a per-payment cap.',
+    value: ['Only addresses you approve can ever be paid', 'Per-payment cap of 0.1 MON and a 2 MON total budget', 'Add or remove payees any time; pause with one signature'],
+    services: ['pay'], cap: 0.1, budget: 2, deposit: 1, payees: true,
+    playbook: [{ kind: 'pay-each', amount: '0.02', label: 'Pay 0.02 MON to every approved payee' }] },
 ];
 
 export const superById = (id: string) => SUPER_VAULTS.find(s => s.id === id);

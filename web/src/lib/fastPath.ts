@@ -29,6 +29,13 @@ export const GAS = {
   pause: 80_000n,
   primeDeposit: 160_000n,
   primeWithdraw: 100_000n,
+  /**
+   * createVault measured about 3.84M gas with every service on a mainnet fork.
+   * 8M covers extra payees (~20k gas each) without billing a block-sized limit.
+   * Monad charges this ceiling in full (~0.8 MON at a 100 gwei base fee).
+   * Callers still eth_call first, so a reverting create does not pay it.
+   */
+  createVault: 8_000_000n,
 } as const;
 
 const DEPOSIT = toFunctionSelector('function deposit()');

@@ -1,10 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { formatEther, type PublicClient } from 'viem';
+import { formatEther, parseEther, type PublicClient } from 'viem';
 import { Card, Pill } from './ui';
 import { fetchTeamSnapshot, TEAM_LABEL, vaultAbi, type Net, type TeamSnapshot } from '@/lib/vault';
 
-type Live = Record<string, { nonce: number; bal: bigint; spent: bigint; paused: boolean }>;
+type Live = Record<string, { nonce: number; bal: bigint; spent: bigint; paused: boolean; gas: bigint }>;
+const MIN_AGENT_GAS = parseEther('0.08');
 const n4 = (v: bigint) => Number(formatEther(v)).toLocaleString(undefined, { maximumFractionDigits: 4 });
 const ago = (t: string) => { const s = Math.max(0, (Date.now() - Date.parse(t)) / 1000); return s < 90 ? `${Math.round(s)}s ago` : s < 5400 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`; };
 
@@ -18,8 +19,8 @@ export default function ShowcaseAgents({ net, pub, base, totalVaults, extraTeamV
       const out: Live = {};
       await Promise.all(snap.agents.filter(a => a.vault && a.agent).map(async a => {
         try {
-          const [nonce, bal, spent, paused] = await Promise.all([pub.getTransactionCount({ address: a.agent! }), pub.getBalance({ address: a.vault! }), pub.readContract({ address: a.vault!, abi: vaultAbi, functionName: 'totalSpent' }) as Promise<bigint>, pub.readContract({ address: a.vault!, abi: vaultAbi, functionName: 'paused' }) as Promise<boolean>]);
-          out[a.id] = { nonce, bal, spent, paused };
+          const [nonce, bal, spent, paused, gas] = await Promise.all([pub.getTransactionCount({ address: a.agent! }), pub.getBalance({ address: a.vault! }), pub.readContract({ address: a.vault!, abi: vaultAbi, functionName: 'totalSpent' }) as Promise<bigint>, pub.readContract({ address: a.vault!, abi: vaultAbi, functionName: 'paused' }) as Promise<boolean>, pub.getBalance({ address: a.agent! })]);
+          out[a.id] = { nonce, bal, spent, paused, gas };
         } catch { /* rpc hiccup */ }
       }));
       if (!stop) setLive(out);
@@ -48,6 +49,7 @@ export default function ShowcaseAgents({ net, pub, base, totalVaults, extraTeamV
             {a.vault ? <>
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-300"><span>✅ {a.allowed}</span><span>⛔ {a.blocked}</span><span>cap {a.perActionCapMON} MON</span>{l && <span>spent {n4(l.spent)} MON</span>}{l && <span>vault {n4(l.bal)} MON</span>}{l?.paused && <Pill tone="warn">paused</Pill>}</div>
               {idle && <p className="mt-2 break-words rounded-xl bg-amber-400/10 p-2 text-[11px] text-amber-100/80">⏸ idle since {ago(a.lastSkip!.ts)}: {a.lastSkip!.reason}</p>}
+              {a.agent && <p data-testid={`topup-${a.id}`} className={`mt-2 break-words rounded-xl p-2 text-[11px] ${l && l.gas < MIN_AGENT_GAS ? 'bg-amber-400/10 text-amber-100' : 'bg-white/5 text-zinc-300'}`}>Top up <a className="break-all font-mono text-violet-300 underline" href={`${net.exp}/address/${a.agent}`} target="_blank" rel="noreferrer">{a.agent}</a> so this agent does not pause. The runner skips it under 0.08 MON.{l ? ` It holds ${n4(l.gas)} MON.` : ''}</p>}
               <a className="mt-2 inline-flex min-h-11 items-center break-all font-mono text-[11px] text-violet-300 underline" href={`${net.exp}/address/${a.vault}`} target="_blank" rel="noreferrer">vault {a.vault} ↗</a>
             </> : <p className="mt-2 break-words rounded-xl bg-white/5 p-2 text-[11px] text-zinc-400">Not live yet: the team still has to create this vault and add its agent key. Until then the runner skips it and logs why.</p>}
           </Card>); })}

@@ -22,7 +22,7 @@ export const DEPLOYMENT = {
   sourcify: 'https://repo.sourcify.dev/10143/0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E',
 } as const;
 
-export const MAINNET = { factory: '0x0342d29055d77ba155c50233f550539E3029BA6a' as Address, legacyFactory: '0x8738B74778502ff3623A8319837A819d8dBdEeB7' as Address, showcaseVault: '0x379e0C3Ecba46d62dAdCf26dBecd0F26A2cdCA97' as Address };
+export const MAINNET = { factory: '0x52727226aF0efe2bfe3E5c97e46B704613344a92' as Address, legacyFactory: '0x0342d29055d77ba155c50233f550539E3029BA6a' as Address, legacyFactories: ['0x0342d29055d77ba155c50233f550539E3029BA6a', '0x8738B74778502ff3623A8319837A819d8dBdEeB7'] as Address[], showcaseVault: '0x379e0C3Ecba46d62dAdCf26dBecd0F26A2cdCA97' as Address };
 
 export function client(rpc?: string): PublicClient {
   return createPublicClient({ chain: monadTestnet, transport: http(rpc ?? monadTestnet.rpcUrls.default.http[0]) }) as PublicClient;

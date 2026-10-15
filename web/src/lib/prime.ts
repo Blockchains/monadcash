@@ -5,9 +5,9 @@ export const primeAbi = artifact.abi as Abi;
 export const PRIME_BYTECODE = artifact.bytecode as Hex;
 
 /** Matches PolicyPilotPrimeVault's constants and the caps this app deploys with. */
-export const PRIME_CAP = parseEther('1');
-export const PRIME_HOP = parseEther('0.05');
-export const PRIME_LOSS = parseEther('0.05');
+export const PRIME_CAP = parseEther('10');
+export const PRIME_HOP = parseEther('0.5');
+export const PRIME_LOSS = parseEther('0.5');
 export const SENIOR_PROFIT_BPS = 3000;
 export const FEE_BPS = 1000;
 export const HOP_BPS = 500;

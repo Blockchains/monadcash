@@ -6,6 +6,14 @@
   "status": "ALPHA - unaudited. Only deposit what you're happy to lose.",
   "contracts": {
     "AgentVaultFactory": {
+      "address": "0x52727226aF0efe2bfe3E5c97e46B704613344a92",
+      "era": "v3",
+      "vaultCap": "1000 MON",
+      "globalCap": "100000 MON",
+      "appCeiling": "10 MON",
+      "note": "Same AgentVault bytecode as v2 apart from the immutable vault cap. New vaults opened in the app use this factory. The app stops a new vault at 10 MON. Existing v1 and v2 vaults keep their own caps."
+    },
+    "LegacyAgentVaultFactoryV2": {
       "address": "0x0342d29055d77ba155c50233f550539E3029BA6a",
       "tx": "0x0faa9973944d81a0e513066d18e20103158ca7c0983b28a02590d957c1698cb0",
       "block": 113090852,
@@ -14,7 +22,8 @@
       "globalCap": "1000 MON",
       "sourcify": "exact_match",
       "sourcifyUrl": "https://repo.sourcify.dev/143/0x0342d29055d77ba155c50233f550539E3029BA6a",
-      "deployCostMON": "0.7156"
+      "deployCostMON": "0.7156",
+      "status": "legacy (still readable; its vaults stay viewable and stay capped at 1 MON)"
     },
     "LegacyAgentVaultFactory": {
       "address": "0x8738B74778502ff3623A8319837A819d8dBdEeB7",
