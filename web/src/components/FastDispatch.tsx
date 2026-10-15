@@ -125,7 +125,7 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
       localStorage.setItem(`pp.super.${v.toLowerCase()}`, preset.id);
       await loadVaults(); refreshHist();
       setVaultId(v);
-      setLine({ ok: true, text: `${preset.name} is live${dep > 0n ? ` with ${formatEther(dep)} MON` : ''}. Dispatch runs the first action.`, href: `${net.exp}/tx/${rc.transactionHash}` });
+      setLine({ ok: true, text: `${preset.name} is live${dep > 0n ? ` with ${formatEther(dep)} MON` : ''}. Tap Dispatch to send the first action.`, href: `${net.exp}/tx/${rc.transactionHash}` });
       if (shortDeposit) toast(dep === 0n ? 'The alpha deposit cap is full, so the vault was created empty. Deposit from Agents before dispatching.' : `Deposit was reduced to ${formatEther(dep)} MON to fit the alpha cap.`, 'info');
       haptic(20);
     } catch (e) { note(e); }

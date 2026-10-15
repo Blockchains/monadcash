@@ -56,9 +56,10 @@ contract GasProfileTest is Test {
         p.withdraw(PolicyPilotPrimeVault.TrancheType.SENIOR, shares);
         uint256 pwd = g - gasleft();
 
-        // gasleft() around the call, including the test contract's call overhead.
-        // web/src/lib/fastPath.ts turns these into transaction gas limits (intrinsic + calldata + cushion).
-        // Monad charges the gas limit, so a jump here means those limits must be raised in the same change.
+        // gasleft() around the call, in the same transaction as setup, so factory slots are warm.
+        // A standalone wallet send is colder. Fork eth_estimateGas (2026-10-15): first execute
+        // to a new address 177464, withdraw 85821. fastPath GAS.pay is 182000 and GAS.vaultWithdraw is 90000.
+        // Monad charges the gas limit, so a jump here means those limits must be remeasured.
         assertLt(pay, 120_000, "pay");
         assertLt(dep, 55_000, "deposit");
         assertLt(wd, 60_000, "withdraw");
