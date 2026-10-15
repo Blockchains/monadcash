@@ -244,7 +244,7 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
   };
 
   useEffect(() => {
-    if (!auto || busy || gate.code !== 'net' || block == null || !quoteForAmount?.ok || !vault) return;
+    if (!auto || busy || (gate.code !== 'net' && gate.code !== 'gain') || block == null || !quoteForAmount?.ok || !vault) return;
     if (tried.current === block) return;
     tried.current = block;
     const timer = window.setTimeout(() => { void go(); }, 180);
@@ -300,7 +300,7 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
           <span>Net {quoteForAmount?.ok ? mon(netMon, 6) : '—'}</span>
         </div>
         {quoteForAmount?.ok && !netPositive && <p data-testid="clip-gas-note" className="break-words text-amber-200">This gain is smaller than the gas this limit charges. Submitting still runs the clip. You pay the gas, including if it reverts.</p>}
-        {quoteForAmount?.ok && netPositive && <p data-testid="clip-net-note" className="break-words text-emerald-200">This gain clears the gas charge. Auto-submit sends one clip per block while that stays true.</p>}
+        {quoteForAmount?.ok && netPositive && <p data-testid="clip-net-note" className="break-words text-emerald-200">This gain clears the gas charge. Auto-submit sends one clip per block while a gain is quoted.</p>}
         {bestSize && <p data-testid="clip-best-note" className="break-words text-zinc-300">Most MON back is {mon(bestSize.profit, 6)} at {mon(bestSize.amount)}. A larger size is used when it returns more.</p>}
         {quoteError && <p className="break-words text-rose-300">{quoteError}</p>}
       </div>
@@ -325,7 +325,7 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
         </div>
       </div>
 
-      <Switch testid="clip-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One send per block, and only when the quoted gain is larger than the gas this limit charges." />
+      <Switch testid="clip-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One send per block while the quote shows a gain. Each send pays the gas limit." />
 
       {snap && snap.shares > 0n && (
         <Btn kind="ghost" data-testid="clip-withdraw" disabled={busy} onClick={() => void withdraw()} className="mt-2 w-full">Withdraw {mon(snap.yours)} to this wallet</Btn>
