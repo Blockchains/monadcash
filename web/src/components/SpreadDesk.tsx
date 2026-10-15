@@ -8,7 +8,7 @@ import { addLocal, mon, sendFault, short, type Net } from '@/lib/vault';
 import { pricedGas } from '@/lib/fastPath';
 import {
   backQuote, chooseSell, clearsFloor, decodeKuru, decodeQuote, explainSpread, fetchCalls, meshQuotes, minOuts, ROUGH_GAS_WEI, spreadAbi,
-  spreadCaptureData, spreadDeployData, spreadGate, spreadWithdrawData, VENUES, workerUrl, type CallRow, type QuoteCall, type StateOverride, type VenueId,
+  SPREAD_CAP, spreadCaptureData, spreadDeployData, spreadDepositData, spreadGate, spreadWithdrawData, VENUES, workerUrl, type CallRow, type QuoteCall, type StateOverride, type VenueId,
 } from '@/lib/spread';
 
 type Quote = {
@@ -51,6 +51,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   toast: (m: React.ReactNode, k?: 'ok' | 'bad' | 'info') => void; block: bigint | null;
 }) {
   const [amount, setAmount] = useState('0.05');
+  const [topUp, setTopUp] = useState('0.02');
   const [vault, setVault] = useState<Address | null>(null);
   const [snap, setSnap] = useState<{ pool: bigint; shares: bigint; yours: bigint } | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -264,6 +265,29 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auto, busy, gate.code, block, quoteForAmount?.ok, vault]);
 
+  const addMon = async () => {
+    if (!vault || !wallet || !account) return;
+    let wei: bigint;
+    try { wei = parseEther(topUp || '0'); } catch { toast('Use a MON amount such as 0.02.', 'bad'); return; }
+    if (wei <= 0n) { toast('The amount needs to be more than 0 MON.', 'bad'); return; }
+    const pool = snap?.pool ?? 0n;
+    if (pool + wei > SPREAD_CAP) { toast('That deposit would pass the 1 MON cap.', 'bad'); return; }
+    if (bal != null && wei > bal) { toast('Your wallet does not hold this deposit.', 'bad'); return; }
+    try { if (!(await need())) return; } catch (e) { fail(e); return; }
+    setBusy(true); setLine(null);
+    try {
+      const data = spreadDepositData();
+      const gas = await pricedGas(pub, account, { to: vault, data, value: wei });
+      const rc = await send(wallet, { to: vault, data, value: wei, gas });
+      addLocal(net, { label: `Added ${topUp} MON to the spread pool`, kind: 'owner', tx: rc.transactionHash, from: account });
+      const href = `${net.exp}/tx/${rc.transactionHash}`;
+      setLine({ ok: true, text: `Added ${topUp} MON to the pool.`, href });
+      toast(<>Deposited. <a className="underline" href={href} target="_blank" rel="noreferrer">View tx ↗</a></>, 'ok');
+      haptic(20);
+    } catch (e) { fail(e); }
+    setBusy(false);
+  };
+
   const withdraw = async () => {
     if (!vault || !wallet || !account || !snap || snap.shares === 0n) return;
     try { if (!(await need())) return; } catch (e) { fail(e); return; }
@@ -339,6 +363,16 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
       </div>
 
       <Switch testid="spread-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One try per block. A rejection or a still-pending transaction turns it off." />
+
+      {vault && snap && snap.pool < SPREAD_CAP && (
+        <div className="mt-3 grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <label className="grid min-w-0 gap-1 text-xs text-zinc-400">
+            <span className="flex min-w-0 justify-between gap-2"><span>Add MON</span><span className="shrink-0 text-zinc-500">room {mon(SPREAD_CAP - snap.pool)}</span></span>
+            <input data-testid="spread-topup" inputMode="decimal" value={topUp} onChange={e => { setTopUp(e.target.value); setLine(null); }} className="min-h-12 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 font-mono text-base text-white outline-none focus:border-monad" />
+          </label>
+          <Btn kind="ghost" data-testid="spread-deposit" disabled={busy} onClick={() => void addMon()} className="h-12 w-full sm:w-auto">Add to pool</Btn>
+        </div>
+      )}
 
       {snap && snap.shares > 0n && (
         <Btn kind="ghost" data-testid="spread-withdraw" disabled={busy} onClick={() => void withdraw()} className="mt-2 w-full">Withdraw {mon(snap.yours)} to this wallet</Btn>

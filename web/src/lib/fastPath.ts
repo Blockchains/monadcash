@@ -12,16 +12,20 @@ export { isUserReject, isConnectorDead, isPromptTimeout, shouldRetryWithoutFees,
  * (https://docs.monad.xyz/developer-essentials/gas-pricing).
  *
  * Call-gas ceilings are locked by test/GasProfile.t.sol (gasleft around the call).
- * Forge traces of the inner frame, which exclude the test contract's overhead:
- *   execute 107164, deposit 39663, withdraw 47792, setPaused 45051,
- *   prime deposit 125606, prime withdraw 62303.
- * A transaction limit adds ~21000 intrinsic and calldata, plus a small cushion.
- * If GasProfileTest fails, raise these in the same change.
+ * That measurement shares a transaction with setup, so factory slots stay warm and it
+ * understates a standalone send. eth_estimateGas on a Monad mainnet fork (cold accounts,
+ * 2026-10-15) is the number a wallet transaction actually needs:
+ *   first execute to a new address 177464 (creating the account), to self 150652,
+ *   later execute to self 135827, withdraw 85821, deposit 67321, setPaused 50938.
+ * Paying a contract can use more gas than this, because the vault forwards the rest of
+ * the call. Limits below are the new-address estimate plus the cushion() rule (2% or 3000).
+ * A short limit reverts and still spends the whole limit on Monad. If GasProfileTest fails,
+ * remeasure and raise these in the same change.
  */
 export const GAS = {
-  pay: 140_000n,
+  pay: 182_000n,
   vaultDeposit: 75_000n,
-  vaultWithdraw: 85_000n,
+  vaultWithdraw: 90_000n,
   pause: 80_000n,
   primeDeposit: 160_000n,
   primeWithdraw: 100_000n,
