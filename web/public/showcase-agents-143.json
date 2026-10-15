@@ -3,18 +3,19 @@
  "note": "These vaults and agent keys are run by the PolicyPilot team to demonstrate the product. They are not external users.",
  "chainId": 143,
  "explorer": "https://monadvision.com",
- "factory": "0x0342d29055d77ba155c50233f550539E3029BA6a",
+ "factory": "0x52727226aF0efe2bfe3E5c97e46B704613344a92",
  "legacyFactories": [
+  "0x0342d29055d77ba155c50233f550539E3029BA6a",
   "0x8738B74778502ff3623A8319837A819d8dBdEeB7"
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T12:25:45.769Z",
+ "updatedAt": "2026-10-15T12:35:46.433Z",
  "totals": {
   "allowed": 421,
   "blocked": 180,
   "ownerTxs": 31,
-  "skipped": 24
+  "skipped": 25
  },
  "agents": [
   {
@@ -155,7 +156,11 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 28,
-   "blocked": 56
+   "blocked": 56,
+   "lastSkip": {
+    "ts": "2026-10-15T12:35:46.431Z",
+    "reason": "agent gas 0.067555984 MON < 0.08 MON (owner must top up the agent wallet)"
+   }
   }
  ],
  "recent": [
