@@ -9,9 +9,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T10:15:20.669Z",
+ "updatedAt": "2026-10-15T10:25:22.852Z",
  "totals": {
-  "allowed": 416,
+  "allowed": 417,
   "blocked": 172,
   "ownerTxs": 31,
   "skipped": 24
@@ -154,11 +154,19 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 23,
+   "allowed": 24,
    "blocked": 48
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T10:25:22.850Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester unwraps 0.05 WMON → MON (allowed)",
+   "status": "allowed",
+   "tx": "0x4576ce8cab5b9c2dd4f2ac6139a47f40ba4b0742707b14a1746af1fd67ed6f91"
+  },
   {
    "ts": "2026-10-15T10:15:20.667Z",
    "persona": "tester",
@@ -651,14 +659,6 @@
    "label": "Tipper tips 0.0028 MON to the Payroll agent",
    "status": "allowed",
    "tx": "0x32e7167820f36ec885ed99e80586684337143f7de9411cd2f373f4bd08c8582f"
-  },
-  {
-   "ts": "2026-10-15T05:35:23.180Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.84 < target 1)",
-   "status": "allowed",
-   "tx": "0x416a20f4a630da74f122074408b443354d08db0eceb7bbee099d254c502da706"
   }
  ],
  "status": "running (GitHub Actions)"
