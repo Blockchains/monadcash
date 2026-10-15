@@ -146,7 +146,7 @@ export default function PrimeTerminal({ net, pub, account, wallet, bal, need, se
   const button = gate.code === 'connect' ? 'Connect wallet' : gate.code === 'halt' ? 'Trading halted' : !gate.ok ? 'Deposit blocked' : `Deposit into ${choice.take}`;
 
   return (
-    <section data-testid="prime-terminal" className="min-w-0 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+    <section id="desk-prime" data-testid="prime-terminal" className="min-w-0 scroll-mt-16 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
       <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-sky-400/15 text-sky-200"><Shield className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">

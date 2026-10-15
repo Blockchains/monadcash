@@ -177,7 +177,7 @@ export default function App() {
     <div className="min-h-dvh overflow-x-clip pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-10">
       {toasts}
       <div className="bg-amber-500/10 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] text-center text-[11px] leading-5 text-amber-200" data-testid="alpha">⚠️ <b>Alpha · unaudited contract · only deposit what you&apos;re happy to lose.</b> Max 1 MON per vault.{net.id === 143 ? ' Monad mainnet = real MON.' : ' Testnet = free test MON.'}</div>
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-ink/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-white/5 bg-ink">
         <div className="mx-auto flex h-16 min-w-0 max-w-6xl items-center gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
           <button onClick={() => setTab('launch')} className="flex min-h-11 min-w-0 items-center gap-2" aria-label="PolicyPilot home"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-monad/20"><ShieldCheck className="h-5 w-5 text-monad" /></span><span className="truncate text-base font-semibold text-zinc-50">PolicyPilot</span></button>
           <nav className="ml-4 hidden items-center gap-1 lg:flex">{TABS.map(t => <button key={t.id} onClick={() => setTab(t.id)} className={`min-h-11 rounded-xl px-3 text-sm transition ${tab === t.id ? 'bg-white/10 text-white' : 'text-zinc-400 hover:text-white'}`}>{t.label}</button>)}</nav>
@@ -196,7 +196,7 @@ export default function App() {
         {tab === 'policy' && <PolicyDashboard embedded />}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden" data-testid="tabbar">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink pb-[env(safe-area-inset-bottom)] lg:hidden" data-testid="tabbar">
         <div className="mx-auto grid max-w-lg grid-cols-5 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
           {TABS.map(t => { const I = t.icon; const on = tab === t.id; return (
             <button key={t.id} onClick={() => setTab(t.id)} aria-current={on ? 'page' : undefined} className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 text-[11px] transition active:scale-90 ${on ? 'text-white' : 'text-zinc-500'}`}>
@@ -288,8 +288,41 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
     setBusy(false);
   };
 
+  const [desk, setDesk] = useState('desk-dispatch');
+  useEffect(() => {
+    const ids = ['desk-dispatch', 'desk-prime', 'desk-spread', 'desk-rules'];
+    const obs = new IntersectionObserver(entries => {
+      const hit = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (hit?.target.id) setDesk(hit.target.id);
+    }, { rootMargin: '-20% 0px -60% 0px', threshold: [0.15, 0.4] });
+    ids.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
+    return () => obs.disconnect();
+  }, []);
+  const jump = (id: string) => {
+    haptic(6);
+    const el = document.getElementById(id);
+    if (el instanceof HTMLDetailsElement) el.open = true;
+    setDesk(id);
+    requestAnimationFrame(() => el?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+  const products = [
+    { id: 'desk-dispatch', label: 'Dispatch', title: 'Stake, swap, or pay yourself. The button sends one real transaction.' },
+    { id: 'desk-prime', label: 'Prime', title: 'Open your two-tranche pool. Capped at 1 MON. No promised rate.' },
+    { id: 'desk-spread', label: 'Spread', title: 'Quotes Uniswap, PancakeSwap, and Kuru. Settles only if the round trip clears.' },
+    { id: 'desk-rules', label: 'Rules', title: 'Custom agent, budget, cap, and which services are allowed.' },
+  ];
+
   return (
     <div className="grid gap-4">
+      <nav data-testid="product-rail" aria-label="Products" className="sticky top-16 z-30 grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-zinc-950 p-1 shadow-[0_12px_30px_-12px_rgba(0,0,0,0.9)]">
+        {products.map(item => (
+          <button key={item.id} type="button" data-testid={`jump-${item.id}`} title={item.title} aria-current={desk === item.id ? 'true' : undefined} onClick={() => jump(item.id)} className={`flex min-h-11 min-w-0 items-center justify-center rounded-xl px-1 text-[11px] font-semibold transition active:scale-95 sm:text-sm ${desk === item.id ? 'bg-white/10 text-white' : 'text-zinc-400'}`}>{item.label}</button>
+        ))}
+      </nav>
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" data-testid="jump-agents" onClick={() => setTab('agents')} className="min-h-11 min-w-0 rounded-2xl border border-white/10 bg-white/[0.03] px-3 text-left text-xs text-zinc-200">Your vaults<span className="mt-0.5 block truncate text-[11px] font-normal text-zinc-500">Deposit, pause, pull MON back</span></button>
+        <button type="button" data-testid="jump-activity" onClick={() => setTab('activity')} className="min-h-11 min-w-0 rounded-2xl border border-white/10 bg-white/[0.03] px-3 text-left text-xs text-zinc-200">Live activity<span className="mt-0.5 block truncate text-[11px] font-normal text-zinc-500">Real mainnet transactions</span></button>
+      </div>
       <section className="relative min-w-0 overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(131,110,249,.35),transparent_55%),radial-gradient(90%_90%_at_100%_100%,rgba(34,211,238,.12),transparent_60%)] p-5 sm:p-8">
         <Pill tone="monad"><Sparkles className="h-3 w-3" /> Monad {net.name} · block {block ? block.toLocaleString() : '…'}</Pill>
         <h1 className="mt-3 text-[clamp(1.75rem,7vw,3.25rem)] font-bold leading-[1.05] tracking-tight text-white" data-testid="tagline">Love agents.<br />Love control.<br /><span className="bg-gradient-to-r from-violet-300 to-cyan-300 bg-clip-text text-transparent">PolicyPilot.</span></h1>
@@ -306,7 +339,7 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
 
       <SpreadDesk net={net} pub={pub} account={account} wallet={wallet} bal={bal} need={need} send={send} toast={toast} block={block} />
 
-      <details data-testid="custom-rules" className="min-w-0 rounded-[2rem] border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+      <details id="desk-rules" data-testid="custom-rules" className="min-w-0 scroll-mt-16 rounded-[2rem] border border-white/10 bg-white/[0.02] p-4 sm:p-5">
         <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-zinc-200">Custom agent and custom rules</summary>
         <p className="mt-2 text-xs text-zinc-400">The full setup: your own agent key or an external agent, every limit as a slider, and each service switched on by hand.</p>
         <div className="mt-4 grid gap-4">
