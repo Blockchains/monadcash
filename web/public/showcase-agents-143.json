@@ -9,12 +9,12 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T08:26:26.451Z",
+ "updatedAt": "2026-10-15T08:36:28.415Z",
  "totals": {
-  "allowed": 413,
+  "allowed": 414,
   "blocked": 164,
   "ownerTxs": 31,
-  "skipped": 22
+  "skipped": 23
  },
  "agents": [
   {
@@ -139,7 +139,11 @@
    "perActionCapMON": "0.005",
    "pending": false,
    "allowed": 60,
-   "blocked": 0
+   "blocked": 0,
+   "lastSkip": {
+    "ts": "2026-10-15T08:36:27.480Z",
+    "reason": "agent gas 0.067651354 MON < 0.08 MON (owner must top up the agent wallet)"
+   }
   },
   {
    "id": "tester",
@@ -150,11 +154,19 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 20,
+   "allowed": 21,
    "blocked": 40
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T08:36:28.414Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps exactly the 0.05 MON cap (boundary: allowed)",
+   "status": "allowed",
+   "tx": "0xcb01154e3ba54b74f40f8a914d0f3bc5e435142d0af4a6f30d508391ed0fa415"
+  },
   {
    "ts": "2026-10-15T08:26:26.450Z",
    "persona": "tester",
@@ -642,15 +654,6 @@
    "status": "blocked",
    "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
    "tx": "0x6ad2ae749964c305de437c64a2cfc2d20d3c2284ab9d7bc8ef9dbd3f27faac87"
-  },
-  {
-   "ts": "2026-10-15T04:55:10.722Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
-   "status": "blocked",
-   "reason": "RequestAlreadyExecuted(0x1affebe7b09172fe8a888b99a1e15d88e6e36ab5e2b8f1c51f0f6509107b3c34)",
-   "tx": "0xf2221cdb858d95550bf88c5b0944f69635ad8b3b05eab3ffbbadcbb382883462"
   }
  ],
  "status": "running (GitHub Actions)"
