@@ -3,6 +3,9 @@ import { createPublicClient, http, keccak256, parseGwei, toFunctionSelector, web
 import { privateKeyToAccount } from 'viem/accounts';
 import { SERVICES, TOKENS } from './services';
 import { chainOf, type Net, type VaultState } from './vault';
+import { errorText, isTransportError, shouldRetryWithoutFees, WalletSilentError, withDeadline } from './walletFault';
+
+export { isUserReject, isConnectorDead, isPromptTimeout, shouldRetryWithoutFees, ensureWalletChain, planWalletReload, receiptWaitMs, pendingReceiptError, revertedReceiptError, withDeadline, chainIdNumber } from './walletFault';
 
 /**
  * Transaction gas limits. Monad charges the gas limit, not gas used
@@ -45,8 +48,13 @@ export function cushion(estimate: bigint): bigint {
 }
 
 export async function pricedGas(pub: Pick<PublicClient, 'estimateGas'>, account: Address, req: { to?: Address; data?: Hex; value?: bigint }): Promise<bigint> {
-  const est = await pub.estimateGas({ account, to: req.to, data: req.data, value: req.value ?? 0n });
-  return cushion(est);
+  const once = () => pub.estimateGas({ account, to: req.to, data: req.data, value: req.value ?? 0n });
+  try {
+    return cushion(await once());
+  } catch (e) {
+    if (!isTransportError(e)) throw e;
+    return cushion(await once());
+  }
 }
 
 type PolicyView = Pick<VaultState, 'executor' | 'owner' | 'paused' | 'cap' | 'budget' | 'spent' | 'bal' | 'rules'>;
@@ -109,10 +117,10 @@ export function feeCaps() {
   return { maxFeePerGas: base * 2n + priority, maxPriorityFeePerGas: priority };
 }
 
-/** Read the latest base fee, then build caps. A stale socket must not underprice the next send. */
+/** Read the latest base fee, then build caps. A stale or silent read must not block the wallet prompt. */
 export async function freshFeeCaps(readBaseFee: () => Promise<bigint | null | undefined>) {
   try {
-    const fee = await readBaseFee();
+    const fee = await withDeadline(readBaseFee(), 4_000, () => new Error('base fee unread'));
     if (fee && fee > 0n) noteBaseFee(fee);
   } catch { /* the cached base fee still produces a usable cap */ }
   return feeCaps();
@@ -160,59 +168,8 @@ export function watchHeads(net: Net, onHead: (block: bigint) => void): () => voi
   return () => { for (const s of stops) { try { s(); } catch { /* already closed */ } } };
 }
 
-function blob(e: unknown): string {
-  const parts: string[] = [];
-  const seen = new Set<unknown>();
-  let x: unknown = e;
-  while (x && typeof x === 'object' && !seen.has(x)) {
-    seen.add(x);
-    const rec = x as { shortMessage?: string; details?: string; message?: string; cause?: unknown; data?: unknown; code?: number };
-    parts.push(rec.shortMessage ?? '', rec.details ?? '', rec.message ?? '');
-    const data = rec.data;
-    if (typeof data === 'string') parts.push(data);
-    else if (data && typeof data === 'object') {
-      const inner = data as { message?: string; cause?: unknown };
-      if (inner.message) parts.push(inner.message);
-    }
-    x = rec.cause;
-  }
-  return parts.join(' ').toLowerCase();
-}
-
-function errorCode(e: unknown): number | undefined {
-  let x: unknown = e;
-  const seen = new Set<unknown>();
-  while (x && typeof x === 'object' && !seen.has(x)) {
-    seen.add(x);
-    const rec = x as { code?: number; cause?: unknown };
-    if (typeof rec.code === 'number') return rec.code;
-    x = rec.cause;
-  }
-  return undefined;
-}
-
-/** A person closed the wallet prompt. Fee and gas failures are not cancellations, even when a wallet uses code 4001. */
-export function isUserReject(e: unknown): boolean {
-  const text = blob(e);
-  if (/fee|underpriced|intrinsic gas|maxfee|max fee|priority fee|base fee/.test(text)) return false;
-  if (errorCode(e) === 4001 || errorCode(e) === 5000) return true;
-  return /user rejected the request|user denied transaction signature|user (?:cancelled|canceled)|rejected the request|denied transaction signature/.test(text);
-}
-
-/**
- * One more wallet prompt, same gas limit, no fee fields, so the wallet can price it.
- * A contract revert and a cancellation are not retried.
- */
-export function shouldRetryWithoutFees(e: unknown): boolean {
-  if (isUserReject(e)) return false;
-  const text = blob(e);
-  if (/insufficient funds|exceeds the balance|nonce too low|already known/.test(text)) return false;
-  if (/revert|execution reverted/.test(text) && !/fee|underpriced|gas price/.test(text)) return false;
-  return true;
-}
-
 function isKnown(e: unknown): boolean {
-  const m = blob(e);
+  const m = errorText(e);
   return m.includes('already known') || m.includes('nonce too low') || m.includes('already imported') || m.includes('known transaction');
 }
 
@@ -235,9 +192,20 @@ export type WalletSendRequest = { to?: Address; data?: Hex; value?: bigint; gas?
 
 let walletLane: Promise<unknown> = Promise.resolve();
 
-/** One wallet prompt at a time. A second click waits instead of stacking nonces. */
-export function queueWallet<T>(fn: () => Promise<T>): Promise<T> {
-  const run = walletLane.catch(() => undefined).then(fn);
+/** How long a wallet prompt may sit before the next click is allowed to start. */
+export const WALLET_PROMPT_MS = 90_000;
+
+/**
+ * One wallet prompt at a time. A second click waits instead of stacking nonces.
+ * If the provider never answers, this job ends and the lane opens. The original
+ * request can still complete in the wallet; close that prompt before sending again.
+ */
+export function queueWallet<T>(fn: () => Promise<T>, ms = WALLET_PROMPT_MS): Promise<T> {
+  const run = walletLane.catch(() => undefined).then(() => withDeadline(
+    Promise.resolve().then(fn),
+    ms,
+    () => new WalletSilentError("Your wallet didn't answer. If that prompt is still open, close it before you try again."),
+  ));
   walletLane = run.then(() => undefined, () => undefined);
   return run;
 }
@@ -278,7 +246,11 @@ export function sendWithKey(net: Net, key: Hex, req: { to: Address; data?: Hex; 
   const job = prev.catch(() => undefined).then(async () => {
     let nonce = nonceNext.get(id);
     if (nonce == null) {
-      nonce = await nonceSource.getTransactionCount({ address: account.address, blockTag: 'pending' });
+      nonce = await withDeadline(
+        nonceSource.getTransactionCount({ address: account.address, blockTag: 'pending' }),
+        12_000,
+        () => new Error('The network did not answer. Nothing was sent.'),
+      );
       nonceNext.set(id, nonce);
     }
     const fees = await freshFeeCaps(() => nonceSource.getBlock().then(b => b.baseFeePerGas));
@@ -287,7 +259,7 @@ export function sendWithKey(net: Net, key: Hex, req: { to: Address; data?: Hex; 
       maxFeePerGas: fees.maxFeePerGas, maxPriorityFeePerGas: fees.maxPriorityFeePerGas, type: 'eip1559',
     });
     try {
-      const hash = await broadcastRaw(net, serialized);
+      const hash = await withDeadline(broadcastRaw(net, serialized), 20_000, () => new Error('The network did not accept the transaction. Nothing was confirmed.'));
       nonceNext.set(id, nonce + 1);
       return hash;
     } catch (e) {

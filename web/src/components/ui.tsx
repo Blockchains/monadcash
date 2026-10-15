@@ -3,6 +3,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { haptic } from '@/lib/wallets';
 
+/** Green when included, amber when the wallet submitted and the block is still coming, red when it failed. */
+export const receiptClass = (line: { ok: boolean; pending?: boolean }) => line.pending
+  ? 'border-amber-500/40 bg-amber-500/10 text-amber-100'
+  : line.ok
+    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100'
+    : 'border-red-500/40 bg-red-500/10 text-red-100';
 export function Card({ children, className = '', ...rest }: { children: ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
   return <div {...rest} className={`min-w-0 rounded-3xl border border-white/10 bg-white/[0.045] p-4 shadow-[0_0_60px_-30px_#836EF9] backdrop-blur-xl sm:p-5 ${className}`}>{children}</div>;
 }

@@ -2,9 +2,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatUnits, getAddress, isAddress, parseEther, type Address, type Hex, type PublicClient, type WalletClient } from 'viem';
 import { AlertTriangle, CheckCircle2, Radio } from 'lucide-react';
-import { Btn, Switch } from './ui';
+import { Btn, receiptClass, Switch } from './ui';
 import { haptic } from '@/lib/wallets';
-import { addLocal, mon, plain, reasonOf, short, type Net } from '@/lib/vault';
+import { addLocal, mon, sendFault, short, type Net } from '@/lib/vault';
 import { pricedGas } from '@/lib/fastPath';
 import {
   backQuote, chooseSell, clearsFloor, decodeKuru, decodeQuote, explainSpread, fetchCalls, meshQuotes, minOuts, ROUGH_GAS_WEI, spreadAbi,
@@ -59,7 +59,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   const [busy, setBusy] = useState(false);
   const [auto, setAuto] = useState(false);
   const [paste, setPaste] = useState('');
-  const [line, setLine] = useState<{ ok: boolean; text: string; href?: string } | null>(null);
+  const [line, setLine] = useState<{ ok: boolean; pending?: boolean; text: string; href?: string } | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const tried = useRef<bigint | null>(null);
   const key = account ? `pp.spread.${net.id}.${account.toLowerCase()}` : '';
@@ -193,14 +193,15 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
 
   const remember = (a: Address) => { if (key) localStorage.setItem(key, a); setVault(a); };
   const fail = (e: unknown) => {
-    const text = explainSpread(e, plain(reasonOf(e)));
-    setLine({ ok: false, text });
-    toast(text, 'bad');
+    const f = sendFault(e);
+    const text = explainSpread(e, f.text);
+    setLine({ ok: false, pending: f.pending, text });
+    toast(text, f.pending ? 'info' : 'bad');
     if (auto) setAuto(false);
   };
 
   const go = async () => {
-    if (gate.code === 'connect') { await need(); return; }
+    if (gate.code === 'connect') { try { await need(); } catch (e) { fail(e); } return; }
     if (!gate.ok || !account || !wallet) return;
     setBusy(true); setLine(null);
     const size = parseEther(amount);
@@ -209,7 +210,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         const data = spreadDeployData(account);
         const gas = await pricedGas(pub, account, { data, value: size });
         const rc = await send(wallet, { data, value: size, gas });
-        if (!rc.contractAddress) throw new Error('The pool address was missing from the receipt.');
+        if (!rc.contractAddress) throw new Error(`The transaction was included, but the pool address was not in the receipt. Open it and paste the contract here. ${rc.transactionHash}`);
         remember(rc.contractAddress);
         addLocal(net, { label: `Opened a spread pool with ${amount} MON`, kind: 'owner', tx: rc.transactionHash, from: account });
         const href = `${net.exp}/tx/${rc.transactionHash}`;
@@ -265,7 +266,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
 
   const withdraw = async () => {
     if (!vault || !wallet || !account || !snap || snap.shares === 0n) return;
-    if (!(await need())) return;
+    try { if (!(await need())) return; } catch (e) { fail(e); return; }
     setBusy(true); setLine(null);
     try {
       const data = spreadWithdrawData(snap.shares);
@@ -337,13 +338,13 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         </div>
       </div>
 
-      <Switch testid="spread-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One try per block. A rejection turns it off." />
+      <Switch testid="spread-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One try per block. A rejection or a still-pending transaction turns it off." />
 
       {snap && snap.shares > 0n && (
         <Btn kind="ghost" data-testid="spread-withdraw" disabled={busy} onClick={() => void withdraw()} className="mt-2 w-full">Withdraw {mon(snap.yours)} to this wallet</Btn>
       )}
 
-      {line && <div data-testid="spread-receipt" className={`mt-3 break-words rounded-2xl border p-3 text-xs ${line.ok ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100' : 'border-red-500/40 bg-red-500/10 text-red-100'}`}>{line.text}{line.href && <> <a className="underline" href={line.href} target="_blank" rel="noreferrer">tx ↗</a></>}</div>}
+      {line && <div data-testid="spread-receipt" className={`mt-3 break-words rounded-2xl border p-3 text-xs ${receiptClass(line)}`}>{line.text}{line.href && <> <a className="underline" href={line.href} target="_blank" rel="noreferrer">tx ↗</a></>}</div>}
 
       <p className="mt-3 break-words text-[11px] text-zinc-500">10% of a successful profit pays the wallet that submitted the transaction. 10% goes to the wallet that opened the pool. The rest stays. The caller pays gas even when the transaction reverts. Anyone who knows the address can submit a round trip; they cannot withdraw your MON.</p>
 

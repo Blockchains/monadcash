@@ -2,9 +2,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatEther, formatUnits, parseEther, type Address, type PublicClient, type WalletClient } from 'viem';
 import { AlertTriangle, CheckCircle2, Zap } from 'lucide-react';
-import { Btn } from './ui';
+import { Btn, receiptClass } from './ui';
 import { haptic } from '@/lib/wallets';
-import { addLocal, factoryAbi, mon, plain, quoteAll, reasonOf, short, type Net, type VaultState } from '@/lib/vault';
+import { addLocal, factoryAbi, mon, quoteAll, sendFault, short, type Net, type VaultState } from '@/lib/vault';
 import { buildSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
 import { pricedGas } from '@/lib/fastPath';
 
@@ -55,7 +55,7 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
   const [vaultId, setVaultId] = useState<string>('new');
   const [amount, setAmount] = useState(defaultAmount(SUPER_VAULTS[0]));
   const [busy, setBusy] = useState(false);
-  const [line, setLine] = useState<{ ok: boolean; text: string; href?: string } | null>(null);
+  const [line, setLine] = useState<{ ok: boolean; pending?: boolean; text: string; href?: string } | null>(null);
   const [best, setBest] = useState<string | null>(null);
   const userPicked = useRef(false);
   const action = ACTION[preset.id];
@@ -96,8 +96,14 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
   const pickPreset = (t: SuperVault) => { haptic(); setPreset(t); };
   const pickVault = (id: string) => { haptic(); userPicked.current = true; setVaultId(id); setLine(null); };
 
+  const note = (e: unknown) => {
+    const f = sendFault(e);
+    setLine({ ok: false, pending: f.pending, text: f.text });
+    toast(f.text, f.pending ? 'info' : 'bad');
+  };
   const create = async () => {
-    if (!(await need()) || !account || !wallet) return;
+    try { if (!(await need()) || !account || !wallet) return; }
+    catch (e) { note(e); return; }
     setBusy(true); setLine(null);
     try {
       let dep = parseEther(String(preset.deposit)); let shortDeposit = false;
@@ -122,13 +128,13 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
       setLine({ ok: true, text: `${preset.name} is live${dep > 0n ? ` with ${formatEther(dep)} MON` : ''}. Dispatch runs the first action.`, href: `${net.exp}/tx/${rc.transactionHash}` });
       if (shortDeposit) toast(dep === 0n ? 'The alpha deposit cap is full, so the vault was created empty. Deposit from Agents before dispatching.' : `Deposit was reduced to ${formatEther(dep)} MON to fit the alpha cap.`, 'info');
       haptic(20);
-    } catch (e) { const text = plain(reasonOf(e)); setLine({ ok: false, text }); toast(text, 'bad'); }
+    } catch (e) { note(e); }
     setBusy(false);
   };
 
   const go = async () => {
     if (!gate.ok || busy) return;
-    if (gate.code === 'connect') { await need(); return; }
+    if (gate.code === 'connect') { try { await need(); } catch (e) { note(e); } return; }
     if (gate.code === 'create') { await create(); return; }
     if (!selected) return;
     setBusy(true); setLine(null);
@@ -137,7 +143,7 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
       setLine({ ok: r.ok, text: r.detail });
       toast(r.msg, r.ok ? 'ok' : 'bad');
       if (r.ok) { await loadVaults(); refreshHist(); }
-    } catch (e) { const text = plain(reasonOf(e)); setLine({ ok: false, text }); toast(text, 'bad'); }
+    } catch (e) { note(e); }
     setBusy(false);
   };
 
@@ -216,7 +222,7 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
             {bal != null && account && vaultId === 'new' && bal < parseEther(String(preset.deposit)) && <p className="break-words text-[11px] text-amber-200">Your wallet has {mon(bal)}. Creating this vault deposits {preset.deposit} MON.</p>}
             <Btn kind="pri" data-testid="dispatch-go" disabled={busy || (!gate.ok && gate.code !== 'connect')} onClick={go} className="mt-auto h-14 w-full text-base">{busy ? 'Working…' : button}</Btn>
           </div>
-          {line && <div data-testid="dispatch-receipt" className={`mt-3 break-words rounded-2xl border p-3 text-xs ${line.ok ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100' : 'border-red-500/40 bg-red-500/10 text-red-100'}`}>{line.text}{line.href && <> <a className="underline" href={line.href} target="_blank" rel="noreferrer">tx ↗</a></>}</div>}
+          {line && <div data-testid="dispatch-receipt" className={`mt-3 break-words rounded-2xl border p-3 text-xs ${receiptClass(line)}`}>{line.text}{line.href && <> <a className="underline" href={line.href} target="_blank" rel="noreferrer">tx ↗</a></>}</div>}
         </div>
       </div>
     </section>
