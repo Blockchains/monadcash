@@ -9,10 +9,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-15T06:35:47.915Z",
+ "updatedAt": "2026-10-15T06:45:51.766Z",
  "totals": {
-  "allowed": 394,
-  "blocked": 155,
+  "allowed": 396,
+  "blocked": 156,
   "ownerTxs": 31,
   "skipped": 18
  },
@@ -122,7 +122,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 49,
+   "allowed": 50,
    "blocked": 0
   },
   {
@@ -134,7 +134,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
    "pending": false,
-   "allowed": 49,
+   "allowed": 50,
    "blocked": 0
   },
   {
@@ -147,10 +147,35 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 17,
-   "blocked": 32
+   "blocked": 33
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-15T06:45:51.764Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps cap + 1 wei (0.050000000000000001 MON): expects PerPaymentCapExceeded",
+   "status": "blocked",
+   "reason": "PerPaymentCapExceeded(50000000000000001, 50000000000000000)",
+   "tx": "0xd2ea2467394e8eac49b3d2f3df4df420d02988d32eb8cfdffe8cd4892f4650b3"
+  },
+  {
+   "ts": "2026-10-15T06:45:50.852Z",
+   "persona": "tipper",
+   "actor": "agent",
+   "label": "Tipper tips 0.0023 MON to the DCA bot (v1 vault) agent",
+   "status": "allowed",
+   "tx": "0x5b9df5fcdf947daf99e65c780daa925c3899b3b0538cc23edffe86c1c4581b01"
+  },
+  {
+   "ts": "2026-10-15T06:45:49.688Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.98 < target 1)",
+   "status": "allowed",
+   "tx": "0xba8200a4ab553f7e8f302ecedffc037e72475a63914ec71dbb22a20da0be5e1f"
+  },
   {
    "ts": "2026-10-15T06:35:47.913Z",
    "persona": "tester",
@@ -619,30 +644,6 @@
    "label": "Tipper tips 0.003 MON to the DCA bot agent",
    "status": "allowed",
    "tx": "0x1f603f9afe36cca91d63bddccee8ca533b66f78058ae4cf30ee3388102ea974a"
-  },
-  {
-   "ts": "2026-10-15T03:38:30.554Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.02 MON → WMON (WMON 0.6 < target 1)",
-   "status": "allowed",
-   "tx": "0x7d97b89702f6d7803cb8f64acd9701fddc6541a9e05ef4bc18bef0e8d91c5405"
-  },
-  {
-   "ts": "2026-10-15T03:28:28.149Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester unwraps 0.05 WMON → MON (allowed)",
-   "status": "allowed",
-   "tx": "0x96dd2a52c017d0323864daa906b1642e95229d180e2f4f165213d3aa4bdcf1f8"
-  },
-  {
-   "ts": "2026-10-15T03:28:26.984Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.0028 MON to the DCA bot (v1 vault) agent",
-   "status": "allowed",
-   "tx": "0xd3151f1fe7093c63227fb314b40e403213134b96f378b0c1d1ee4ebc09f1ab40"
   }
  ],
  "status": "running (GitHub Actions)"
