@@ -4,9 +4,10 @@ import { formatEther, formatUnits, parseEther, type Address, type PublicClient, 
 import { AlertTriangle, CheckCircle2, Zap } from 'lucide-react';
 import { Btn, receiptClass } from './ui';
 import { haptic } from '@/lib/wallets';
-import { addLocal, executableMon, factoryAbi, mon, quoteAll, sendFault, short, type Net, type VaultState } from '@/lib/vault';
+import { addLocal, factoryAbi, mon, quoteAll, readVault, sendFault, short, vcall, type Net, type VaultState } from '@/lib/vault';
 import { buildSuper, SUPER_VAULTS, type SuperVault } from '@/lib/superVaults';
 import { GAS } from '@/lib/fastPath';
+import { limitsFor, loadFunders, parseFunder, planSpend, saveFunders, SIGNER_RESERVE, type FundSource } from '@/lib/spend';
 
 type RunAgent = (s: VaultState, kind: string, amount: bigint) => Promise<{ ok: boolean; msg: React.ReactNode; detail: string }>;
 
@@ -16,7 +17,7 @@ const ACTION: Record<SuperVault['id'], { kind: string; target: string; verb: str
   payments: { kind: 'pay', target: 'your wallet', verb: 'Pay yourself' },
 };
 
-const presetAmount = (t: SuperVault) => String(t.cap);
+const presetAmount = (t: SuperVault) => String(t.deposit);
 
 function fits(s: VaultState, t: SuperVault) {
   return t.services.every(id => s.rules.includes(id));
@@ -25,52 +26,55 @@ function canSign(s: VaultState, account: Address | null) {
   return !!(s.key || (account && s.executor.toLowerCase() === account.toLowerCase()));
 }
 
-type Gate = { ok: boolean; code: string; label: string; detail: string };
-
-/** Instant, in-memory check. The chain is asked only when the user dispatches. */
-export function dispatchGate(o: {
-  mainnet: boolean; account: boolean; mode: 'create' | 'run'; amount: string;
-  cap: bigint; budget: bigint; spent: bigint; bal: bigint; paused: boolean; canSign: boolean;
-}): Gate {
-  let wei: bigint;
-  try { wei = parseEther(o.amount || '0'); } catch { return { ok: false, code: 'amount', label: 'ENTER AN AMOUNT', detail: 'Use a MON amount such as 0.02.' }; }
-  if (wei <= 0n) return { ok: false, code: 'amount', label: 'ENTER AN AMOUNT', detail: 'The action needs more than 0 MON.' };
-  if (!o.mainnet) return { ok: false, code: 'net', label: 'MAINNET ONLY', detail: 'These presets call live Monad protocols. Switch the network to mainnet.' };
-  if (wei > o.cap) return { ok: false, code: 'cap', label: 'EXCEEDS CAP', detail: `The per-action cap is ${mon(o.cap)}. Raise it only from custom rules.` };
-  if (!o.account) return { ok: false, code: 'connect', label: 'CONNECT WALLET', detail: 'One wallet connection, then this button sends the transaction.' };
-  if (o.mode === 'create') return { ok: true, code: 'create', label: 'READY TO CREATE', detail: 'One signature creates the vault, deposits MON, and makes your wallet the agent.' };
-  if (o.paused) return { ok: false, code: 'paused', label: 'VAULT PAUSED', detail: 'Resume it from Agents, then come back. Nothing is sent while it is paused.' };
-  if (o.spent + wei > o.budget) return { ok: false, code: 'budget', label: 'EXCEEDS BUDGET', detail: `${mon(o.budget - o.spent)} of the budget is left.` };
-  if (wei > o.bal) return { ok: false, code: 'bal', label: 'NOT ENOUGH MON', detail: `This vault holds ${mon(o.bal)}. Deposit from Agents, or pick a smaller amount.` };
-  if (!o.canSign) return { ok: true, code: 'sim', label: 'POLICY PASS', detail: 'This browser cannot sign for the agent, so Dispatch runs a free on-chain check and sends nothing.' };
-  return { ok: true, code: 'go', label: 'PASSED — READY', detail: 'Inside the cap, the budget, and the vault balance. Dispatch sends one real transaction.' };
-}
-
-export default function FastDispatch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, loadVaults, refreshHist, toast }: {
+export default function FastDispatch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, loadVaults, refreshHist, toast, ownerTx }: {
   net: Net; pub: PublicClient; account: Address | null; wallet: WalletClient | null; bal: bigint | null;
   vaults: VaultState[] | null; need: () => Promise<boolean>; send: (w: WalletClient, req: { to: Address; data?: `0x${string}`; value?: bigint; gas?: bigint }) => Promise<{ transactionHash: `0x${string}` }>;
   runAgent: RunAgent; loadVaults: () => Promise<void>; refreshHist: () => void; toast: (m: React.ReactNode, k?: 'ok' | 'bad' | 'info') => void;
+  ownerTx: (label: string, req: { to: Address; data: `0x${string}`; value?: bigint }) => Promise<unknown>;
 }) {
   const [preset, setPreset] = useState<SuperVault>(SUPER_VAULTS[0]);
   const [vaultId, setVaultId] = useState<string>('new');
   const [amount, setAmount] = useState(presetAmount(SUPER_VAULTS[0]));
+  const [source, setSource] = useState<FundSource>('vault');
+  const [funders, setFunders] = useState({ balancer: '', deployer: '' });
+  const [funderBal, setFunderBal] = useState<bigint | null>(null);
   const [busy, setBusy] = useState(false);
   const [line, setLine] = useState<{ ok: boolean; pending?: boolean; text: string; href?: string } | null>(null);
   const [best, setBest] = useState<string | null>(null);
   const userPicked = useRef(false);
   const amountTyped = useRef(false);
+  useEffect(() => { setFunders(loadFunders()); }, []);
   const action = ACTION[preset.id];
   const matches = (vaults ?? []).filter(s => fits(s, preset));
   const selected = vaultId === 'new' ? null : matches.find(s => s.v.toLowerCase() === vaultId.toLowerCase()) ?? null;
   const mainnet = net.id === 143;
 
   useEffect(() => { userPicked.current = false; amountTyped.current = false; setAmount(presetAmount(preset)); setLine(null); setBest(null); }, [preset.id]);
+  const funderRaw = source === 'vault' ? '' : funders[source];
+  const funder = source === 'vault' ? null : parseFunder(funderRaw);
+  const isOwner = selected ? !!(account && selected.owner.toLowerCase() === account.toLowerCase()) : !!account;
+  const funderConnected = !!(funder && account && funder.toLowerCase() === account.toLowerCase());
+  const cap = selected ? selected.cap : parseEther(String(preset.cap));
+  const gate = planSpend({
+    mainnet, account: !!account, mode: selected ? 'run' : 'create', amount,
+    cap, budget: selected?.budget ?? parseEther(String(preset.budget)), spent: selected?.spent ?? 0n,
+    bal: selected?.bal ?? 0n, vaultCap: selected?.vaultCap ?? parseEther(String(preset.cap)),
+    paused: !!selected?.paused, canSign: selected ? canSign(selected, account) : true, isOwner,
+    source, funder, funderConnected, funderBal: funderBal ?? 0n,
+  });
+  const maxWei = selected ? gate.maxWei : parseEther(String(preset.deposit));
+
+  useEffect(() => {
+    if (!funder) { setFunderBal(null); return; }
+    let on = true;
+    pub.getBalance({ address: funder }).then(b => { if (on) setFunderBal(b); }).catch(() => { if (on) setFunderBal(null); });
+    return () => { on = false; };
+  }, [funder, pub, bal]);
   useEffect(() => {
     if (amountTyped.current) return;
     if (!selected) { setAmount(presetAmount(preset)); return; }
-    const n = executableMon(selected);
-    setAmount(n > 0n ? formatEther(n) : '0');
-  }, [preset.id, selected]);
+    setAmount(maxWei > 0n ? formatEther(maxWei) : '0');
+  }, [preset.id, selected, maxWei]);
   useEffect(() => {
     if (userPicked.current) return;
     const ranked = (list: VaultState[]) => list.sort((a, b) => (a.bal > b.bal ? -1 : 1));
@@ -95,16 +99,12 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
     return () => { on = false; clearTimeout(t); };
   }, [preset.id, selected?.v, amount, pub]);
 
-  const cap = selected ? selected.cap : parseEther(String(preset.cap));
-  const maxWei = selected ? executableMon(selected) : cap;
-  const gate = dispatchGate({
-    mainnet, account: !!account, mode: selected ? 'run' : 'create', amount,
-    cap, budget: selected?.budget ?? parseEther(String(preset.budget)), spent: selected?.spent ?? 0n,
-    bal: selected?.bal ?? 0n, paused: !!selected?.paused, canSign: selected ? canSign(selected, account) : true,
-  });
-
   const pickPreset = (t: SuperVault) => { haptic(); setPreset(t); };
-  const pickVault = (id: string) => { haptic(); userPicked.current = true; setVaultId(id); setLine(null); };
+  const pickVault = (id: string) => { haptic(); userPicked.current = true; amountTyped.current = false; setVaultId(id); setLine(null); };
+  const writeFunder = (id: 'balancer' | 'deployer', value: string) => {
+    const next = { ...funders, [id]: value };
+    setFunders(next); saveFunders(next); setLine(null);
+  };
 
   const note = (e: unknown) => {
     const f = sendFault(e);
@@ -146,10 +146,39 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
     if (gate.code === 'connect') { try { await need(); } catch (e) { note(e); } return; }
     if (!gate.ok) return;
     if (gate.code === 'create') { await create(); return; }
-    if (!selected) return;
+    if (!selected || !account) return;
     setBusy(true); setLine(null);
     try {
-      const r = await runAgent(selected, action.kind, parseEther(amount));
+      let live = selected;
+      const wei = parseEther(amount);
+      if (gate.pull > 0n) {
+        try {
+          const [gc, td] = await Promise.all([
+            pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'globalCap' }),
+            pub.readContract({ address: net.factory, abi: factoryAbi, functionName: 'totalDeposited' }),
+          ]) as [bigint, bigint];
+          const room = gc > td ? gc - td : 0n;
+          if (gate.pull > room) throw new Error(`The shared deposit cap has ${formatEther(room)} MON left. Use a smaller amount.`);
+        } catch (e) {
+          if (e instanceof Error && e.message.startsWith('The shared deposit cap')) throw e;
+        }
+        setLine({ ok: true, pending: true, text: `Depositing ${formatEther(gate.pull)} MON from the ${source} wallet…` });
+        await ownerTx(`Deposit ${formatEther(gate.pull)} MON from the ${source} wallet`, { ...vcall(live.v, 'deposit', []), value: gate.pull });
+        live = await readVault(pub, net, live.v);
+      }
+      const raise = limitsFor(live, wei);
+      if (raise.cap != null) {
+        setLine({ ok: true, pending: true, text: 'Raising the per-action cap to this vault’s on-chain cap…' });
+        await ownerTx('Owner raises the per-action cap to the vault cap', vcall(live.v, 'setPerPaymentCap', [raise.cap]));
+        live = { ...live, cap: raise.cap };
+      }
+      if (raise.budget != null) {
+        setLine({ ok: true, pending: true, text: 'Raising the budget to cover the vault cap…' });
+        await ownerTx('Owner raises the budget to cover the vault cap', vcall(live.v, 'setBudget', [raise.budget]));
+        live = { ...live, budget: raise.budget };
+      }
+      if (gate.pull > 0n || raise.cap != null || raise.budget != null) live = await readVault(pub, net, live.v);
+      const r = await runAgent(live, action.kind, wei);
       setLine({ ok: r.ok, text: r.detail });
       toast(r.msg, r.ok ? 'ok' : 'bad');
       if (r.ok) { await loadVaults(); refreshHist(); }
@@ -157,7 +186,13 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
     setBusy(false);
   };
 
-  const button = gate.code === 'connect' ? 'Connect wallet' : gate.code === 'create' ? `Create vault · ${preset.deposit} MON` : gate.code === 'sim' ? 'Check policy' : '1-click dispatch';
+  const button = gate.code === 'connect' ? 'Connect wallet'
+    : gate.code === 'create' ? `Create vault · ${preset.deposit} MON`
+    : gate.code === 'sim' ? 'Check policy'
+    : gate.pull > 0n && gate.lift ? 'Fund, raise limit, dispatch'
+    : gate.pull > 0n ? 'Fund and dispatch'
+    : gate.lift ? 'Raise limit and dispatch'
+    : '1-click dispatch';
 
   return (
     <section id="desk-dispatch" data-testid="fast-dispatch" className="min-w-0 scroll-mt-16 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
@@ -165,7 +200,7 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-monad/20 text-violet-200"><Zap className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
           <h2 className="text-lg font-semibold text-white">Three taps</h2>
-          <p className="text-xs text-zinc-400">A preset, a vault, then one real action. No addresses to paste, and the request id is generated for you.</p>
+          <p className="text-xs text-zinc-400">A preset, a vault, then one real action. Add MON to a balancer or deployer wallet when the vault needs a larger size.</p>
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -178,7 +213,7 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
                 <button key={t.id} type="button" data-testid={`preset-${t.id}`} onClick={() => pickPreset(t)} className={`min-w-0 rounded-2xl border p-3 text-left transition active:scale-[0.99] ${on ? 'border-monad bg-monad/10' : 'border-white/10 bg-white/[0.02]'}`}>
                   <div className="flex min-w-0 items-center gap-2"><span className="text-lg">{t.emoji}</span><span className="min-w-0 flex-1 truncate font-medium text-zinc-50">{t.name}</span></div>
                   <p className="mt-1 break-words text-xs text-zinc-400">{t.tagline}</p>
-                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[11px] text-zinc-300"><span>Cap {t.cap} MON</span><span>Budget {t.budget} MON</span></div>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[11px] text-zinc-300"><span>Up to {t.cap} MON</span><span>Deposit {t.deposit} MON</span></div>
                 </button>
               );
             })}
@@ -220,10 +255,30 @@ export default function FastDispatch({ net, pub, account, wallet, bal, vaults, n
           <div className="mb-2 text-[11px] uppercase tracking-wider text-zinc-500">3 · Dispatch</div>
           <div className="flex flex-1 flex-col gap-3 rounded-2xl border border-white/10 bg-black/30 p-3">
             <div className="break-words text-sm text-zinc-200">{action.verb} on {action.target}</div>
+            <div data-testid="fund-sources" className="grid min-w-0 gap-2">
+              <div className="text-[11px] uppercase tracking-wider text-zinc-500">Funds</div>
+              <div className="grid grid-cols-3 gap-1">
+                {(['vault', 'balancer', 'deployer'] as const).map(id => (
+                  <button key={id} type="button" data-testid={`fund-${id}`} onClick={() => { haptic(); amountTyped.current = false; setSource(id); setLine(null); }} className={`min-w-0 truncate rounded-xl border px-1 py-2 text-[11px] capitalize ${source === id ? 'border-monad bg-monad/15 text-white' : 'border-white/10 text-zinc-400'}`}>{id}</button>
+                ))}
+              </div>
+              {source !== 'vault' && (
+                <label className="grid min-w-0 gap-1 text-xs text-zinc-400">
+                  <span className="flex min-w-0 items-center justify-between gap-2"><span className="shrink-0">Address</span>
+                    <span className="flex shrink-0 gap-1">
+                      {funder && <button type="button" data-testid="fund-copy" onClick={() => { navigator.clipboard?.writeText(funder); toast('Address copied. Send MON to it, then connect it.', 'info'); }} className="rounded-full border border-white/15 px-2 py-1 text-[11px] text-violet-200">Copy</button>}
+                      <button type="button" data-testid="fund-use" disabled={!account} onClick={() => account && writeFunder(source, account)} className="rounded-full border border-white/15 px-2 py-1 text-[11px] text-violet-200 disabled:opacity-40">Use connected</button>
+                    </span>
+                  </span>
+                  <input data-testid="fund-address" value={funders[source]} onChange={e => writeFunder(source, e.target.value)} placeholder="0x… wallet you add MON to" spellCheck={false} className="min-h-11 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 font-mono text-xs text-white outline-none focus:border-monad" />
+                  <span className="break-words text-[11px] text-zinc-500">{funder ? `${funderConnected ? 'Connected' : 'Not connected'} · ${funderBal == null ? 'reading balance…' : mon(funderBal)}.` : 'Paste the wallet you will add MON to.'} Dispatch keeps {mon(SIGNER_RESERVE)} on it for gas and deposits only when that wallet owns the vault.</span>
+                </label>
+              )}
+            </div>
             <label className="grid gap-1 text-xs text-zinc-400"><span className="flex min-w-0 items-center justify-between gap-2"><span>Amount (MON)</span><button type="button" data-testid="dispatch-max" onClick={() => { amountTyped.current = false; setAmount(formatEther(maxWei)); setLine(null); }} className="shrink-0 rounded-full border border-white/15 px-2 py-1 text-[11px] text-violet-200">Max {mon(maxWei, 6)}</button></span>
               <input data-testid="dispatch-amount" inputMode="decimal" value={amount} onChange={e => { amountTyped.current = true; setAmount(e.target.value); setLine(null); }} className="min-h-12 w-full min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 font-mono text-base text-white outline-none focus:border-monad" />
             </label>
-            <div className="text-[11px] text-zinc-500">Cap {mon(cap)} · budget {selected ? mon(selected.budget) : `${preset.budget} MON`}</div>
+            <div className="break-words text-[11px] text-zinc-500">Cap {mon(cap)}{selected ? ` · vault cap ${mon(selected.vaultCap)}` : ''} · budget {selected ? mon(selected.budget) : mon(parseEther(String(preset.budget)))}</div>
             {best && <div data-testid="dispatch-quote" className="break-words text-xs text-emerald-200">Best quote: {best}</div>}
             <div data-testid="dispatch-gate" data-code={gate.code} className={`flex min-w-0 items-start gap-2 rounded-xl px-1 text-sm ${gate.ok ? 'text-emerald-300' : 'text-rose-300'}`}>
               {gate.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}
