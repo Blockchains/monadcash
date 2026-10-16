@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createPublicClient, createWalletClient, http, fallback, defineChain, parseAbi,
-  encodeAbiParameters, getAddress, formatUnits,
+  encodeAbiParameters, encodePacked, getAddress, formatUnits,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 
@@ -28,6 +28,9 @@ const DURATION_MIN = Number(process.env.DURATION_MIN || 15);
 const ONCE = process.env.ONCE === '1';
 const DRY = process.env.DRY === '1';
 const INIT = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'direct-init.hex'), 'utf8').trim();
+const V3_INIT = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'v3-init.hex'), 'utf8').trim();
+const CAKE_V3 = getAddress('0x21114915Ac6d5A2e156931e20B20b038dEd0Be7C');
+const AUSD = getAddress('0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a');
 
 const VENUES = [
   { name: 'uni', factory: '0x182a927119d56008d921126764bf884221b10f59', router: '0x4B2ab38DBF28D31D467aA8993f6c2585981D6804' },
@@ -324,6 +327,99 @@ function topHops(books) {
   return hops.slice(0, 12);
 }
 
+async function priceV3(size, minBack) {
+  const block = await pc.getBlock();
+  const base = block.baseFeePerGas ?? 0n;
+  const price = base > 100_000_000_000n ? base : 100_000_000_000n;
+  const path = encodePacked(['address', 'uint24', 'address', 'uint24', 'address'], [WMON, 500, AUSD, 2500, WMON]);
+  const data = V3_INIT + encodeAbiParameters(
+    [{ type: 'address' }, { type: 'bytes' }, { type: 'uint256' }],
+    [CAKE_V3, path, minBack],
+  ).slice(2);
+  const raw = { from: EXPECT, data, value: `0x${size.toString(16)}` };
+  const listed = await rpc('eth_createAccessList', [raw, 'latest']);
+  const accessList = (listed.accessList || []).map((entry) => ({ address: entry.address, storageKeys: entry.storageKeys || [] }));
+  const estimate = BigInt(await rpc('eth_estimateGas', [{ ...raw, accessList }, 'latest']));
+  const traced = await rpc('debug_traceCall', [{ ...raw, gas: `0x${estimate.toString(16)}`, accessList }, 'latest', { tracer: 'callTracer' }]);
+  const received = valueBack(traced, EXPECT);
+  let lo = estimate > 40_000n ? estimate - 40_000n : 21_000n;
+  let hi = estimate;
+  for (let step = 0; lo + 1n < hi && step < 18; step += 1) {
+    const gas = (lo + hi) / 2n;
+    try {
+      await rpc('eth_call', [{ ...raw, accessList, gas: `0x${gas.toString(16)}` }, 'latest']);
+      hi = gas;
+    } catch {
+      lo = gas;
+    }
+  }
+  const signed = hi + SPARE;
+  let spare = false;
+  try {
+    await rpc('eth_call', [{ ...raw, accessList, gas: `0x${(signed - SPARE).toString(16)}` }, 'latest']);
+    spare = true;
+  } catch {
+    spare = false;
+  }
+  const bill = signed * price;
+  return {
+    kind: 'v3', name: 'ausd', size, data, accessList, received, bill, net: received - size - bill,
+    spare, price, estimate, floor: hi, signed, block: block.number,
+  };
+}
+
+async function sendV3(account, row) {
+  const latest = await pc.getTransactionCount({ address: EXPECT, blockTag: 'latest' });
+  const pending = await pc.getTransactionCount({ address: EXPECT, blockTag: 'pending' });
+  if (pending !== latest) return { ok: false, sent: false, reason: 'in_flight' };
+  const seen = await priceV3(row.size, 1n);
+  if (!passes(seen)) return { ok: false, sent: false, reason: 'moved', netWei: seen?.net?.toString?.() || '0' };
+  const again = await priceV3(row.size, row.size + seen.bill);
+  if (!passes(again)) return { ok: false, sent: false, reason: 'moved', netWei: again?.net?.toString?.() || '0' };
+  const before = await pc.getBalance({ address: EXPECT });
+  if (before < FLOOR_BAL + again.size + again.bill) return { ok: false, sent: false, reason: 'reserve', balanceWei: before.toString() };
+  const wallet = createWalletClient({ account, chain: monad, transport: http(RPCS[0], { timeout: 25_000 }) });
+  const hash = await wallet.sendTransaction({
+    account, chain: monad, data: again.data, value: again.size, gas: again.signed,
+    maxFeePerGas: again.price, maxPriorityFeePerGas: 0n, accessList: again.accessList,
+  });
+  const receipt = await pc.waitForTransactionReceipt({ hash, timeout: 90_000 });
+  if (receipt.status !== 'success') return { ok: false, sent: true, reason: 'revert', hash, gasLimit: again.signed.toString() };
+  const end = await pc.getBalance({ address: EXPECT });
+  return {
+    ok: true, sent: true, reason: 'success', hash, block: receipt.blockNumber.toString(),
+    name: 'ausd', sizeWei: again.size.toString(), gasLimit: again.signed.toString(),
+    balanceBeforeWei: before.toString(), balanceEndWei: end.toString(), nativeDeltaWei: (end - before).toString(),
+  };
+}
+
+const V3_SIZES = [10n ** 18n, 2n * 10n ** 18n, 5n * 10n ** 17n];
+
+async function tryV3(account) {
+  for (const size of V3_SIZES) {
+    try {
+      const priced = await priceV3(size, 1n);
+      log({
+        ok: true, sent: false, reason: 'sim', name: 'ausd', sizeWei: size.toString(),
+        netWei: priced.net.toString(), gas: priced.signed.toString(), floor: priced.floor.toString(),
+        spare: priced.spare, block: priced.block.toString(),
+      });
+      if (!passes(priced)) continue;
+      if (DRY || !account) {
+        log({ ok: false, sent: false, reason: account ? 'dry' : 'no_signer', name: 'ausd', netWei: priced.net.toString(), gas: priced.signed.toString() });
+        return { sends: 0, stop: false };
+      }
+      const sent = await sendV3(account, priced);
+      log(sent);
+      if (sent.sent && !sent.ok) return { sends: 0, stop: true };
+      if (sent.ok) return { sends: 1, stop: false };
+    } catch (err) {
+      log({ ok: false, sent: false, reason: 'sim_error', name: 'ausd', sizeWei: size.toString(), message: String(err?.shortMessage || err?.message || '').slice(0, 180) });
+    }
+  }
+  return { sends: 0, stop: false };
+}
+
 async function main() {
   const key = process.env.AGENT_KEY_REBALANCER || '';
   let account;
@@ -337,6 +433,9 @@ async function main() {
   const bal = await pc.getBalance({ address: EXPECT });
   log({ ok: true, sent: false, reason: 'start', block: (await pc.getBlockNumber()).toString(), balance: formatUnits(bal, 18), signer: Boolean(account) });
   let sends = 0;
+  const opened = await tryV3(account);
+  sends += opened.sends;
+  if (opened.stop) return;
   for (const row of WATCH) {
     const ready = await bestWatch(row);
     if (!ready.length) {
@@ -388,6 +487,12 @@ async function main() {
   let tick = 0;
   while (Date.now() < end && sends < MAX_SENDS) {
     tick += 1;
+    if (tick % 5 === 0) {
+      const again = await tryV3(account);
+      sends += again.sends;
+      if (again.stop) return;
+      if (sends >= MAX_SENDS) break;
+    }
     for (const row of WATCH) {
       const ready = await bestWatch(row);
       if (!ready.length || DRY || !account) continue;
