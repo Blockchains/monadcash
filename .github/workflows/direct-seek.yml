@@ -1,0 +1,35 @@
+name: direct-seek
+# Pair-to-pair search for a settled gain after the gas limit, including a fraction of a MON.
+# Uses the rebalancer gas key. A revert ends the process.
+# Kill switch: set the repository variable DIRECT_SEEK_ENABLED to the string false.
+on:
+  schedule:
+    - cron: '25 * * * *'
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: direct-seek
+  cancel-in-progress: false
+jobs:
+  seek:
+    if: vars.DIRECT_SEEK_ENABLED != 'false' && (github.event_name != 'pull_request' || github.head_ref == 'cursor/tiny-profit-4764')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the runner
+        working-directory: runner
+        run: npm ci
+      - name: Send a direct hop only when the fresh simulation still clears
+        working-directory: runner
+        env:
+          AGENT_KEY_REBALANCER: ${{ secrets.AGENT_KEY_REBALANCER }}
+          DURATION_MIN: "12"
+          TICK_MS: "8000"
+        run: node direct-seek.mjs
