@@ -1,0 +1,22 @@
+name: research-tape
+# Public hourly read for the desk tape. No keys. No transactions.
+# Appends block number, base fee, and the shMON unstake fee to web/public/research/live.json.
+on:
+  schedule: [{ cron: '17 * * * *' }]
+  workflow_dispatch:
+permissions: { contents: write }
+concurrency: { group: research-tape, cancel-in-progress: false }
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Read block, base fee, and shMON unstake fee
+        run: node web/scripts/tape-refresh.mjs
+      - name: Commit the public read
+        env: { BRANCH: ${{ github.ref_name }} }
+        run: bash web/scripts/tape-commit.sh

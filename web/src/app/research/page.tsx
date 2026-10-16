@@ -1,4 +1,8 @@
 import type { Metadata } from 'next';
+import { Linked } from '../../components/Linked';
+import { LiveTape, type TapeObs } from '../../components/LiveTape';
+import { TERMS } from '../../lib/tapeLinks';
+import liveDoc from '../../../public/research/live.json';
 import styles from './tape.module.css';
 
 const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
@@ -78,6 +82,19 @@ const jsonLd = {
         { '@type': 'ListItem', position: 2, name: 'Desk tape', item: CANONICAL },
       ],
     },
+    {
+      '@type': 'Dataset',
+      name: 'PolicyPilot Monad desk tape corpus',
+      description: DESCRIPTION,
+      url: CANONICAL,
+      isAccessibleForFree: true,
+      creator: { '@type': 'Organization', name: 'PolicyPilot', url: HOME },
+      distribution: [
+        { '@type': 'DataDownload', encodingFormat: 'application/json', contentUrl: `${HOME}research/corpus.json` },
+        { '@type': 'DataDownload', encodingFormat: 'application/x-ndjson', contentUrl: `${HOME}research/corpus.jsonl` },
+        { '@type': 'DataDownload', encodingFormat: 'application/json', contentUrl: `${HOME}research/live.json` },
+      ],
+    },
   ],
 };
 
@@ -106,7 +123,7 @@ export default function ResearchTape() {
     <div className={styles.page}>
       <div className={styles.progress} aria-hidden="true" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <article className={styles.wrap}>
+      <Linked><article className={styles.wrap}>
         <header>
           <p className={styles.kicker}>
             <a href={`${BP}/`}>PolicyPilot</a>
@@ -124,6 +141,7 @@ export default function ResearchTape() {
             . Base fee read at block 113,745,594. The aprMON redeem is a fork of block 113,747,559. The NADXBT settlement is a fork of public Ankr state in the same pass. Live spread receipts are already on mainnet.
           </p>
           <nav className={styles.toc} aria-label="Tape sections">
+            <a href="#live">Live</a>
             <a href="#billing">01 Billing</a>
             <a href="#universe">02 The universe</a>
             <a href="#closest">03 Closest print</a>
@@ -133,6 +151,7 @@ export default function ResearchTape() {
             <a href="#fiction">07 Empty and indexed</a>
             <a href="#rule">08 The rule</a>
             <a href="#book">09 The open book</a>
+            <a href="#glossary">10 Keywords</a>
           </nav>
           <div className={styles.stats}>
             <div className={styles.stat}><b className={styles.up}>+0.05306</b><span>MON settled, gross</span></div>
@@ -140,7 +159,18 @@ export default function ResearchTape() {
             <div className={styles.stat}><b className={styles.down}>−0.00294</b><span>MON, before calldata</span></div>
           </div>
           <p className={styles.meta}>39,296 v2 pairs read · 35,000 solvent · 2 cycles above 0.005 MON · 0 skims.</p>
+          <p className={styles.meta}>
+            Training set for agents: <a href={`${BP}/research/corpus.json`}>corpus.json</a>, <a href={`${BP}/research/corpus.jsonl`}>corpus.jsonl</a>, hourly <a href={`${BP}/research/live.json`}>live.json</a>, and <a href={`${BP}/llms.txt`}>llms.txt</a>.
+          </p>
         </header>
+
+        <section id="live">
+          <h2><span className={styles.idx}>Live</span>The running read</h2>
+          <p>
+            Once an hour a public script reads the chain and appends a line. It records the block, the base fee, and the shMON unstake fee. It does not search for a route and it does not send a transaction. The prints in the rest of this tape stay the 16 October pass.
+          </p>
+          <LiveTape initial={(liveDoc.observations ?? []) as TapeObs[]} localUrl={`${BP}/research/live.json`} />
+        </section>
 
         <section id="billing">
           <h2><span className={styles.idx}>01</span>What Monad actually charges</h2>
@@ -422,11 +452,24 @@ export default function ResearchTape() {
           </ul>
         </section>
 
+        <section id="glossary">
+          <h2><span className={styles.idx}>10</span>Keywords, linked</h2>
+          <p>Each name in the tape points at a document or a contract. The line under it is the sense used in these prints.</p>
+          <div className={styles.glossary}>
+            {TERMS.map(term => (
+              <div key={term.id} id={`term-${term.id}`}>
+                <b><a href={term.href}>{term.phrase}</a></b>
+                <p>{term.define}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <footer className={styles.foot}>
           <p>PolicyPilot desk · Tape 016 · Published 16 October 2026, blotter extended the same day. This note is research. It is not an offer to trade, and it does not quote a rate of return. The product that sends clips and spreads is unchanged by this page.</p>
           <p style={{ marginTop: '0.8rem' }}><a href={`${BP}/`}>Back to PolicyPilot</a></p>
         </footer>
-      </article>
+      </article></Linked>
     </div>
   );
 }

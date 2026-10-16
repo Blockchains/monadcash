@@ -135,6 +135,28 @@
 }
 .page p { margin: 0.85rem 0 0; font-size: 1.05rem; line-height: 1.62; }
 .page a { color: #ddd6fe; }
+.term { text-underline-offset: 0.15em; }
+.page a.addr { text-decoration: none; }
+.page a.addr:hover, .page a.term:hover { text-decoration: underline; }
+.live { margin-top: 0.4rem; }
+.liveRow {
+  display: grid;
+  gap: 0.2rem;
+  border-bottom: 1px solid var(--rule);
+  padding: 0.55rem 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.liveRow div { display: flex; flex-wrap: wrap; gap: 0.35rem 0.8rem; min-width: 0; }
+.liveRow a, .liveRow span { overflow-wrap: anywhere; }
+.glossary { margin-top: 0.4rem; }
+.glossary div {
+  border-bottom: 1px solid var(--rule);
+  padding: 0.65rem 0;
+}
+.glossary b { display: block; font-weight: 560; color: #fafaf9; }
+.glossary p { margin: 0.3rem 0 0; }
 .page code,
 .addr {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
