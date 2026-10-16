@@ -1,0 +1,26 @@
+name: tape-fill
+# One swap from the rebalancer gas wallet, only on this research branch.
+# No vault call. The script refuses the send unless the simulation still clears
+# and the wallet stays at or above 5 MON.
+on:
+  pull_request:
+    branches: [main]
+permissions: { contents: read }
+concurrency: { group: tape-fill, cancel-in-progress: false }
+jobs:
+  fill:
+    if: github.head_ref == 'cursor/ecosystem-fill-4764'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Install the runner
+        working-directory: runner
+        run: npm ci
+      - name: Send only if the cycle still clears
+        working-directory: runner
+        env:
+          AGENT_KEY_REBALANCER: ${{ secrets.AGENT_KEY_REBALANCER }}
+        run: node tape-fill.mjs
