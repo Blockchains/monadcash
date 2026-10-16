@@ -1,0 +1,36 @@
+name: rebalancer-seek
+# Seeks the two shapes that already cleared for the rebalancer and sends one only when a
+# fresh Monad simulation still clears. Uses the rebalancer gas key. Does not change the
+# showcase clip cap or the 600s round. A revert ends the process.
+# Kill switch: set the repository variable REBALANCER_SEEK_ENABLED to the string false.
+on:
+  schedule:
+    - cron: '15 * * * *'
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: rebalancer-seek
+  cancel-in-progress: false
+jobs:
+  seek:
+    if: vars.REBALANCER_SEEK_ENABLED != 'false' && (github.event_name != 'pull_request' || github.head_ref == 'cursor/rebalancer-seek-4764')
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the runner
+        working-directory: runner
+        run: npm ci
+      - name: Seek and send only if a cycle still clears
+        working-directory: runner
+        env:
+          AGENT_KEY_REBALANCER: ${{ secrets.AGENT_KEY_REBALANCER }}
+          DURATION_MIN: "35"
+          TICK_MS: "4000"
+        run: node rebalancer-seek.mjs
