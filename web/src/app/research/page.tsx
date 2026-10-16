@@ -11,7 +11,7 @@ const CANONICAL = `${ORIGIN}${BP}/research/`;
 const SHARE_IMAGE = `${ORIGIN}${BP}/icon-512.png`;
 const TITLE = 'Monad desk tape: the gas limit is the trade';
 const DESCRIPTION =
-  'PolicyPilot desk tape, 16 October 2026. The full Monad mainnet blotter: 35,000 solvent pairs, every measured route, and the gas bill. The closest settled gain is 0.05306 MON. The minimum bill is 0.05600 MON.';
+  'PolicyPilot desk tape, 16 October 2026. Monad bills the gas limit. A DYOR NADXBT cycle of 0.006 MON received 0.060420185 WMON on a fork. On the live node, with the node’s access list and minOut set to that amount, eth_estimateGas returned 294,130. The bill at 100 gwei is 0.029413 MON. The net is 0.025007 MON. It was not broadcast. Routes that finished short stay on the blotter.';
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     siteName: 'PolicyPilot',
     type: 'article',
     publishedTime: '2026-10-16T01:40:00.000Z',
-    modifiedTime: '2026-10-16T02:40:00.000Z',
+    modifiedTime: '2026-10-16T03:12:20.000Z',
     locale: 'en_US',
     images: [{ url: SHARE_IMAGE, width: 512, height: 512, alt: 'PolicyPilot' }],
   },
@@ -104,7 +104,9 @@ const BILLS = [
   ['140,000', '0.01400', 'One Uniswap v3-style swap, by itself.'],
   ['200,000', '0.02000', 'A tight two-hop of ordinary tokens, if the path is kind.'],
   ['420,000', '0.04200', 'The clip limit this desk already signs. It stays there.'],
-  ['560,024', '0.05600', 'The closest print, before calldata is added.'],
+  ['294,130', '0.02941', 'Access-list limit on the 0.006 MON cycle. The call returns the WMON. Not broadcast.'],
+  ['523,536', '0.05235', 'The same swap with no access list, minOut set to the amount received.'],
+  ['560,024', '0.05600', 'The earlier fork meter on 0.01 MON, before calldata.'],
 ];
 
 const VENUES = [
@@ -134,29 +136,30 @@ export default function ResearchTape() {
           <hr className={styles.rule} />
           <h1>The gas limit is the trade.</h1>
           <p className={styles.dek}>
-            This is the whole pass, including every route that finished short. Monad bills the gas limit, the base fee does not fall below 100 gwei, and the chain is public, so the calls are public. A settlement moved tokens. A quote is an <code>eth_call</code>. An index mid is someone else’s price, and it is labeled as a mid.
+            This is the whole pass, including every route that finished short. Monad bills the gas limit, the base fee does not fall below 100 gwei, and the chain is public, so the calls are public. A settlement moved tokens. A quote is an <code>eth_call</code>. An index mid is someone else’s price, and it is labeled as a mid. One later call clears the floor. It was not sent.
           </p>
           <p className={styles.meta}>
             <time dateTime="2026-10-16">16 October 2026</time>
-            . Base fee read at block 113,745,594. The aprMON redeem is a fork of block 113,747,559. The NADXBT settlement is a fork of public Ankr state in the same pass. Live spread receipts are already on mainnet.
+            . Base fee read at block 113,745,594, and again at 113,787,261, both 100 gwei. The aprMON redeem is a fork of block 113,747,559. The first NADXBT settlement is a fork of public Ankr state. The clearing numbers are a fork of block 113,785,475 for the tokens, and the live node at block 113,787,261 for the gas. Live spread receipts are already on mainnet.
           </p>
           <nav className={styles.toc} aria-label="Tape sections">
             <a href="#live">Live</a>
             <a href="#billing">01 Billing</a>
             <a href="#universe">02 The universe</a>
             <a href="#closest">03 Closest print</a>
-            <a href="#settled">04 Settled, and short</a>
-            <a href="#shares">05 Share tokens</a>
-            <a href="#books">06 Pools and books</a>
-            <a href="#fiction">07 Empty and indexed</a>
-            <a href="#rule">08 The rule</a>
-            <a href="#book">09 The open book</a>
-            <a href="#glossary">10 Keywords</a>
+            <a href="#clears">04 The floor clears</a>
+            <a href="#settled">05 Settled, and short</a>
+            <a href="#shares">06 Share tokens</a>
+            <a href="#books">07 Pools and books</a>
+            <a href="#fiction">08 Empty and indexed</a>
+            <a href="#rule">09 The rule</a>
+            <a href="#book">10 The open book</a>
+            <a href="#glossary">11 Keywords</a>
           </nav>
           <div className={styles.stats}>
-            <div className={styles.stat}><b className={styles.up}>+0.05306</b><span>MON settled, gross</span></div>
-            <div className={styles.stat}><b className={styles.down}>0.05600</b><span>MON minimum gas bill</span></div>
-            <div className={styles.stat}><b className={styles.down}>−0.00294</b><span>MON, before calldata</span></div>
+            <div className={styles.stat}><b className={styles.up}>+0.05442</b><span>MON received above size</span></div>
+            <div className={styles.stat}><b className={styles.down}>0.02941</b><span>MON bill at 294,130 gas</span></div>
+            <div className={styles.stat}><b className={styles.up}>+0.02501</b><span>MON net, not broadcast</span></div>
           </div>
           <p className={styles.meta}>39,296 v2 pairs read · 35,000 solvent · 2 cycles above 0.005 MON · 0 skims.</p>
           <p className={styles.meta}>
@@ -189,7 +192,7 @@ export default function ResearchTape() {
             ))}
           </div>
           <p className={styles.note}>
-            A gain has to clear the limit you would actually sign. A forge <code>gasUsed</code> figure includes the test harness, so it is an upper bound on the work, not a number to put in a wallet. The closest print below was measured on the router call itself.
+            A gain has to clear the limit you would actually sign. A forge <code>gasUsed</code> figure includes the test harness, so it is an upper bound on the work, not a number to put in a wallet. The wallet number is what <code>eth_estimateGas</code> returns on a Monad node, checked by an <code>eth_call</code> one gas lower that reverts. The closest print below is the harness. The section after it is the node.
           </p>
         </section>
 
@@ -213,7 +216,7 @@ export default function ResearchTape() {
             Beside that book, 210 Uniswap v3 and Pancake v3 pools were opened, 74 of them live, 36 with liquidity. Curve was read on stables, on cbBTC/WBTC/LBTC, and on the LST pool. Uniswap v4 was quoted, not indexed. Kuru was asked <code>bestBidAsk</code> on 100 markets. LFJ, Pinot, Atlantis, Capricorn, Monday Trade, Bean, Aethonswap, Balancer v3, and SomeSwap were opened where a contract answered. Morpho Blue was read for positions that were actually underwater. Share tokens were shMON, sMON, gMON, aprMON, sLVMON, strUSD, and the other wrappers that expose a redeem.
           </p>
           <p className={styles.note}>
-            The two hits are below. One settles and still loses to the limit. The other is a pair of mock tokens and is smaller than a three-hop bill. Everything else in this tape is a route we measured because it looked like money, and it did not clear.
+            The two hits are below. On the forge harness the real one still loses to the limit the test signed. Priced later on the Monad node, the same path clears, and that print is the next section. The other hit is a pair of mock tokens and is smaller than a three-hop bill. Everything else in this tape is a route we measured because it looked like money, and it did not clear.
           </p>
         </section>
 
@@ -247,12 +250,61 @@ export default function ResearchTape() {
             The same three swaps by hand, each output sent back to the caller, returned the full quoted 0.063077226 MON and burned 962,235 gas. That bare bill was 0.0985735 MON, and the net was −0.045496 MON. The existing router is the cheaper machine. A new contract around the same hops would add a deployment, and a deployment costs more than this entire gain.
           </p>
           <p className={styles.note}>
-            The transfer of NADXBT is the gas. The router already forwards each hop to the next pair, which is the cheap shape. There is no second trick on this path that pulls the limit under 0.053 MON.
+            That note was the harness at size 0.01. The router call on a Monad node, at size 0.006, with the node’s own access list, comes in under the gain. The next section is that measurement. The harness number stays here so the miss is not rewritten.
+          </p>
+        </section>
+
+        <section id="clears">
+          <h2><span className={styles.idx}>04</span>The floor clears</h2>
+          <p>
+            Same router, same three pools, smaller size. <code>swapExactETHForTokens</code> of 0.006 MON. The path is still WMON, USDC, NADXBT, WMON. The three pools were solvent on the fork: token balance equaled reserve on both sides of each pair. The WMON/NADXBT pool still holds about 0.067 MON, so this size is most of the mispricing, and the next person to trade it takes it.
+          </p>
+          <p className={styles.tag}>Fork balance, live gas. Not broadcast</p>
+          <p>
+            The router’s return value is the quote, 0.060465831 MON. The WMON that arrives is less. On a fork of block 113,785,475 the recipient’s WMON balance rose by 0.060420185 MON. A live trace at block 113,787,261 shows the same transfer, 60,420,185,260,805,938 wei, to the published team owner <code className={styles.addr}>0xc0c4E411e41bECAD6DA860F67063C2D6363a6113</code>. That address was the <code>from</code> of a simulation. Nothing was signed.
+          </p>
+          <div className={styles.grid2}>
+            <div className={styles.row}><div>Size in</div><div className={styles.num}>0.006000000 MON</div></div>
+            <div className={styles.row}><div>Router return</div><div className={styles.num}>0.060465831 MON</div></div>
+            <div className={styles.row}><div>WMON received</div><div className={styles.num}>0.060420185 MON</div></div>
+            <div className={styles.row}><div>Haircut</div><div className={styles.num}>0.000045646 MON</div></div>
+            <div className={styles.row}><div>Gross</div><div className={styles.num}>0.054420185 MON</div></div>
+          </div>
+          <p>
+            Setting <code>minOut</code> to the quote reverts with <code>DyorRouterV2: INSUFFICIENT_OUTPUT_AMOUNT</code>. Setting it to the received amount, 60,420,185,260,805,938 wei, is accepted. The return array is not the fill.
+          </p>
+          <p>
+            Gas, from the live node, base fee 100 gwei. With no access list, <code>eth_estimateGas</code> at that <code>minOut</code> is 523,536. The bill is 0.052353600 MON. Net 0.002066585 MON. With <code>minOut</code> of 1 and no list, an <code>eth_call</code> succeeds at 519,452 gas and reverts at 519,451. There are 20,665 gas of room before the 523,536 bill meets the gain. A fat cushion spends it.
+          </p>
+          <p>
+            The node’s access list is 12 entries. With that list, and <code>minOut</code> equal to the received amount, <code>eth_estimateGas</code> is 294,130. The bill is 0.029413000 MON. Net 0.025007185 MON. The same list on an Ethereum-schedule fork used 290,584 gas for a successful swap, against 518,184 with no list, so the cut shows up on both meters. One gas under 291,725 the live <code>eth_call</code> fails. At 291,725 it returns. There are 250,071 gas of room before the access-list bill meets the gain. The price can rise from 100 gwei to 185 gwei and the bill still sits under the gain. At 186 gwei it does not.
+          </p>
+          <div className={styles.grid2}>
+            <div className={styles.row}><div>No list, estimate</div><div className={styles.num}>523,536</div></div>
+            <div className={styles.row}><div>Bill, no list</div><div className={styles.num}>0.052353600 MON</div></div>
+            <div className={styles.row}><div>Net, no list</div><div className={styles.num}>+0.002066585 MON</div></div>
+            <div className={styles.row}><div>With the list, estimate</div><div className={styles.num}>294,130</div></div>
+            <div className={styles.row}><div>Bill, with the list</div><div className={styles.num}>0.029413000 MON</div></div>
+            <div className={styles.row}><div>Net, with the list</div><div className={styles.num}>+0.025007185 MON</div></div>
+            <div className={styles.row}><div>Fork gas, no list</div><div className={styles.num}>518,184</div></div>
+            <div className={styles.row}><div>Fork gas, with the list</div><div className={styles.num}>290,584</div></div>
+          </div>
+          <p>
+            The list is the router, WMON, USDC, NADXBT, the factory, the three pairs, the USDC delegatecall target <code className={styles.addr}>0xbd520ea8cbb4f81b62aff3c3ffe7affd69800b6d</code>, a 23,329-byte contract the router calls with empty calldata at <code className={styles.addr}>0xe18cec5cab64b54357fb1d9cb317ccabbaeae648</code>, and two accounts with no code, <code className={styles.addr}>0x30c4ee621d3c2e9b75528a11843797e1738d8e4b</code> and <code className={styles.addr}>0xdf25f88aa6cde9937fdcfcf10fa349528c79dbf9</code>. Anyone can rebuild it with <code>eth_createAccessList</code>.
+          </p>
+          <p>
+            A revert still pays the whole limit. One failed attempt at 294,130 gas costs 0.029413 MON, which is more than the 0.025007 MON net. The profit is only there if this call succeeds. The pool is thin. This pass did not broadcast it, and it does not change the clip limit, the round, or the 5 MON reserve.
+          </p>
+          <p>
+            The same hour, v3 round trips of 1 MON were quoted and not settled. WETH came back +0.003455 through Uniswap fee 500 into Pancake fee 500. AUSD came back +0.008570 through Uniswap fee 100 into Pancake fee 500. USDC was −0.001325, USDT −0.002571, WBTC −0.144079. A two-leg v3 bill is about 0.028 MON before any list. Neither positive quote clears that, so they stay quotes. The skim book under 0.02 MON was not walked again. The earlier zero above 0.02 still stands.
+          </p>
+          <p className={styles.note}>
+            Gross 0.054420185 MON. Signed limit 294,130. Bill 0.029413 MON. Net +0.025007185 MON at the 100 gwei floor. Not a receipt.
           </p>
         </section>
 
         <section id="settled">
-          <h2><span className={styles.idx}>04</span>Settled, and still short</h2>
+          <h2><span className={styles.idx}>05</span>Settled, and still short</h2>
           <p>These moved tokens on a fork, or they already have a mainnet receipt. The gain is real. The bill is larger.</p>
 
           <article className={styles.print}>
@@ -281,7 +333,7 @@ export default function ResearchTape() {
         </section>
 
         <section id="shares">
-          <h2><span className={styles.idx}>05</span>Share tokens</h2>
+          <h2><span className={styles.idx}>06</span>Share tokens</h2>
           <p>A discount to net asset value is a print only when the share can be turned back into MON in the same transaction. These could not.</p>
 
           <article className={styles.print}>
@@ -317,7 +369,7 @@ export default function ResearchTape() {
         </section>
 
         <section id="books">
-          <h2><span className={styles.idx}>06</span>Pools and books that were actually there</h2>
+          <h2><span className={styles.idx}>07</span>Pools and books that were actually there</h2>
           <p>These quotes executed against contracts that hold the tokens. The edge, where there was one, was smaller than the fee or smaller than the gas.</p>
 
           <article className={styles.print}>
@@ -380,7 +432,7 @@ export default function ResearchTape() {
         </section>
 
         <section id="fiction">
-          <h2><span className={styles.idx}>07</span>Numbers that were not inventory</h2>
+          <h2><span className={styles.idx}>08</span>Numbers that were not inventory</h2>
           <p>These are in the tape because they looked like the largest numbers on the desk. The chain did not hold the tokens the index was pricing.</p>
 
           <article className={styles.print}>
@@ -427,9 +479,9 @@ export default function ResearchTape() {
         </section>
 
         <section id="rule">
-          <h2><span className={styles.idx}>08</span>The rule the desk keeps</h2>
+          <h2><span className={styles.idx}>09</span>The rule the desk keeps</h2>
           <p>
-            Profit has to exceed <code>gas_limit × 100 gwei</code>, and the limit has to be high enough that the call succeeds. For ordinary tokens a two-venue trip wants about 0.025 MON before a signature is worth considering. The 0.053 MON print is the largest settled gain in the set, and the NADXBT transfer is what sets its gas. The solvent Uniswap v2 book was 20,911 pairs and zero hits. Pancake v2 was 13,057 solvent pairs and one mock-token cycle. No pair on any of the eight factories held an extra 0.02 MON or an extra 0.02 USDC above its reserve.
+            Profit has to exceed <code>gas_limit × price</code>, and the limit has to be high enough that the call succeeds. The 0.006 MON cycle does that on the node’s estimate: 294,130 gas, 0.029413 MON, against 0.054420185 MON received above size. A revert at that limit costs more than the net, and the pool that pays it holds about 0.067 MON, so the number is a state, not a standing book. The solvent Uniswap v2 book was 20,911 pairs and zero hits. Pancake v2 was 13,057 solvent pairs and one mock-token cycle. No pair on any of the eight factories held an extra 0.02 MON or an extra 0.02 USDC above its reserve. That skim line was not reopened below 0.02.
           </p>
           <p>
             A quote is not a send. The signer sends when the settled gain is larger than the limit the wallet will put on the transaction, checked with <code>eth_call</code> first, because a revert bills that limit in full. The clip gas limit stays 420,000. The rough gas figure on the spread desk stays a half million gas at 100 gwei. The signing wallet keeps 5 MON. Rounds stay ten minutes apart, and a round sends at most 20 clips.
@@ -440,20 +492,20 @@ export default function ResearchTape() {
         </section>
 
         <section id="book">
-          <h2><span className={styles.idx}>09</span>The open book</h2>
+          <h2><span className={styles.idx}>10</span>The open book</h2>
           <p>Anyone can re-read these calls. The chain is the record.</p>
           <ul className={styles.sources}>
             <li>Chain 143. <code>https://rpc.monad.xyz</code>, <code>https://rpc-mainnet.monadinfra.com</code>, and <code>https://rpc.ankr.com/monad_mainnet</code>. Base fee 100 gwei at block 113,745,594. aprMON fork block 113,747,559. The NADXBT fork was public Ankr state in this same pass.</li>
             <li>Factories: Uniswap v2 <code className={styles.addr}>0x182a927119d56008d921126764bf884221b10f59</code>, Pancake v2 <code className={styles.addr}>0x02a84c1b3bbd7401a5f7fa98a384ebc70bb5749e</code>, Nadswap <code className={styles.addr}>0xa25b13127e63ddae6d0b35570ff3d39dbd621001</code>, DYORSwap <code className={styles.addr}>0xE78B9c8F3e9f46CEDC204309E9F387f736d0d278</code>, OctoSwap <code className={styles.addr}>0xce104732685b9d7b2f07a09d828f6b19786cda32</code>, Madness <code className={styles.addr}>0x93d71152a93619c0b10a2efc856ac46120fd01ab</code>, zkSwap <code className={styles.addr}>0x0ff16867bcac3c5fdc2dc73558e3f8e2ed89eea2</code>, Swyrl <code className={styles.addr}>0xd158cdfec90e9429a290c3144afeb72e8c23603a</code>.</li>
             <li>WMON <code className={styles.addr}>0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A</code>. USDC <code className={styles.addr}>0x754704Bc059F8C67012fEd69BC8A327a5aafb603</code>. USDT0 <code className={styles.addr}>0xe7cd86e13AC4309349F30B3435a9d337750fC82D</code>. NADXBT <code className={styles.addr}>0x7289A594e116DC99af16ff0db0529A803b68Bfa5</code>.</li>
-            <li>DYOR pairs: WMON/USDC <code className={styles.addr}>0xBE8345287c5bA716941f50A80020911AC2e07c68</code>, USDC/NADXBT <code className={styles.addr}>0x7789D1E9DC0ddA50DF30e66b9DFf53D862393b1E</code>, WMON/NADXBT <code className={styles.addr}>0xFdcB57E198D123545A9E71FDd0DEA424E13B2720</code>. Router <code className={styles.addr}>0x26CEb692410c4b3C12D63e01CFc03eEA103fc474</code>.</li>
+            <li>DYOR pairs: WMON/USDC <code className={styles.addr}>0xBE8345287c5bA716941f50A80020911AC2e07c68</code>, USDC/NADXBT <code className={styles.addr}>0x7789D1E9DC0ddA50DF30e66b9DFf53D862393b1E</code>, WMON/NADXBT <code className={styles.addr}>0xFdcB57E198D123545A9E71FDd0DEA424E13B2720</code>. Router <code className={styles.addr}>0x26CEb692410c4b3C12D63e01CFc03eEA103fc474</code>. The clearing simulation is a fork of block 113,785,475 and a live estimate at block 113,787,261. Rebuild the list with <code>eth_createAccessList</code>.</li>
             <li>Kuru books that answered: <code className={styles.addr}>0x40c49f171202f91ff5d2fae34c22dd2bfdd22af0</code>, <code className={styles.addr}>0xa6afd386135b7d41a6c40c525abc4a1019b0d132</code>, <code className={styles.addr}>0x851145eaefdc37956b08da829fa31722199f3f07</code>, <code className={styles.addr}>0x065c9d28e428a0db40191a54d33d5b7c71a9c394</code>.</li>
             <li>Spread receipts on mainnet: <code className={styles.addr}>0xedc5a196e891690fb9681b20eb03a621173c43df8b1747e4259e4d736853fba5</code> and <code className={styles.addr}>0x0b75431aed1b0f4c1d918dc229ff6307af093ca6ca076bcfaece783c32ff4e9a</code>.</li>
           </ul>
         </section>
 
         <section id="glossary">
-          <h2><span className={styles.idx}>10</span>Keywords, linked</h2>
+          <h2><span className={styles.idx}>11</span>Keywords, linked</h2>
           <p>Each name in the tape points at a document or a contract. The line under it is the sense used in these prints.</p>
           <div className={styles.glossary}>
             {TERMS.map(term => (
@@ -466,7 +518,7 @@ export default function ResearchTape() {
         </section>
 
         <footer className={styles.foot}>
-          <p>PolicyPilot desk · Tape 016 · Published 16 October 2026, blotter extended the same day. This note is research. It is not an offer to trade, and it does not quote a rate of return. The product that sends clips and spreads is unchanged by this page.</p>
+          <p>PolicyPilot desk · Tape 016 · Published 16 October 2026, blotter extended the same day. The clearing print is a simulation. It is not a receipt, not an offer to trade, and not a rate of return. The product that sends clips and spreads is unchanged by this page.</p>
           <p style={{ marginTop: '0.8rem' }}><a href={`${BP}/`}>Back to PolicyPilot</a></p>
         </footer>
       </article></Linked>
