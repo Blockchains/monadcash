@@ -1,7 +1,8 @@
 // One creation on the rebalancer gas wallet. Not a vault call.
+// The 16 Oct 2026 send already landed in block 113798632.
 // The constructor buys UNCLE on Pancake v2 and sells it on Purps, then unwraps.
-// It returns no runtime code. A later run refuses to sign unless a fresh
-// simulation still clears and the wallet stays at or above 5 MON.
+// It returns no runtime code. The workflow that called this file was removed.
+// A later run still refuses to sign unless a fresh simulation clears and the 5 MON floor holds.
 // DRY=1 simulates from the public address and does not sign.
 import { createPublicClient, createWalletClient, http, encodeAbiParameters } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
