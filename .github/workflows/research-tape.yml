@@ -18,5 +18,6 @@ jobs:
       - name: Read block, base fee, and shMON unstake fee
         run: node web/scripts/tape-refresh.mjs
       - name: Commit the public read
-        env: { BRANCH: ${{ github.ref_name }} }
+        env:
+          BRANCH: ${{ github.ref_name }}
         run: bash web/scripts/tape-commit.sh
