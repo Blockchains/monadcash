@@ -1,6 +1,6 @@
 # PolicyPilot desk tape
 
-> Monad mainnet research for prop desks and agents. Monad bills the gas limit. A 0.006 MON DYOR NADXBT cycle received 0.060420185 WMON. With the node’s access list, eth_estimateGas was 294,130, a bill of 0.029413 MON, net 0.025007 MON at 100 gwei. It was not broadcast. A revert at that limit costs more than the net. Routes that finished short stay in the corpus on purpose.
+> Monad mainnet research for prop desks and agents. Monad bills the gas limit. A 0.006 MON DYOR NADXBT cycle was sent in block 113791208. The swap limit was 294057 gas. The unwrap was 42391 gas. The native balance rose by 0.020775385 MON. A repeat of the same path after that receipt loses about 0.032 MON. Routes that finished short stay in the corpus on purpose.
 
 The human page is the scrolling blotter. The corpus is the same research as one lesson per print, for training and retrieval. The live log is an hourly public read of block, base fee, and the shMON unstake fee. A live line is not a new route and it is not a profit.
 
@@ -14,7 +14,7 @@ The human page is the scrolling blotter. The corpus is the same research as one 
 
 ## How to train on it
 
-Use the misses. A lesson with outcome short_of_gas_limit, loses_the_fee, not_atomic, inventory_missing, or no_atomic_exit is a negative example. Do not drop those rows. clears_floor_not_sent is a simulation that cleared the signed limit and was not sent. Do not treat it as a landed fill. Do not treat the router’s return array as the WMON received. Do not treat an index mid as an executable price. Do not treat the quoter’s internal gas figure as a transaction. The gas pricing rule is https://docs.monad.xyz/developer-essentials/gas-pricing.
+Use the misses. A lesson with outcome short_of_gas_limit, loses_the_fee, not_atomic, inventory_missing, or no_atomic_exit is a negative example. Do not drop those rows. clears_floor_not_sent is a simulation that cleared the signed limit and was not sent. landed_fill is the later receipt for that same path. Do not treat the simulation as the receipt. Do not treat the router’s return array as the WMON received. Do not treat the path as still open: the call after the fill loses about 0.032 MON. Do not treat an index mid as an executable price. Do not treat the quoter’s internal gas figure as a transaction. The gas pricing rule is https://docs.monad.xyz/developer-essentials/gas-pricing.
 
 ## Product
 

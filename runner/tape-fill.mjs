@@ -1,4 +1,6 @@
 // One clearing swap on the rebalancer gas wallet. Not a vault call.
+// The 16 Oct 2026 send already landed. The workflow that called this file was removed.
+// A later run still refuses to sign unless a fresh simulation clears and the 5 MON floor holds.
 // Aborts unless a fresh simulation still clears gas_limit * base fee,
 // and unless the wallet stays at or above 5 MON after the spend.
 // DRY=1 simulates from the public address and does not sign.
