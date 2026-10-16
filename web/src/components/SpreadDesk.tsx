@@ -166,7 +166,8 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         if (!row?.ok) continue;
         const back = decodeQuote(row.result);
         const cleared = clearsFloor(wei, back);
-        if (!best || back > best.back) {
+        const better = !best || (cleared.ok && !best.ok) || (cleared.ok === best.ok && back > best.back);
+        if (better) {
           best = { amount: wei, uni, thin, cake, kuru, sell: backs[i].sell, buy: backs[i].buy, usdc: backs[i].usdc, back, profit: cleared.profit, bounty: cleared.bounty, fee: cleared.fee, poolCut: cleared.pool, ok: cleared.ok, coversGas: cleared.coversGas };
         }
       }
@@ -226,6 +227,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     quoting: !quoteForAmount && !quoteError && (quoting || !!vault),
     quoteOk: quoteForAmount ? quoteForAmount.ok : quoteError ? false : null,
     coversGas: quoteForAmount?.coversGas,
+    smallLoss: !!quoteForAmount?.ok && quoteForAmount.profit === 0n,
   });
 
   const remember = (a: Address) => { if (key) localStorage.setItem(key, a); setVault(a); };
@@ -246,7 +248,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
     await new Promise(resolve => setTimeout(resolve, 250));
     try {
       const found = await bestProfitSize(net.rpcs?.length ? net.rpcs : [net.rpc], maxIn);
-      if (!found) { toast('No size up to the cap returns extra MON right now.', 'info'); return; }
+      if (!found) { toast('No size up to the cap stays inside a 0.50% shortfall right now.', 'info'); return; }
       setBestSize({ amount: found.amount, profit: found.profit });
       amountTouched.current = true;
       setAmount(formatEther(found.amount));
@@ -292,7 +294,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
 
   const tabId = useRef(Math.random().toString(36).slice(2));
   useEffect(() => {
-    if (!auto || busy || gate.code !== 'go' || block == null || !quoteForAmount?.ok || !vault) return;
+    if (!auto || busy || (gate.code !== 'go' && gate.code !== 'loss') || block == null || !quoteForAmount?.ok || !vault) return;
     if (tried.current === block) return;
     tried.current = block;
     let sent = false;
@@ -372,7 +374,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
   };
 
   const flatBest = gate.code === 'flat' && !!bestSize && bestSize.profit > 0n;
-  const button = gate.code === 'connect' ? 'Connect wallet' : flatBest && bestSize ? `Use ${mon(bestSize.amount)}` : gate.code === 'open' ? `Open pool · ${amount || '0'} MON` : gate.code === 'go' ? 'Submit round trip' : 'Waiting for a spread';
+  const button = gate.code === 'connect' ? 'Connect wallet' : flatBest && bestSize ? `Use ${mon(bestSize.amount)}` : gate.code === 'open' ? `Open pool · ${amount || '0'} MON` : gate.code === 'go' || gate.code === 'loss' ? 'Submit round trip' : 'Waiting for a spread';
 
   return (
     <section id="desk-spread" data-testid="spread-desk" className="min-w-0 scroll-mt-16 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
@@ -380,7 +382,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-400/15 text-emerald-200"><Radio className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
           <h2 className="text-lg font-semibold text-white">Spread</h2>
-          <p className="break-words text-xs text-zinc-400">This tab quotes Uniswap v3 at 0.30% and 0.05%, PancakeSwap v3 at 0.05%, and Kuru when a new block arrives. It fills the size, up to 10 MON, that returns the most MON. A larger size replaces it when that size returns more. Any quoted gain submits with one signature. Rough gas is shown and does not block it. There is no promised rate.</p>
+          <p className="break-words text-xs text-zinc-400">This tab quotes Uniswap v3 at 0.30% and 0.05%, PancakeSwap v3 at 0.05%, and Kuru when a new block arrives. It fills the largest size, up to 10 MON, whose shortfall stays inside 0.50%. A flat quote still submits. Rough gas is shown and does not block it. There is no promised rate.</p>
         </div>
       </div>
 
@@ -396,8 +398,9 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
           <span>Pool 80% {quoteForAmount ? mon(quoteForAmount.poolCut) : '—'}</span>
           <span>Rough gas {mon(ROUGH_GAS_WEI)}</span>
         </div>
-        {quoteForAmount?.ok && !quoteForAmount.coversGas && <p data-testid="spread-gas-note" className="break-words text-amber-200">This gain is smaller than rough gas. Submitting still runs the round trip. You pay the gas.</p>}
-        {bestSize && <p data-testid="spread-best-note" className="break-words text-zinc-300">Most MON back is {mon(bestSize.profit, 6)} at {mon(bestSize.amount)}. A larger size is used when it returns more. A connected wallet sends it with one signature.</p>}
+        {quoteForAmount?.ok && quoteForAmount.profit === 0n && <p data-testid="spread-loss-note" className="break-words text-amber-200">This quote is flat or inside a 0.50% shortfall. Submitting still runs the round trip. You pay the gas.</p>}
+        {quoteForAmount?.ok && quoteForAmount.profit > 0n && !quoteForAmount.coversGas && <p data-testid="spread-gas-note" className="break-words text-amber-200">This gain is smaller than rough gas. Submitting still runs the round trip. You pay the gas.</p>}
+        {bestSize && <p data-testid="spread-best-note" className="break-words text-zinc-300">Largest size inside the band is {mon(bestSize.amount)} with {mon(bestSize.profit, 6)} quoted gain. A connected wallet sends it with one signature.</p>}
         {quoteError && <p className="break-words text-rose-300">{quoteError}</p>}
       </div>
 
@@ -423,7 +426,7 @@ export default function SpreadDesk({ net, pub, account, wallet, bal, need, send,
         </div>
       </div>
 
-      <Switch testid="spread-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One send per block when the quote gains MON. You pay gas, which can be larger than the gain. A rejection or a still-pending transaction turns it off." />
+      <Switch testid="spread-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One send per block while the shortfall stays inside 0.50%. You pay gas. A rejection or a still-pending transaction turns it off." />
 
       {vault && snap && snap.pool < snap.cap && (
         <div className="mt-3 grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">

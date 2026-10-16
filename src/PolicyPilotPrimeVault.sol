@@ -8,7 +8,7 @@ import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 /// @notice A personal MON pool with two tranches. Capital Protected (senior) is paid first and loses
 ///         last. Max Alpha (junior) takes the first loss and the rest of the profit. Alpha, unaudited.
 ///         There is no promised rate: the only protection is junior MON sitting in this contract.
-/// @dev A hop may move at most 5% of the pool and at most `absoluteHopCap`. It reverts when the loss
+/// @dev A hop may move the whole pool, and never more than `absoluteHopCap`. It reverts when the loss
 ///      is above `maxLoss`. After settlement, a drawdown of 1.5% from the high watermark halts new
 ///      hops and deposits. The 10% performance fee is charged only on NAV above the high watermark.
 contract PolicyPilotPrimeVault is ReentrancyGuard {
@@ -45,7 +45,7 @@ contract PolicyPilotPrimeVault is ReentrancyGuard {
     uint256 public constant BPS = 10_000;
     uint256 public constant SENIOR_PROFIT_BPS = 3_000;
     uint256 public constant PERFORMANCE_FEE_BPS = 1_000;
-    uint256 public constant HOP_BPS = 500;
+    uint256 public constant HOP_BPS = 10_000;
     uint256 public constant BREAKER_BPS = 150;
     uint256 internal constant OFFSET = 1_000_000;
 

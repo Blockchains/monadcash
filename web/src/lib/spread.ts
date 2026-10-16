@@ -29,8 +29,10 @@ export function isCurrentSpreadCode(code: string | null | undefined): boolean {
   return live.length === SPREAD_RUNTIME.length && maskSpreadRuntime(live) === maskSpreadRuntime(SPREAD_RUNTIME);
 }
 
-/** New pools accept any increase in MON. A positive floor is still allowed, up to 500 bps. */
+/** New pools accept any increase in MON, and a shortfall of at most this many basis points. A positive floor is still allowed, up to 500 bps. */
 export const MIN_PROFIT_BPS = 0;
+/** Matches PolicyPilotClipVault and PolicyPilotSpreadVault LOSS_BPS. Half a percent of the MON sold. */
+export const LOSS_BPS = 50;
 export const KEEPER_BPS = 1_000;
 export const PROTOCOL_BPS = 1_000;
 export const SPREAD_CAP = parseEther('10');
@@ -52,7 +54,7 @@ export const VENUES: Record<VenueId, { name: string; router: Address; quoter: Ad
 
 export const SETTLEMENT_VENUES: VenueId[] = ['uniswap', 'pancake', 'uniswap-thin'];
 
-/** Sizes checked for the largest MON increase, up to the 10 MON pool cap. A bigger size is used only when it returns more. */
+/** Sizes checked up to the 10 MON pool cap. The largest size whose shortfall stays inside half a percent is used. */
 export const PROFIT_SIZES = ['0.05', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1', '1.5', '2', '3', '5', '8', '10'] as const;
 
 export const venueIndex = (id: VenueId): 0 | 1 | 2 => VENUES[id].index;
@@ -61,19 +63,25 @@ export function floorProfit(amount: bigint): bigint {
   return (amount * BigInt(MIN_PROFIT_BPS)) / 10_000n;
 }
 
+export function lossAllowance(amount: bigint): bigint {
+  return (amount * BigInt(LOSS_BPS)) / 10_000n;
+}
+
 export function splitProfit(profit: bigint): { bounty: bigint; fee: bigint; pool: bigint } {
   const bounty = (profit * BigInt(KEEPER_BPS)) / 10_000n;
   const fee = (profit * BigInt(PROTOCOL_BPS)) / 10_000n;
   return { bounty, fee, pool: profit - bounty - fee };
 }
 
-/** `ok` is a quoted gain that meets the pool floor. Rough gas is reported beside it and does not veto the quote. */
-export function clearsFloor(amount: bigint, wmonBack: bigint): { profit: bigint; floor: bigint; bounty: bigint; fee: bigint; pool: bigint; ok: boolean; coversGas: boolean } {
+/** `ok` is a quote inside the loss band that meets the pool floor. A flat quote and a shortfall of at most half a percent are ok when the floor is zero. Rough gas is reported beside it and does not veto the quote. */
+export function clearsFloor(amount: bigint, wmonBack: bigint): { profit: bigint; short: bigint; allowance: bigint; floor: bigint; bounty: bigint; fee: bigint; pool: bigint; ok: boolean; coversGas: boolean } {
   const profit = wmonBack > amount ? wmonBack - amount : 0n;
+  const short = amount > wmonBack ? amount - wmonBack : 0n;
   const floor = floorProfit(amount);
+  const allowance = floor === 0n ? lossAllowance(amount) : 0n;
   const split = splitProfit(profit);
-  const ok = profit > 0n && profit >= floor;
-  return { profit, floor, ...split, ok, coversGas: ok && profit > ROUGH_GAS_WEI };
+  const ok = wmonBack > 0n && short <= allowance && profit >= floor;
+  return { profit, short, allowance, floor, ...split, ok, coversGas: ok && profit > ROUGH_GAS_WEI };
 }
 
 export function chooseSell(uniUsdc: bigint, cakeUsdc: bigint): { sell: VenueId; buy: VenueId; usdc: bigint } | null {
@@ -84,16 +92,20 @@ export function chooseSell(uniUsdc: bigint, cakeUsdc: bigint): { sell: VenueId; 
 }
 
 export function minOuts(amount: bigint, usdc: bigint, wmonBack: bigint): { minUsdc: bigint; minWmon: bigint } {
-  const floorBack = amount + floorProfit(amount);
+  const need = amount + floorProfit(amount);
+  const allowance = floorProfit(amount) === 0n ? lossAllowance(amount) : 0n;
+  const lossFloor = need > allowance ? need - allowance : 1n;
   const slipped = (wmonBack * 99n) / 100n;
-  return { minUsdc: (usdc * 99n) / 100n > 0n ? (usdc * 99n) / 100n : 1n, minWmon: slipped > floorBack ? slipped : floorBack };
+  let minWmon = slipped > lossFloor ? slipped : lossFloor;
+  if (wmonBack >= lossFloor && minWmon > wmonBack) minWmon = wmonBack;
+  return { minUsdc: (usdc * 99n) / 100n > 0n ? (usdc * 99n) / 100n : 1n, minWmon };
 }
 
 export type SpreadGate = { ok: boolean; code: string; label: string; detail: string };
 
 export function spreadGate(o: {
   mainnet: boolean; account: boolean; vault: boolean; amount: string; pool: bigint;
-  walletBal: bigint | null; quoting: boolean; quoteOk: boolean | null; coversGas?: boolean;
+  walletBal: bigint | null; quoting: boolean; quoteOk: boolean | null; coversGas?: boolean; smallLoss?: boolean;
 }): SpreadGate {
   let wei: bigint;
   try { wei = parseEther(o.amount || '0'); } catch {
@@ -109,9 +121,10 @@ export function spreadGate(o: {
     return { ok: true, code: 'open', label: 'READY TO OPEN', detail: 'One signature opens your pool and deposits this MON. There is no promised rate.' };
   }
   if (o.quoting || o.quoteOk == null) return { ok: false, code: 'quote', label: 'QUOTING', detail: 'Asking Uniswap, PancakeSwap, and Kuru for this size.' };
-  if (!o.quoteOk) return { ok: false, code: 'flat', label: 'NO SPREAD', detail: 'Every quoted round trip comes back with no extra MON. Nothing is sent.' };
-  if (!o.coversGas) return { ok: true, code: 'go', label: 'QUOTED GAIN', detail: 'The pool gains MON on this quote. Rough gas can be larger than that gain, and you pay it. A loss still reverts.' };
-  return { ok: true, code: 'go', label: 'SPREAD COVERS GAS', detail: 'Submit the round trip with the most MON back. A loss reverts.' };
+  if (!o.quoteOk) return { ok: false, code: 'flat', label: 'LOSS TOO LARGE', detail: 'Every quoted round trip is more than 0.50% under the MON sold. Nothing is sent.' };
+  if (o.smallLoss) return { ok: true, code: 'loss', label: 'SMALL LOSS', detail: 'This size is flat or inside a 0.50% shortfall. The round trip still sends. You pay the gas.' };
+  if (!o.coversGas) return { ok: true, code: 'go', label: 'QUOTED GAIN', detail: 'The pool gains MON on this quote. Rough gas can be larger than that gain, and you pay it.' };
+  return { ok: true, code: 'go', label: 'SPREAD COVERS GAS', detail: 'Submit the largest size that stays inside a 0.50% shortfall.' };
 }
 
 export type QuoteCall = { to: Address; data: Hex; value?: Hex; from?: Address };
@@ -250,6 +263,7 @@ async function profitAt(rpcs: readonly string[], amount: bigint): Promise<{ quot
   if (forwards.filter(row => row.usdc > 0n).length < 2) return { quoted: false, best: null };
   const backs = roundTripBacks(forwards);
   let best: { amount: bigint; profit: bigint; sell: VenueId; buy: VenueId } | null = null;
+  let bestBack = 0n;
   let sawBack = false;
   for (const leg of backs) {
     const data = await ethCallRotating(rpcs, leg.call);
@@ -258,12 +272,12 @@ async function profitAt(rpcs: readonly string[], amount: bigint): Promise<{ quot
     try { back = decodeQuote(data); } catch { continue; }
     sawBack = true;
     const cleared = clearsFloor(amount, back);
-    if (cleared.ok && (!best || cleared.profit > best.profit)) best = { amount, profit: cleared.profit, sell: leg.sell, buy: leg.buy };
+    if (cleared.ok && (!best || back > bestBack)) { bestBack = back; best = { amount, profit: cleared.profit, sell: leg.sell, buy: leg.buy }; }
   }
   return { quoted: sawBack, best };
 }
 
-/** The size at or below `maxIn` whose quoted round trip returns the most MON. Each leg uses the next public endpoint. A flat size is skipped. An unread size is tried once more. */
+/** The largest size at or below `maxIn` whose shortfall stays inside half a percent. Each leg uses the next public endpoint. A deeper loss is skipped. An unread size is tried once more. */
 export async function bestProfitSize(rpc: string | readonly string[], maxIn: bigint): Promise<{ amount: bigint; profit: bigint; sell: VenueId; buy: VenueId } | null> {
   const rpcs = (Array.isArray(rpc) ? rpc : [rpc]).filter(Boolean);
   if (!rpcs.length) return null;
@@ -276,7 +290,7 @@ export async function bestProfitSize(rpc: string | readonly string[], maxIn: big
       await pause(300);
       row = await profitAt(rpcs, amount).catch(() => ({ quoted: false, best: null }));
     }
-    if (row.best && (!best || row.best.profit > best.profit)) best = row.best;
+    if (row.best && (!best || row.best.amount >= best.amount)) best = row.best;
     await pause(60);
   }
   return best;
@@ -299,8 +313,8 @@ export function spreadWithdrawData(shares: bigint): Hex {
 }
 
 const SPREAD_PLAIN: Record<string, string> = {
-  Floor: 'That round trip does not clear the pool’s profit floor.',
-  Unprofitable: 'The swap came back short, so the whole round trip reverted.',
+  Floor: 'That round trip is outside the pool’s floor. A zero floor still allows a 0.50% shortfall.',
+  Unprofitable: 'The shortfall was more than the pool allows, so the whole round trip reverted.',
   SameVenue: 'The two legs have to be different pools.',
   TradeTooLarge: 'That size is larger than this pool allows.',
   VaultCapExceeded: 'That deposit would pass this pool’s cap.',

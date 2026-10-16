@@ -23,8 +23,9 @@ interface IClipV3Pool {
 /// @title PolicyPilotClipVault
 /// @notice A personal MON pool that clips a two-pool round trip by calling the Uniswap v3 and
 ///         PancakeSwap v3 pools directly. There is no profit floor and no trade-size cap inside
-///         the pool: any increase in the pool's MON clears, and the whole balance can be the trade.
-///         10% of that profit is paid to the caller, 10% to the treasury, and 80% stays.
+///         the pool: any increase in the pool's MON clears, a shortfall of at most 0.50% still
+///         settles, and the whole balance can be the trade. A larger shortfall reverts.
+///         10% of a gain is paid to the caller, 10% to the treasury, and 80% stays. A loss pays neither.
 /// @dev Monad charges the gas limit, not the gas used. This path does not approve a router and does
 ///      not route through one, so the repeating cost is the two pool swaps plus wrapping.
 ///      Alpha and unaudited. There is no promised rate. The caller pays gas, including on a revert.
@@ -51,6 +52,8 @@ contract PolicyPilotClipVault is ReentrancyGuard {
     }
 
     uint256 public constant BPS = 10_000;
+    /// @notice Largest shortfall, in basis points of the MON sold, that still settles.
+    uint256 public constant LOSS_BPS = 50;
     uint256 public constant KEEPER_BPS = 1_000;
     uint256 public constant PROTOCOL_BPS = 1_000;
     uint256 internal constant OFFSET = 1_000_000;
@@ -113,16 +116,18 @@ contract PolicyPilotClipVault is ReentrancyGuard {
         return _assetsFor(balanceOf[user], address(this).balance);
     }
 
-    /// @notice Sell WMON on `sellVenue` and buy it back on `buyVenue`. Reverts unless the pool's MON increases.
+    /// @notice Sell WMON on `sellVenue` and buy it back on `buyVenue`.
+    ///         A gain pays the bounty. A shortfall inside `LOSS_BPS` still settles and pays nothing.
     /// @param minUsdc Minimum USDC the first leg must deliver.
-    /// @param minWmon Minimum WMON the second leg must deliver. Must be more than `amount`.
+    /// @param minWmon Minimum WMON the second leg must deliver. It can sit `LOSS_BPS` under `amount`.
     function clip(Venue sellVenue, Venue buyVenue, uint256 amount, uint256 minUsdc, uint256 minWmon)
         external
         nonReentrant
         returns (uint256 profit, uint256 bounty)
     {
         if (sellVenue == buyVenue) revert SameVenue();
-        if (minUsdc == 0 || minWmon <= amount) revert Floor();
+        uint256 allowance = amount * LOSS_BPS / BPS;
+        if (minUsdc == 0 || minWmon + allowance < amount) revert Floor();
         if (amount > uint256(type(int256).max)) revert TradeTooLarge(amount, uint256(type(int256).max));
         uint256 start = address(this).balance;
         if (amount == 0 || amount > start) revert TradeTooLarge(amount, start);
@@ -133,8 +138,8 @@ contract PolicyPilotClipVault is ReentrancyGuard {
         IClipWMON(WMON).withdraw(back);
 
         uint256 end = address(this).balance;
-        if (end <= start) revert Unprofitable(end, start);
-        profit = end - start;
+        if (start > end && start - end > allowance) revert Unprofitable(end, start - allowance);
+        profit = end > start ? end - start : 0;
         bounty = profit * KEEPER_BPS / BPS;
         uint256 fee = profit * PROTOCOL_BPS / BPS;
         if (bounty > 0) _pay(msg.sender, bounty);

@@ -6,11 +6,12 @@ export const PRIME_BYTECODE = artifact.bytecode as Hex;
 
 /** Matches PolicyPilotPrimeVault's constants and the caps this app deploys with. */
 export const PRIME_CAP = parseEther('10');
-export const PRIME_HOP = parseEther('0.5');
-export const PRIME_LOSS = parseEther('0.5');
+export const PRIME_HOP = parseEther('10');
+/** A hop on a vault opened here may lose 0.05 MON and still settle. A larger loss reverts. */
+export const PRIME_LOSS = parseEther('0.05');
 export const SENIOR_PROFIT_BPS = 3000;
 export const FEE_BPS = 1000;
-export const HOP_BPS = 500;
+export const HOP_BPS = 10_000;
 export const BREAKER_BPS = 150;
 
 export type TrancheId = 0 | 1;
