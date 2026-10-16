@@ -50,8 +50,7 @@ export function clipDeployData(treasury: Address): Hex {
 
 export function clipCallData(sell: VenueId, buy: VenueId, amount: bigint, usdc: bigint, back: bigint): Hex {
   const mins = minOuts(amount, usdc, back);
-  const minWmon = mins.minWmon > amount ? mins.minWmon : amount + 1n;
-  return encodeFunctionData({ abi: clipAbi, functionName: 'clip', args: [venueIndex(sell), venueIndex(buy), amount, mins.minUsdc, minWmon] });
+  return encodeFunctionData({ abi: clipAbi, functionName: 'clip', args: [venueIndex(sell), venueIndex(buy), amount, mins.minUsdc, mins.minWmon] });
 }
 
 export function clipDepositData(): Hex {
@@ -66,7 +65,7 @@ export type ClipGate = { ok: boolean; code: string; label: string; detail: strin
 
 export function clipGate(o: {
   mainnet: boolean; account: boolean; vault: boolean; amount: string; pool: bigint;
-  walletBal: bigint | null; quoting: boolean; quoteOk: boolean | null; netPositive: boolean;
+  walletBal: bigint | null; quoting: boolean; quoteOk: boolean | null; netPositive: boolean; smallLoss?: boolean;
 }): ClipGate {
   let wei: bigint;
   try { wei = parseEther(o.amount || '0'); } catch {
@@ -82,14 +81,15 @@ export function clipGate(o: {
     return { ok: true, code: 'open', label: 'READY TO OPEN', detail: 'One signature opens your pool and deposits this MON. There is no promised rate.' };
   }
   if (o.quoting || o.quoteOk == null) return { ok: false, code: 'quote', label: 'QUOTING', detail: 'Asking the pools for this size.' };
-  if (!o.quoteOk) return { ok: false, code: 'flat', label: 'NO GAIN', detail: 'This size comes back with no extra MON. Nothing is sent.' };
-  if (!o.netPositive) return { ok: true, code: 'gain', label: 'QUOTED GAIN', detail: 'The pool gains MON on this quote. The gas limit costs more than that gain, and you pay it. A loss still reverts.' };
+  if (!o.quoteOk) return { ok: false, code: 'flat', label: 'LOSS TOO LARGE', detail: 'This size comes back more than 0.50% under the MON sold. Nothing is sent.' };
+  if (o.smallLoss) return { ok: true, code: 'loss', label: 'SMALL LOSS', detail: 'This size is flat or inside a 0.50% shortfall. The clip still sends. You pay the gas on top.' };
+  if (!o.netPositive) return { ok: true, code: 'gain', label: 'QUOTED GAIN', detail: 'The pool gains MON on this quote. The gas limit costs more than that gain, and you pay it.' };
   return { ok: true, code: 'net', label: 'CLEARS GAS', detail: 'This size returns more MON than the gas limit charges. One signature sends it.' };
 }
 
 const CLIP_PLAIN: Record<string, string> = {
-  Unprofitable: 'The pool would not gain MON, so nothing was sent.',
-  Floor: 'The minimum back has to be more than the MON sold.',
+  Unprofitable: 'The shortfall was more than 0.50%, so nothing was sent.',
+  Floor: 'The minimum back has to stay inside 0.50% of the MON sold.',
   SameVenue: 'The two legs have to be different pools.',
   TradeTooLarge: 'That size is larger than the MON in the pool.',
   VaultCapExceeded: 'That deposit would pass the pool cap.',

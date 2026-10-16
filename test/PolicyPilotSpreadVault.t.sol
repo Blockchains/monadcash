@@ -269,9 +269,22 @@ contract PolicyPilotSpreadVaultTest is Test {
 
         RateRouterSwap(CAKE).set(1e6, 0.5e18);
         vm.prank(carol);
+        (profit, bounty) = v.capture(PolicyPilotSpreadVault.Venue.UNI_THIN, PolicyPilotSpreadVault.Venue.CAKE, 0.5 ether, 1, 0.5 ether - 0.0025 ether);
+        assertEq(profit, 0, "flat is not a gain");
+        assertEq(bounty, 0, "flat pays nothing");
+        assertEq(address(v).balance, 1.00016 ether, "flat trip leaves the pool");
+
+        RateRouterSwap(CAKE).set(1e6, 0.499e18);
+        vm.prank(carol);
+        (profit, bounty) = v.capture(PolicyPilotSpreadVault.Venue.UNI_THIN, PolicyPilotSpreadVault.Venue.CAKE, 0.5 ether, 1, 0.5 ether - 0.0025 ether);
+        assertEq(profit, 0, "0.20% shortfall is not a gain");
+        assertEq(address(v).balance, 1.00016 ether - 0.001 ether, "pool keeps the shortfall");
+
+        RateRouterSwap(CAKE).set(1e6, 0.49e18);
+        vm.prank(carol);
         vm.expectRevert();
-        v.capture(PolicyPilotSpreadVault.Venue.UNI_THIN, PolicyPilotSpreadVault.Venue.CAKE, 1 ether, 1, 1 ether);
-        assertEq(address(v).balance, 1.00016 ether, "flat trip untouched");
+        v.capture(PolicyPilotSpreadVault.Venue.UNI_THIN, PolicyPilotSpreadVault.Venue.CAKE, 0.5 ether, 1, 0.5 ether - 0.0025 ether);
+        assertEq(address(v).balance, 1.00016 ether - 0.001 ether, "2% shortfall untouched");
     }
 
     function test_fiveBpsFloorStillRejectsASmallerQuotedMinimum() public {

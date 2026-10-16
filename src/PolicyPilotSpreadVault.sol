@@ -30,8 +30,9 @@ interface ISwapRouter02 {
 
 /// @title PolicyPilotSpreadVault
 /// @notice A personal MON pool. Anyone may run one round trip across the fixed Uniswap v3 and
-///         PancakeSwap v3 pools, and the call reverts unless the pool's MON balance grows.
-///         10% of that profit is paid to the caller, 10% to the treasury, and 80% stays in the pool.
+///         PancakeSwap v3 pools. A zero profit floor still settles a shortfall of at most 0.50%.
+///         A larger shortfall reverts. A positive floor still requires that gain.
+///         10% of a gain is paid to the caller, 10% to the treasury, and 80% stays in the pool.
 ///         Alpha and unaudited. There is no promised rate. The caller pays gas, including on a revert.
 /// @dev The routers, fee tiers, WMON, and USDC are fixed. A caller cannot point the pool at another contract.
 contract PolicyPilotSpreadVault is ReentrancyGuard {
@@ -57,6 +58,8 @@ contract PolicyPilotSpreadVault is ReentrancyGuard {
     }
 
     uint256 public constant BPS = 10_000;
+    /// @notice Largest shortfall, in basis points of the MON sold, accepted when `minProfitBps` is zero.
+    uint256 public constant LOSS_BPS = 50;
     uint256 public constant KEEPER_BPS = 1_000;
     uint256 public constant PROTOCOL_BPS = 1_000;
     uint256 internal constant OFFSET = 1_000_000;
@@ -131,10 +134,10 @@ contract PolicyPilotSpreadVault is ReentrancyGuard {
         return address(this).balance * maxTradeBps / BPS;
     }
 
-    /// @notice Sell wrapped MON for USDC on `sellVenue`, buy it back on `buyVenue`, and revert
-    ///         unless the pool gains at least `minProfitBps` and the caller's minimums.
+    /// @notice Sell wrapped MON for USDC on `sellVenue`, buy it back on `buyVenue`.
+    ///         A zero floor settles a shortfall inside `LOSS_BPS`. A positive floor still requires that gain.
     /// @param minUsdc Minimum USDC the first leg must deliver. The caller sets this from a quote.
-    /// @param minWmon Minimum WMON the second leg must deliver. Must cover the MON sold plus the floor.
+    /// @param minWmon Minimum WMON the second leg must deliver. With a zero floor it can sit `LOSS_BPS` under `amount`.
     function capture(Venue sellVenue, Venue buyVenue, uint256 amount, uint256 minUsdc, uint256 minWmon)
         external
         nonReentrant
@@ -145,8 +148,8 @@ contract PolicyPilotSpreadVault is ReentrancyGuard {
         uint256 start = address(this).balance;
         uint256 maxAmount = start * maxTradeBps / BPS;
         if (amount == 0 || amount > maxAmount || amount > start) revert TradeTooLarge(amount, maxAmount);
-        uint256 floorProfit = amount * minProfitBps / BPS;
-        if (minWmon < amount + floorProfit) revert Floor();
+        uint256 allowance = minProfitBps == 0 ? amount * LOSS_BPS / BPS : 0;
+        if (minWmon + allowance < amount + amount * minProfitBps / BPS) revert Floor();
 
         IWMON(WMON).deposit{value: amount}();
         _swap(_router(sellVenue), WMON, USDC, _fee(sellVenue), amount, minUsdc);
@@ -160,9 +163,9 @@ contract PolicyPilotSpreadVault is ReentrancyGuard {
         IWMON(WMON).withdraw(back);
 
         uint256 end = address(this).balance;
-        if (end <= start) revert Unprofitable(end, start + floorProfit);
-        profit = end - start;
-        if (profit < floorProfit) revert Unprofitable(profit, floorProfit);
+        if (start > end && start - end > allowance) revert Unprofitable(end, start - allowance);
+        profit = end > start ? end - start : 0;
+        if (profit < amount * minProfitBps / BPS) revert Unprofitable(profit, amount * minProfitBps / BPS);
 
         bounty = profit * KEEPER_BPS / BPS;
         uint256 fee = profit * PROTOCOL_BPS / BPS;

@@ -149,7 +149,8 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
         let back = 0n;
         try { back = decodeQuote(row.result); } catch { continue; }
         const cleared = clearsFloor(wei, back);
-        if (!best || back > best.back) {
+        const better = !best || (cleared.ok && !best.ok) || (cleared.ok === best.ok && back > best.back);
+        if (better) {
           best = { amount: wei, sell: backs[i].sell, buy: backs[i].buy, usdc: backs[i].usdc, back, profit: cleared.profit, ok: cleared.ok };
         }
       }
@@ -180,6 +181,7 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
     quoting: !quoteForAmount && !quoteError && (quoting || !!vault),
     quoteOk: quoteForAmount ? quoteForAmount.ok : quoteError ? false : null,
     netPositive,
+    smallLoss: !!quoteForAmount?.ok && quoteForAmount.profit === 0n,
   });
 
   const remember = (a: Address) => { if (key) localStorage.setItem(key, a); setVault(a); };
@@ -200,7 +202,7 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
     await new Promise(resolve => setTimeout(resolve, 250));
     try {
       const found = await bestProfitSize(net.rpcs?.length ? net.rpcs : [net.rpc], maxIn);
-      if (!found) { toast('No size up to the cap returns extra MON right now.', 'info'); return; }
+      if (!found) { toast('No size up to the cap stays inside a 0.50% shortfall right now.', 'info'); return; }
       setBestSize({ amount: found.amount, profit: found.profit });
       setAmount(formatEther(found.amount));
     } catch (e) { fail(e); }
@@ -244,7 +246,7 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
   };
 
   useEffect(() => {
-    if (!auto || busy || (gate.code !== 'net' && gate.code !== 'gain') || block == null || !quoteForAmount?.ok || !vault) return;
+    if (!auto || busy || (gate.code !== 'net' && gate.code !== 'gain' && gate.code !== 'loss') || block == null || !quoteForAmount?.ok || !vault) return;
     if (tried.current === block) return;
     tried.current = block;
     const timer = window.setTimeout(() => { void go(); }, 180);
@@ -279,7 +281,7 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
   };
 
   const flatBest = gate.code === 'flat' && !!bestSize && bestSize.profit > 0n;
-  const button = gate.code === 'connect' ? 'Connect wallet' : flatBest && bestSize ? `Use ${mon(bestSize.amount)}` : gate.code === 'open' ? `Open pool · ${amount || '0'} MON` : gate.code === 'net' || gate.code === 'gain' ? 'Submit clip' : 'Waiting for a clip';
+  const button = gate.code === 'connect' ? 'Connect wallet' : flatBest && bestSize ? `Use ${mon(bestSize.amount)}` : gate.code === 'open' ? `Open pool · ${amount || '0'} MON` : gate.code === 'net' || gate.code === 'gain' || gate.code === 'loss' ? 'Submit clip' : 'Waiting for a clip';
   const netMon = quoteForAmount && quoteForAmount.profit > charge ? quoteForAmount.profit - charge : 0n;
 
   return (
@@ -288,7 +290,7 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-400/15 text-cyan-200"><Zap className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
           <h2 className="text-lg font-semibold text-white">Clip</h2>
-          <p className="break-words text-xs text-zinc-400">A separate pool that sells and buys on the Uniswap v3 and PancakeSwap v3 pools directly, so the repeating transaction skips the router. It checks every new block and fills the size, up to 10 MON, with the most MON back. The whole pool can be the trade. One signature sends it. There is no promised rate.</p>
+          <p className="break-words text-xs text-zinc-400">A separate pool that sells and buys on the Uniswap v3 and PancakeSwap v3 pools directly, so the repeating transaction skips the router. It checks every new block and fills the largest size, up to 10 MON, whose shortfall stays inside 0.50%. The whole pool can be the trade. One signature sends it. There is no promised rate.</p>
         </div>
       </div>
 
@@ -299,9 +301,10 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
           <span data-testid="clip-gas">Gas charge {mon(charge, 4)} at {CLIP_GAS.toString()} gas</span>
           <span>Net {quoteForAmount?.ok ? mon(netMon, 6) : '—'}</span>
         </div>
-        {quoteForAmount?.ok && !netPositive && <p data-testid="clip-gas-note" className="break-words text-amber-200">This gain is smaller than the gas this limit charges. Submitting still runs the clip. You pay the gas, including if it reverts.</p>}
-        {quoteForAmount?.ok && netPositive && <p data-testid="clip-net-note" className="break-words text-emerald-200">This gain clears the gas charge. Auto-submit sends one clip per block while a gain is quoted.</p>}
-        {bestSize && <p data-testid="clip-best-note" className="break-words text-zinc-300">Most MON back is {mon(bestSize.profit, 6)} at {mon(bestSize.amount)}. A larger size is used when it returns more.</p>}
+        {quoteForAmount?.ok && quoteForAmount.profit === 0n && <p data-testid="clip-loss-note" className="break-words text-amber-200">This quote is flat or inside a 0.50% shortfall. Submitting still runs the clip. You pay the gas.</p>}
+        {quoteForAmount?.ok && quoteForAmount.profit > 0n && !netPositive && <p data-testid="clip-gas-note" className="break-words text-amber-200">This gain is smaller than the gas this limit charges. Submitting still runs the clip. You pay the gas.</p>}
+        {quoteForAmount?.ok && netPositive && <p data-testid="clip-net-note" className="break-words text-emerald-200">This gain clears the gas charge. Auto-submit sends one clip per block while the quote stays inside the band.</p>}
+        {bestSize && <p data-testid="clip-best-note" className="break-words text-zinc-300">Largest size inside the band is {mon(bestSize.amount)} with {mon(bestSize.profit, 6)} quoted gain.</p>}
         {quoteError && <p className="break-words text-rose-300">{quoteError}</p>}
       </div>
 
@@ -325,7 +328,7 @@ export default function ClipDesk({ net, pub, account, wallet, bal, need, send, t
         </div>
       </div>
 
-      <Switch testid="clip-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One send per block while the quote shows a gain. Each send pays the gas limit." />
+      <Switch testid="clip-auto" on={auto} disabled={!vault} onChange={v => { tried.current = null; setAuto(v); }} label="Auto-submit" sub="Off until you turn it on. One send per block while the shortfall stays inside 0.50%. Each send pays the gas limit." />
 
       {snap && snap.shares > 0n && (
         <Btn kind="ghost" data-testid="clip-withdraw" disabled={busy} onClick={() => void withdraw()} className="mt-2 w-full">Withdraw {mon(snap.yours)} to this wallet</Btn>

@@ -122,15 +122,39 @@ contract PolicyPilotClipVaultTest is Test {
         assertEq(profit, 0.02 ether);
     }
 
-    function test_flat_round_trip_reverts() public {
+    function test_flat_and_small_loss_settle_and_a_larger_loss_reverts() public {
         ClipMockPool(THIN).setOut(1_000_000);
         ClipMockPool(CAKE).setOut(0.5 ether);
-        vm.deal(alice, 0.5 ether);
+        vm.deal(alice, 2 ether);
         vm.prank(alice);
-        PolicyPilotClipVault v = new PolicyPilotClipVault{value: 0.5 ether}(treasury, 10 ether);
+        PolicyPilotClipVault v = new PolicyPilotClipVault{value: 1.5 ether}(treasury, 10 ether);
+        uint256 allowance = 0.5 ether * 50 / 10_000;
+
         vm.prank(carol);
         vm.expectRevert();
         v.clip(PolicyPilotClipVault.Venue.UNI_THIN, PolicyPilotClipVault.Venue.CAKE, 0.5 ether, 1, 0.5 ether + 1);
+
+        uint256 start = address(v).balance;
+        vm.prank(carol);
+        (uint256 profit, uint256 bounty) =
+            v.clip(PolicyPilotClipVault.Venue.UNI_THIN, PolicyPilotClipVault.Venue.CAKE, 0.5 ether, 1, 0.5 ether - allowance);
+        assertEq(profit, 0, "flat gain");
+        assertEq(bounty, 0, "flat pays nothing");
+        assertEq(address(v).balance, start, "flat leaves the pool");
+
+        ClipMockPool(CAKE).setOut(0.5 ether - 0.001 ether);
+        vm.prank(carol);
+        (profit, bounty) =
+            v.clip(PolicyPilotClipVault.Venue.UNI_THIN, PolicyPilotClipVault.Venue.CAKE, 0.5 ether, 1, 0.5 ether - allowance);
+        assertEq(profit, 0, "small loss is not a gain");
+        assertEq(bounty, 0, "small loss pays nothing");
+        assertEq(address(v).balance, start - 0.001 ether, "pool keeps the shortfall");
+
+        ClipMockPool(CAKE).setOut(0.5 ether - 0.01 ether);
+        vm.prank(carol);
+        vm.expectRevert();
+        v.clip(PolicyPilotClipVault.Venue.UNI_THIN, PolicyPilotClipVault.Venue.CAKE, 0.5 ether, 1, 0.5 ether - allowance);
+        assertEq(address(v).balance, start - 0.001 ether, "large loss untouched");
     }
 
     function test_same_venue_and_oversize_revert() public {

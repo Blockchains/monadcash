@@ -370,7 +370,11 @@ const SPREAD_VENUES = [
   { id: 2, quoter: '0x661e93cca42afacb172121ef892830ca3b70f08d', fee: 500 },
 ];
 const SPREAD_CAP_WEI = parseEther('10');
-// Same grid as web/src/lib/spread.ts PROFIT_SIZES. The size with the most MON back is used, up to the pool cap.
+/** Matches the clip and spread contracts. A shortfall of at most 0.50% of the MON sold still settles. */
+const LOSS_BPS = 50n;
+const lossAllowance = amount => amount * LOSS_BPS / 10_000n;
+const insideLoss = (amount, back) => back > 0n && back + lossAllowance(amount) >= amount;
+// Same grid as web/src/lib/spread.ts PROFIT_SIZES. The largest size inside the loss band is used, up to the pool cap.
 const SPREAD_SIZES = ['0.05', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1', '1.5', '2', '3', '5', '8', '10'].map(s => parseEther(s));
 function maskRuntime(code, slots) {
   const hex = String(code).toLowerCase();
@@ -414,7 +418,7 @@ async function quoteLeg(quoter, fee, tokenIn, tokenOut, amountIn) {
   }
   throw last;
 }
-/** Largest quoted MON increase at or below maxIn. Quotes are sequential so a burst does not drop a venue. Kuru is not a settlement leg. */
+/** Largest size at or below maxIn whose quoted shortfall stays inside 0.50%. Quotes are sequential so a burst does not drop a venue. Kuru is not a settlement leg. */
 async function bestSpread(maxIn) {
   let best = null;
   for (const amount of SPREAD_SIZES) {
@@ -425,17 +429,19 @@ async function bestSpread(maxIn) {
       catch { forwards.push({ ...v, usdc: 0n }); }
     }
     await sleep(40);
+    let bestBack = 0n;
     for (const sell of forwards) {
       if (sell.usdc <= 0n) continue;
       for (const buy of forwards) {
         if (buy.id === sell.id) continue;
         let back = 0n;
         try { back = await quoteLeg(buy.quoter, buy.fee, T.USDC, T.WMON, sell.usdc); } catch { back = 0n; }
+        if (!insideLoss(amount, back) || back <= bestBack) continue;
+        bestBack = back;
         const profit = back > amount ? back - amount : 0n;
-        if (profit > 0n && (!best || profit > best.profit)) {
-          const slipped = (sell.usdc * 95n) / 100n;
-          best = { amount, sell: sell.id, buy: buy.id, usdc: sell.usdc, back, profit, minUsdc: slipped > 0n ? slipped : 1n, minWmon: amount };
-        }
+        const slipped = (sell.usdc * 95n) / 100n;
+        const allowance = lossAllowance(amount);
+        best = { amount, sell: sell.id, buy: buy.id, usdc: sell.usdc, back, profit, minUsdc: slipped > 0n ? slipped : 1n, minWmon: amount > allowance ? amount - allowance : 1n };
       }
     }
     await sleep(60);
@@ -445,7 +451,7 @@ async function bestSpread(maxIn) {
 /**
  * One mainnet deploy of the current spread bytecode, then one capture, from the agent EOA with the most MON.
  * Not part of a persona turn: the fee is outside MAX_FEE_MON. Stops after three errors.
- * A capture is sent only when its size returns more MON than a capture already sent. A flat quote is retried next round.
+ * A capture is sent only when its size is larger than a capture already sent. A shortfall inside 0.50% still sends. A deeper loss is retried next round.
  * The gained MON stays in the pool.
  */
 const capturedWei = row => {
@@ -483,7 +489,7 @@ async function proveSpreadOnce() {
   const poolBalNow = pool ? await pc.getBalance({ address: pool }) : 0n;
   const room = pool ? (poolBalNow + fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : poolBalNow + fund) : (fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : fund);
   const trip = await bestSpread(room);
-  if (!trip) { log('proveSpread: no round trip returns extra MON'); return; }
+  if (!trip) { log('proveSpread: no size stays inside a 0.50% shortfall'); return; }
   const prev = ledger.filter(x => x.persona === 'spread' && x.status === 'captured').reduce((m, r) => { const a = capturedWei(r); return a > m ? a : m; }, 0n);
   if (prev > 0n && trip.amount <= prev) { log('proveSpread: best size', formatEther(trip.amount), 'is not larger than the', formatEther(prev), 'MON already captured'); return; }
   log('proveSpread', payer.id, formatEther(trip.amount), 'MON', 'venues', trip.sell, '→', trip.buy, 'quoted gain', formatEther(trip.profit), 'MON before gas');
@@ -533,8 +539,8 @@ async function proveSpreadOnce() {
   log('proveSpread captured', `${EXP}/tx/${r.transactionHash}`, 'pool', formatEther(before), '→', formatEther(after));
 }
 /**
- * Up to 20 direct-pool clips per round, while the quote shows a MON gain. Gas is paid on every send and can be larger than the gain.
- * The fee is outside MAX_FEE_MON. A flat quote is not sent. The signing wallet keeps 5 MON.
+ * Up to 20 direct-pool clips per round, at the largest size whose shortfall stays inside 0.50%. Gas is paid on every send.
+ * The fee is outside MAX_FEE_MON. A deeper loss is not sent. The signing wallet keeps 5 MON.
  */
 async function proveClip() {
   const rows = ledger.filter(x => x.persona === 'clip');
@@ -565,7 +571,7 @@ async function proveClipOnce() {
   const poolBalNow = pool ? await pc.getBalance({ address: pool }) : 0n;
   const room = pool ? (poolBalNow + fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : poolBalNow + fund) : (fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : fund);
   const trip = await bestSpread(room);
-  if (!trip) { log('proveClip: no round trip returns extra MON'); return; }
+  if (!trip) { log('proveClip: no size stays inside a 0.50% shortfall'); return; }
   log('proveClip', payer.id, formatEther(trip.amount), 'MON', 'venues', trip.sell, '→', trip.buy, 'quoted gain', formatEther(trip.profit), 'MON. Gas is paid on top and can be larger.');
   if (DRY_RUN) { log('[dry-run] proveClip would deploy/clip and send nothing'); return; }
   const wc = wcOf(payer.id);
@@ -609,12 +615,11 @@ async function proveClipOnce() {
       await sleep(500);
       continue;
     }
-    if (!live || live.amount > held || live.profit <= 0n) {
+    if (!live || live.amount > held) {
       live = await bestSpread(held > 0n ? held : room);
-      if (!live) { log('proveClip: no gain left after', sent, 'clips'); break; }
+      if (!live) { log('proveClip: no size inside the loss band after', sent, 'clips'); break; }
     }
-    const minWmon = live.amount + 1n;
-    const clipData = encodeFunctionData({ abi: clipArtifact.abi, functionName: 'clip', args: [live.sell, live.buy, live.amount, live.minUsdc, minWmon] });
+    const clipData = encodeFunctionData({ abi: clipArtifact.abi, functionName: 'clip', args: [live.sell, live.buy, live.amount, live.minUsdc, live.minWmon] });
     try { await pc.call({ account: payer.account.address, to: pool, data: clipData }); }
     catch (e) {
       if (busyRpc(e)) { log('proveClip: rpc busy', errMsg(e)); await sleep(500); continue; }
@@ -708,6 +713,10 @@ if (E.SPREAD_SELFTEST === '1') {
   if (!clipAffordable(parseEther('6'), keep5, 420_000n, parseGwei('102'))) { console.error('6 MON should cover a clip above the 5 MON reserve'); process.exit(1); }
   if (clipAffordable(keep5 + cost, keep5, 420_000n, parseGwei('102'))) { console.error('a balance equal to the reserve plus gas should not send'); process.exit(1); }
   if (CLIP_MAX_PER_ROUND !== 20) { console.error('clip cap must be 20 per round'); process.exit(1); }
+  if (lossAllowance(parseEther('1')) !== parseEther('0.005')) { console.error('loss allowance must be 0.50%'); process.exit(1); }
+  if (!insideLoss(parseEther('1'), parseEther('0.995'))) { console.error('a 0.50% shortfall should settle'); process.exit(1); }
+  if (insideLoss(parseEther('1'), parseEther('0.994'))) { console.error('a deeper shortfall should not settle'); process.exit(1); }
+  if (CLIP_GAS !== 420_000n) { console.error('clip gas limit stays 420000'); process.exit(1); }
   console.log('spread bytecode self-test ok', SPREAD_IMMUTABLES.length, 'immutable slots', CLIP_IMMUTABLES.length, 'clip slots');
   process.exit(0);
 }

@@ -5,7 +5,7 @@ import { AlertTriangle, CheckCircle2, Lock, Shield, Zap } from 'lucide-react';
 import { Btn, receiptClass } from './ui';
 import { haptic } from '@/lib/wallets';
 import { addLocal, mon, sendFault, short, type Net } from '@/lib/vault';
-import { BREAKER_BPS, explainPrime, FEE_BPS, HOP_BPS, primeAbi, primeDeployData, primeDepositData, primeGate, primeWithdrawData, PRIME_CAP, PRIME_HOP, SENIOR_PROFIT_BPS, trancheAssets, type TrancheId } from '@/lib/prime';
+import { BREAKER_BPS, explainPrime, FEE_BPS, primeAbi, primeDeployData, primeDepositData, primeGate, primeWithdrawData, PRIME_CAP, PRIME_HOP, SENIOR_PROFIT_BPS, trancheAssets, type TrancheId } from '@/lib/prime';
 import { GAS, pricedGas } from '@/lib/fastPath';
 
 type Snap = {
@@ -225,7 +225,7 @@ export default function PrimeTerminal({ net, pub, account, wallet, bal, need, se
         <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-zinc-300"><Lock className="h-3.5 w-3.5 shrink-0" />How the pool protects the two tranches</summary>
         <div className="mt-2 grid gap-2 break-words">
           <p>Junior MON is the only cushion. A loss reduces the alpha tranche first. Protected MON drops only after alpha is at zero. There is no outside guarantee.</p>
-          <p>Each hop can move at most {HOP_BPS / 100}% of the pool, and never more than {mon(PRIME_HOP)} on a vault opened here. A hop that loses more than the agent allowed reverts, so an unprofitable route sends nothing. If the pool falls {BREAKER_BPS / 100}% under its high watermark, new hops and deposits stop. Withdrawals stay open.</p>
+          <p>Each hop can move the whole pool, and never more than {mon(PRIME_HOP)} on a vault opened here. A hop that loses more than 0.05 MON reverts. A smaller loss still settles. If the pool falls {BREAKER_BPS / 100}% under its high watermark, new hops and deposits stop. Withdrawals stay open.</p>
           <p>The performance fee is {FEE_BPS / 100}% of gains above the high watermark, paid to the treasury chosen when the vault was opened (your wallet, for a vault you open here). Principal is not charged. {SENIOR_PROFIT_BPS / 100}% of what remains goes to Protected and the rest to Alpha.</p>
           <p>The cap is {mon(cap)}. This contract is alpha and unaudited. Deposit only what you can lose.</p>
           <form className="flex min-w-0 flex-col gap-2 sm:flex-row" onSubmit={e => { e.preventDefault(); void usePaste(); }}>

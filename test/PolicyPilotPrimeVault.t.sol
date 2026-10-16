@@ -77,7 +77,7 @@ contract PolicyPilotPrimeVaultTest is Test {
     function test_constantsMatchTheRetailCopy() public view {
         assertEq(v.SENIOR_PROFIT_BPS(), 3000);
         assertEq(v.PERFORMANCE_FEE_BPS(), 1000);
-        assertEq(v.HOP_BPS(), 500);
+        assertEq(v.HOP_BPS(), 10_000);
         assertEq(v.BREAKER_BPS(), 150);
     }
 
@@ -208,8 +208,8 @@ contract PolicyPilotPrimeVaultTest is Test {
         assertFalse(v.executed(bytes32("bad")));
 
         vm.prank(exec);
-        vm.expectRevert(abi.encodeWithSelector(PolicyPilotPrimeVault.HopCapExceeded.selector, 5 ether + 1, 5 ether));
-        v.hop(bytes32("big"), address(router), abi.encodeWithSelector(Router.echo.selector), 5 ether + 1, 0);
+        vm.expectRevert(abi.encodeWithSelector(PolicyPilotPrimeVault.HopCapExceeded.selector, 50 ether + 1, 50 ether));
+        v.hop(bytes32("big"), address(router), abi.encodeWithSelector(Router.echo.selector), 50 ether + 1, 0);
     }
 
     function test_hopProfitPaysTheWatermarkFee() public {
@@ -236,7 +236,7 @@ contract PolicyPilotPrimeVaultTest is Test {
         v.deposit{value: 100 ether}(PolicyPilotPrimeVault.TrancheType.SENIOR);
         v.deposit{value: 10 ether}(PolicyPilotPrimeVault.TrancheType.JUNIOR);
         vm.stopPrank();
-        // 5% of 110 = 5.5, absolute cap is 50, so 4 ether is inside the hop cap and past the 1.5% floor.
+        // The whole balance can move, up to the 50 MON absolute cap, so 4 ether is inside and past the 1.5% floor.
         vm.prank(exec);
         v.hop(bytes32("spill"), address(router), abi.encodeWithSelector(Router.keep.selector), 4 ether, 4 ether);
         (uint256 seniorAssets,) = _senior();
@@ -369,7 +369,8 @@ contract PolicyPilotPrimeVaultTest is Test {
     function testFuzz_juniorIsHitBeforeSenior(uint96 rawJ, uint96 rawS, uint96 rawL) public {
         uint256 j = bound(rawJ, 0.1 ether, 2 ether);
         uint256 s = bound(rawS, 20 ether, 40 ether);
-        uint256 ceiling = (j + s) * 500 / 10_000;
+        uint256 nav = j + s;
+        uint256 ceiling = nav < 50 ether ? nav : 50 ether;
         uint256 loss = bound(rawL, 1, ceiling);
         vm.deal(alice, j + s);
         vm.startPrank(alice);

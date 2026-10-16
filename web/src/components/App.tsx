@@ -373,8 +373,8 @@ function Launch({ net, pub, account, wallet, bal, vaults, need, send, runAgent, 
   const products = [
     { id: 'desk-dispatch', label: 'Dispatch', title: 'Stake, swap, or pay yourself. The button sends one real transaction.' },
     { id: 'desk-prime', label: 'Prime', title: 'Open your two-tranche pool. Capped at 10 MON. No promised rate.' },
-    { id: 'desk-spread', label: 'Spread', title: 'Quotes Uniswap 0.30%, Uniswap 0.05%, PancakeSwap, and Kuru. Settles when the pool gains MON.' },
-    { id: 'desk-clip', label: 'Clip', title: 'Low-gas round trip on the pools directly. Sends when the gain clears the gas limit.' },
+    { id: 'desk-spread', label: 'Spread', title: 'Quotes Uniswap 0.30%, Uniswap 0.05%, PancakeSwap, and Kuru. Sends the largest size inside a 0.50% shortfall.' },
+    { id: 'desk-clip', label: 'Clip', title: 'Low-gas round trip on the pools directly. Sends the largest size inside a 0.50% shortfall. Gas is still the 420,000 limit.' },
     { id: 'desk-rules', label: 'Rules', title: 'Custom agent, budget, cap, and which services are allowed.' },
   ];
 
@@ -756,7 +756,7 @@ function OwnVault({ s, net, pub, account, runAgent, ownerTx, toast, teamName, te
         <Pill tone={s.paused ? 'warn' : 'ok'}>{s.paused ? 'Paused' : 'Active'}</Pill></div>
       <VaultReport key={s.v} s={s} net={net} pub={pub} account={account} template={template} runAgent={runAgent} ownerTx={ownerTx} reload={reload} canSign={signer !== null} isOwner readOnly={false} />
       <Switch testid="sw-pause-vault" on={!s.paused} onChange={async v => { try { await ownerTx(v ? 'Owner resumes the agent' : 'Owner pauses the agent', vcall(s.v, 'setPaused', [!v])); toast(v ? '▶️ Agent resumed' : '⏸ Agent paused', 'ok'); } catch (e) { const f = sendFault(e); toast(f.text, f.pending ? 'info' : 'bad'); } }} label={s.paused ? 'Agent is paused' : 'Agent is live'} sub="Instant kill-switch, one signature" />
-      {template && <Playbook s={s} template={template} pub={pub} runAgent={runAgent} canSign={signer !== null} reload={reload} />}
+      {template && <Playbook s={s} template={template} pub={pub} runAgent={runAgent} canSign={signer !== null} reload={reload} account={account} ownerTx={ownerTx} />}
       <div className="mt-2 text-[11px] uppercase tracking-wider text-zinc-500">Agent actions · {signer === 'wallet' ? 'real, signed by your wallet' : signer === 'key' ? 'real, signed by the key in this browser' : 'simulate only'}</div>
       <p className="mt-1 break-words text-xs text-zinc-400">{signer === 'wallet' ? <>Your wallet <span className="font-mono">{short(s.executor)}</span> is this vault’s agent. Every button sends a real transaction that the vault checks against your policy first.</> : signer === 'key' ? <>Agent key <span className="font-mono">{short(s.executor)}</span> is stored in this browser. Buttons send real transactions through the vault’s policy.</> : <>Agent <span className="font-mono">{short(s.executor)}</span> signs elsewhere, so buttons here run a free policy check (eth_call) and send nothing. To act from this wallet, make it the agent below (owner signature).</>}</p>
       <div className="mt-2 flex flex-wrap gap-2">{acts.map(a => <Btn key={a.kind} kind="soft" className="px-3" data-testid={`act-${a.kind}`} onClick={() => setK(a.kind)}>{a.label}</Btn>)}<Btn kind="danger" className="px-3" data-testid="break" onClick={() => setK('break')}>😈 Break it</Btn></div>
@@ -774,24 +774,48 @@ function OwnVault({ s, net, pub, account, runAgent, ownerTx, toast, teamName, te
     </Card>
   );
 }
-function Playbook({ s, template, pub, runAgent, canSign, reload }: { s: VaultState; template: SuperVault; pub: PublicClient; runAgent: any; canSign: boolean; reload: () => void }) {
+function Playbook({ s, template, pub, runAgent, canSign, reload, account, ownerTx }: { s: VaultState; template: SuperVault; pub: PublicClient; runAgent: any; canSign: boolean; reload: () => void; account: Address | null; ownerTx: (label: string, req: { to: Address; data: `0x${string}`; value?: bigint }) => Promise<unknown> }) {
   const [lines, setLines] = useState<{ ok: boolean; text: string; msg?: React.ReactNode }[]>([]); const [busy, setBusy] = useState(false); const [done, setDone] = useState(false);
   const run = async () => {
     if (!canSign) return; setBusy(true); setDone(false); setLines([]);
     const push = (ok: boolean, text: string, msg?: React.ReactNode) => setLines(l => [...l, { ok, text, msg }]);
     let stopped = false;
-    const fitMon = async (want: bigint) => {
-      const [bal, budget, spent, cap] = await Promise.all([
+    const ownerHere = !!(account && s.owner.toLowerCase() === account.toLowerCase());
+    let vault = s;
+    const readLimits = async () => {
+      const [bal, budget, spent, cap, vaultCap] = await Promise.all([
         pub.getBalance({ address: s.v }),
         pub.readContract({ address: s.v, abi: vaultAbi, functionName: 'budget' }) as Promise<bigint>,
         pub.readContract({ address: s.v, abi: vaultAbi, functionName: 'totalSpent' }) as Promise<bigint>,
         pub.readContract({ address: s.v, abi: vaultAbi, functionName: 'perPaymentCap' }) as Promise<bigint>,
+        pub.readContract({ address: s.v, abi: vaultAbi, functionName: 'vaultCap' }) as Promise<bigint>,
       ]);
-      const room = executableMon({ cap, budget, spent, bal });
+      return { bal, budget, spent, cap, vaultCap };
+    };
+    const fitMon = async (want: bigint) => {
+      const live = await readLimits();
+      if (ownerHere && live.vaultCap > 0n) {
+        const room = live.bal < live.vaultCap ? live.bal : live.vaultCap;
+        return want < room ? want : room;
+      }
+      const room = executableMon(live);
       return want < room ? want : room;
     };
+    const lift = async (amount: bigint) => {
+      if (!ownerHere) return;
+      const live = await readLimits();
+      const raise = limitsFor(live, amount);
+      if (raise.cap != null) {
+        await ownerTx('Owner raises the per-action cap to the vault cap', vcall(s.v, 'setPerPaymentCap', [raise.cap]));
+        vault = { ...vault, cap: raise.cap };
+      }
+      if (raise.budget != null) {
+        await ownerTx('Owner raises the budget to cover the vault cap', vcall(s.v, 'setBudget', [raise.budget]));
+        vault = { ...vault, budget: raise.budget };
+      }
+    };
     const step = async (kind: string, amount: bigint, label: string, extra?: { to?: Address }) => {
-      const r = await runAgent(s, kind, amount, extra ?? {});
+      const r = await runAgent(vault, kind, amount, extra ?? {});
       push(r.ok, label, r.ok ? undefined : r.msg); if (!r.ok) stopped = true;
     };
     try {
@@ -805,6 +829,7 @@ function Playbook({ s, template, pub, runAgent, canSign, reload }: { s: VaultSta
           for (const to of allowed) {
             const want = parseEther(st.amount); const amt = await fitMon(want);
             if (amt === 0n) { push(false, 'Stopped: nothing left inside the cap and budget for the next payment.'); stopped = true; break; }
+            await lift(amt);
             await step('payto', amt, `Paid ${formatEther(amt)} MON to ${short(to)}`, { to }); if (stopped) break;
           }
           continue;
@@ -817,6 +842,7 @@ function Playbook({ s, template, pub, runAgent, canSign, reload }: { s: VaultSta
           const want = parseEther(st.amount); amount = await fitMon(want);
           if (amount === 0n) { push(false, `Stopped: nothing left inside the cap and budget for “${st.label}”.`); stopped = true; break; }
           if (amount !== want) label = `${st.label} — sent ${formatEther(amount)} MON, the most this vault can move`;
+          await lift(amount);
         }
         await step(st.kind, amount, label);
       }
