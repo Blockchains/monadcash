@@ -61,7 +61,7 @@ export class VaultAgent {
   }
 }
 
-/** Monad mainnet AgentVaultFactory (v3, 1000 MON per-vault cap, 100000 MON global cap). New vaults use this. The app stops a new vault at 10 MON. */
+/** Monad mainnet AgentVaultFactory (v3, 1000 MON per-vault cap, 100000 MON global cap). New vaults use this. The app stops a new vault at that 1000 MON cap. */
 export const MAINNET_FACTORY = '0x52727226aF0efe2bfe3E5c97e46B704613344a92' as Address;
 /** Earlier factories. v2 is 1 MON per vault and 1000 MON global. v1 is 1 MON per vault and 10 MON global. */
 export const MAINNET_LEGACY_FACTORIES = ['0x0342d29055d77ba155c50233f550539E3029BA6a', '0x8738B74778502ff3623A8319837A819d8dBdEeB7'] as Address[];

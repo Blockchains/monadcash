@@ -10,8 +10,8 @@
       "era": "v3",
       "vaultCap": "1000 MON",
       "globalCap": "100000 MON",
-      "appCeiling": "10 MON",
-      "note": "Same AgentVault bytecode as v2 apart from the immutable vault cap. New vaults opened in the app use this factory. The app stops a new vault at 10 MON. Existing v1 and v2 vaults keep their own caps."
+      "appCeiling": "1000 MON",
+      "note": "Same AgentVault bytecode as v2 apart from the immutable vault cap. New vaults opened in the app use this factory. The app stops a new vault at 1000 MON, the same as this factory's vault cap. Existing v1 and v2 vaults keep their own caps. An owner can raise perPaymentCap and budget up to that vault's immutable vault cap."
     },
     "LegacyAgentVaultFactoryV2": {
       "address": "0x0342d29055d77ba155c50233f550539E3029BA6a",

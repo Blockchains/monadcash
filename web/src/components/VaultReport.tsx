@@ -5,7 +5,7 @@ import { ArrowDownToLine, Lock } from 'lucide-react';
 import { Btn, Pill, Switch } from './ui';
 import { SERVICES, TOKENS, type TokenSym } from '@/lib/services';
 import { cashoutPlan, changePct, COLORS, fmtAmt, fmtMon, loadBook, navKey, navUsdc, pctOf, pushSample, PX_KEY, readToks, type Book, type CashStep, type Sample } from '@/lib/portfolio';
-import { mon, plain, reasonOf, vaultAbi, vcall, type Net, type VaultState } from '@/lib/vault';
+import { APP_VAULT_MON, mon, plain, reasonOf, vaultAbi, vcall, type Net, type VaultState } from '@/lib/vault';
 import type { SuperVault } from '@/lib/superVaults';
 
 type RunAgent = (s: VaultState, kind: string, amount: bigint, extra?: { to?: Address; venues?: ('uniswap' | 'pancake')[] }) => Promise<{ ok: boolean; msg: React.ReactNode; detail: string }>;
@@ -27,7 +27,7 @@ function workings(s: VaultState, template?: SuperVault): { title: string; steps:
     return {
       title: `How ${template.name} works`,
       steps: [
-        { icon: '📥', title: 'You fund it', text: `One deposit, up to 10 MON on a new vault. The agent may move at most ${template.cap} MON per action and ${template.budget} MON in total. Output has to come back to the vault.` },
+        { icon: '📥', title: 'You fund it', text: `One deposit, up to ${APP_VAULT_MON} MON on a new vault. The agent may move at most ${template.cap} MON per action and ${template.budget} MON in total. Output has to come back to the vault.` },
         ...template.playbook.map(st => ({ icon: st.kind === 'pay-each' ? '💸' : '▸', title: st.label, text: STEP_TEXT[st.kind] ?? '' })),
         { icon: '↩️', title: 'You cash out', text: 'MON comes back to your wallet. Receipt tokens come back too, for you to redeem in the protocol’s own app. Closing also pauses the agent.' },
       ],

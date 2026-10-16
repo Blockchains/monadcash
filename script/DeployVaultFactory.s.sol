@@ -4,7 +4,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {AgentVaultFactory} from "../src/AgentVaultFactory.sol";
 
 /// Usage: forge script script/DeployVaultFactory.s.sol --rpc-url $RPC [--broadcast] --private-key $KEY
-/// Default vault cap is the app ceiling (10 MON). The require allows up to v3's 1000 MON chain cap. Default global cap is 10000 MON.
+/// Default VAULT_CAP is 10 MON. The require allows up to v3's 1000 MON chain cap, which is also the app ceiling. Default global cap is 10000 MON.
 contract DeployVaultFactory is Script {
     function run() external returns (AgentVaultFactory f) {
         uint256 vaultCap = vm.envOr("VAULT_CAP", uint256(10 ether));

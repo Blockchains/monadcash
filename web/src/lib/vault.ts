@@ -100,8 +100,8 @@ export const parseRecorded = (s?: string): Reason => { const m = /^(\w+)\((.*)\)
 
 // ---------- policy -> createVault args ----------
 export type Policy = { budgetOn: boolean; budget: number; capOn: boolean; cap: number; deposit: number; gas: number; services: string[]; payees: Address[]; startPaused: boolean };
-/** Product ceiling for a vault opened in this app. v3's on-chain cap is 1000 MON; v1 and v2 vaults stay at 1 MON. */
-export const APP_VAULT_MON = 10;
+/** Product ceiling for a vault opened in this app. Matches v3's on-chain cap of 1000 MON. v1 and v2 vaults stay at 1 MON. */
+export const APP_VAULT_MON = 1000;
 export function buildCreate(executor: Address, owner: Address, p: Policy) {
   const toWei = (x: number) => BigInt(Math.round(x * 1e6)) * 10n ** 12n;
   const ceiling = BigInt(APP_VAULT_MON) * 10n ** 18n;
@@ -132,8 +132,8 @@ const svc = (id: string) => SERVICES.find(s => s.id === id)! as Service & { addr
 export const vcall = (v: Address, fn: string, args: readonly unknown[]) => ({ to: v, data: encodeFunctionData({ abi: vaultAbi, functionName: fn as any, args: args as any }) });
 
 /** One-click starter vault: your own wallet is the agent, so every action below can be sent from it for real.
- *  0.1 MON per action, 1 MON total, owner as the only payee, wrap + Kuru + Uniswap + PancakeSwap on. */
-export const STARTER = { cap: 0.1, budget: 1, deposit: 0.5, services: ['pay', 'wmon', 'kuru', 'uniswap', 'pancake'] };
+ *  Per-action cap and budget sit at the v3 vault cap. Deposit stays small. Owner is the only payee. Wrap, Kuru, Uniswap, and PancakeSwap are on. */
+export const STARTER = { cap: APP_VAULT_MON, budget: APP_VAULT_MON, deposit: 0.5, services: ['pay', 'wmon', 'kuru', 'uniswap', 'pancake'] };
 export const buildStarter = (owner: Address, deposit = STARTER.deposit) => buildCreate(owner, owner, { budgetOn: true, budget: STARTER.budget, capOn: true, cap: STARTER.cap, deposit, gas: 0, services: STARTER.services, payees: [], startPaused: false });
 
 /** Live MON → USDC quotes on all three venues (null = venue unavailable right now). */
