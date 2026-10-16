@@ -30,7 +30,7 @@ export const TERMS: Term[] = [
   { id: 'zkswap', phrase: 'zkSwap', href: 'https://monadvision.com/address/0x0ff16867bcac3c5fdc2dc73558e3f8e2ed89eea2', define: 'Eight pairs, all solvent, 0 hits.' },
   { id: 'monday-trade', phrase: 'Monday Trade', href: 'https://monadvision.com', define: 'Named on the WMON/USDC index. This pass did not turn that mid into a settlement.' },
   { id: 'aethonswap', phrase: 'Aethonswap', href: 'https://monadvision.com', define: 'Opened far enough to see a WBTC/WMON pool. Not a settlement in this tape.' },
-  { id: 'someswap', phrase: 'SomeSwap', href: 'https://monadvision.com', define: 'Returned no pools on the read this pass made.' },
+  { id: 'someswap', phrase: 'SomeSwap', href: 'https://monadvision.com/address/0x00008a3c1077325bb19cd93e5a0f1e95144700fa', define: 'Factory 0x00008a3c1077325bb19cd93e5a0f1e95144700fa. 46 pairs on the uncapped pass. No cycle there cleared the gas limit.' },
   { id: 'capricorn', phrase: 'Capricorn', href: 'https://monadvision.com', define: 'Named on the WMON/USDC index range. The executable quotes are in the pool sections.' },
   { id: 'balancer', phrase: 'Balancer', href: 'https://docs.balancer.fi/', define: 'Balancer v3 appeared on the WMON/USDC index. The index range is labeled as a mid.' },
   { id: 'atlantis', phrase: 'Atlantis', href: 'https://monadvision.com/address/0x32681b2afbeb1a0ad7545cb2cd72236fe5d7919f', define: 'USDC/WETH pool. Algebra. The on-chain price matched the deep book.' },

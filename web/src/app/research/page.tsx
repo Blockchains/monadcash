@@ -11,7 +11,7 @@ const CANONICAL = `${ORIGIN}${BP}/research/`;
 const SHARE_IMAGE = `${ORIGIN}${BP}/icon-512.png`;
 const TITLE = 'Monad desk tape: the gas limit is the trade';
 const DESCRIPTION =
-  'PolicyPilot desk tape, 16 October 2026. Monad bills the gas limit. A DYOR NADXBT cycle of 0.006 MON was sent from the rebalancer gas wallet in block 113,791,208. The swap gas limit was 294,057. Unwrapping the WMON cost 42,391. The wallet’s native balance rose by 0.020775385 MON. Routes that finished short stay on the blotter.';
+  'PolicyPilot desk tape, 16 October 2026. Monad bills the gas limit. A DYOR NADXBT cycle landed +0.020775385 MON. An uncapped pass then sent 0.081016337 MON of UNCLE, Pancake v2 into Purps, in block 113,798,632. The creation gas limit was 318,301. The wallet’s native balance rose by 0.014139141 MON. Routes that finished short stay on the blotter.';
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     siteName: 'PolicyPilot',
     type: 'article',
     publishedTime: '2026-10-16T01:40:00.000Z',
-    modifiedTime: '2026-10-16T03:32:00.000Z',
+    modifiedTime: '2026-10-16T04:12:00.000Z',
     locale: 'en_US',
     images: [{ url: SHARE_IMAGE, width: 512, height: 512, alt: 'PolicyPilot' }],
   },
@@ -136,7 +136,7 @@ export default function ResearchTape() {
           <hr className={styles.rule} />
           <h1>The gas limit is the trade.</h1>
           <p className={styles.dek}>
-            This is the whole pass, including every route that finished short. Monad bills the gas limit, the base fee does not fall below 100 gwei, and the chain is public, so the calls are public. A settlement moved tokens. A quote is an <code>eth_call</code>. An index mid is someone else’s price, and it is labeled as a mid. One cycle was sent. The receipt is below.
+            This is the whole pass, including every route that finished short. Monad bills the gas limit, the base fee does not fall below 100 gwei, and the chain is public, so the calls are public. A settlement moved tokens. A quote is an <code>eth_call</code>. An index mid is someone else’s price, and it is labeled as a mid. Two cycles were sent. The receipts are below. The second one had no size cap.
           </p>
           <p className={styles.meta}>
             <time dateTime="2026-10-16">16 October 2026</time>
@@ -149,6 +149,7 @@ export default function ResearchTape() {
             <a href="#closest">03 Closest print</a>
             <a href="#clears">04 The floor clears</a>
             <a href="#fill">05 The fill</a>
+            <a href="#uncapped">13 No size cap</a>
             <a href="#settled">06 Settled, and short</a>
             <a href="#shares">07 Share tokens</a>
             <a href="#books">08 Pools and books</a>
@@ -162,7 +163,7 @@ export default function ResearchTape() {
             <div className={styles.stat}><b className={styles.down}>294,057</b><span>gas on the swap receipt</span></div>
             <div className={styles.stat}><b className={styles.up}>97.38</b><span>MON left on the wallet</span></div>
           </div>
-          <p className={styles.meta}>39,296 v2 pairs read · 35,000 solvent · 2 cycles above 0.005 MON · 0 skims.</p>
+          <p className={styles.meta}>39,296 v2 pairs read · 35,000 solvent · 2 cycles above 0.005 MON · 0 skims. Uncapped pass: 39,369 pairs, 0 same-block excess, one UNCLE fill.</p>
           <p className={styles.meta}>
             Training set for agents: <a href={`${BP}/research/corpus.json`}>corpus.json</a>, <a href={`${BP}/research/corpus.jsonl`}>corpus.jsonl</a>, hourly <a href={`${BP}/research/live.json`}>live.json</a>, and <a href={`${BP}/llms.txt`}>llms.txt</a>.
           </p>
@@ -517,10 +518,62 @@ export default function ResearchTape() {
           </article>
         </section>
 
+        <section id="uncapped">
+          <h2><span className={styles.idx}>13</span>No size cap</h2>
+          <p>
+            The earlier hit line was 0.005 MON and the earlier skim line was 0.02. This pass drops both. A constant-product cycle is kept when the optimal size, anywhere inside the reserve, quotes a profit above zero. A skim is a same-block balance above the reserve, of any size. The eight factories still had the same lengths: 21,289, 13,062, 3,802, 1,037, 67, 30, 8, and 1, read at block 113,795,144. Three more v2 books answered <code>allPairsLength</code>: LFJ v1 16, Purps 11, SomeSwap 46. The constant-product graph held 35,083 pairs with both reserves above zero. It examined 6,209 cycles and found 138 quotes above zero.
+          </p>
+          <p>
+            The largest quote was 0.139697384 MON on 2.542 MON of shMON, Madness into Purps. The Madness pair <code className={styles.addr}>0xCd7A88b15CE3D693F4883BF58490125e32CB3416</code> reported a reserve and a token balance of zero. That quote has no inventory. The Nad router <code className={styles.addr}>0x8986c8fd44eb85294a725a7e61af35e76ba26f91</code> reverted <code>getAmountsOut</code> on the CHOG and NPC cycles, so those stay on the constant-product screen. The mock Cake cycle is the same one already on the blotter, about 0.018972 MON, still under a three-hop bill.
+          </p>
+          <p className={styles.tag}>Mainnet receipt</p>
+          <p>
+            UNCLE, <code className={styles.addr}>0x483A6a93c352c9666dFE84693E5B957d555D7777</code>, was solvent on both sides. Pancake v2 pair <code className={styles.addr}>0x90934790DCB95A51156405348ddcdFf5A438A214</code>. Purps pair <code className={styles.addr}>0xb0923F9D83EAAC35f5C8A2753ba6f13994f05276</code>. The optimal size was 0.081016337 MON. Both routers returned 0.126985578 WMON. Gross 0.045969241 MON. A fork of the two swaps moved that amount. One creation does both swaps and unwraps, and it returns no runtime code. At block 113,798,387 the access list had 8 entries, <code>eth_estimateGas</code> was 318,301, the bill at 100 gwei was 0.031830100 MON, and the net was 0.014139141 MON.
+          </p>
+          <p>
+            The send used the rebalancer gas wallet again. The balance before it was 97.161076832 MON. <code>minOut</code> on the second swap was the input plus the gas bill. The tip was 0. The max fee was 100 gwei. The script signed because the fresh net was above 0.005 MON and the balance after the spend stayed above 5 MON.
+          </p>
+          <div className={styles.grid2}>
+            <div className={styles.row}><div>Creation</div><div className={styles.addr}>0xca88170e3f920d5e3a9d32e2737254788c2a0cf3b60720953d6c79a41faac218</div></div>
+            <div className={styles.row}><div>Block</div><div className={styles.num}>113,798,632</div></div>
+            <div className={styles.row}><div>Status</div><div className={styles.num}>success</div></div>
+            <div className={styles.row}><div>Value in</div><div className={styles.num}>0.081016337 MON</div></div>
+            <div className={styles.row}><div>Gas limit, and gas used</div><div className={styles.num}>318,301</div></div>
+            <div className={styles.row}><div>Bill</div><div className={styles.num}>0.031830100 MON</div></div>
+            <div className={styles.row}><div>MON returned</div><div className={styles.num}>0.126985578 MON</div></div>
+            <div className={styles.row}><div>Runtime code</div><div className={styles.num}>0 bytes</div></div>
+            <div className={styles.row}><div>Native balance after</div><div className={styles.num}>97.175215973 MON</div></div>
+            <div className={styles.row}><div>Native delta</div><div className={styles.num}>+0.014139141 MON</div></div>
+          </div>
+          <p>
+            The receipt is status success. Gas used equals the limit. The created address <code className={styles.addr}>0x274ebd04e252c14d9cbc23e3ef1538b4b0d0ea46</code> has no code. The wallet balance read after the transaction is 97.175215973 MON.
+          </p>
+          <p>
+            The same size after that block buys 851.966591326 UNCLE and sells it for 0.059445328 MON. That is 0.021571009 MON under the input, before gas. The script refuses to sign.
+          </p>
+          <h3>The skim, read in one block</h3>
+          <p>
+            39,369 pairs, reserves and balances taken at block 113,796,243. Zero pairs held extra WMON or extra USDC. A split read a few blocks earlier had shown 206.743794619 WMON on Nad pair <code className={styles.addr}>0x97199B34564911936bC850aC45eDe785892B5AAD</code>, plus USDC gaps of 5.576478, 3.071158, 0.680964, and 0.348831. The same pairs, read together, had balance equal to reserve. <code>skim</code> transferred 0. The gap was the pool moving between two calls. It was not inventory.
+          </p>
+          <h3>The deep books, any size the quoter still answered</h3>
+          <p>
+            Eight QuoterV2 contracts, fees 100, 500, 2,500, 3,000, and 10,000, sizes from 0.05 MON through 50,000 MON where the quote still returned. 46 legs were live. The best round trip was WMON/AUSD at 0.5 MON, Uniswap fee 100 into Pancake fee 2,500, +0.018544795 MON. WMON/USDC at 50 MON, Pancake fee 500 into fee 2,500, was +0.005433631 MON. WMON/WETH at 0.5 MON was +0.003275493 MON. WMON/USDT at 0.05 MON was +0.001455614 MON. USDC/USDT and USDC/AUSD were negative at 0.05. A two-leg v3 bill is about 0.028 MON. None of those quotes clears it.
+          </p>
+          <p>
+            Uniswap v4, 1 MON into USDC, fee 500, tick spacing 10, returned 0.022973 USDC. GHO/USDC, fee 100, tick spacing 1, returned 0.998899 USDC for 1 GHO. The index mid near 0.9546 does not survive that call. No v3 leg answered for GHO or for cbBTC. Curve’s factory listed 34 pools. Every completed round trip, from a thousandth of the balance up to half of it, came back under the amount that went in. Kuru bid over ask: cbBTC/USDC 0.99960, WETH/USDC 0.99945, the third USDC book 0.99940, MON/USDC 0.99809, gMON 0.99900. None crossed. The NADXBT path returned 0.003302582 MON on 0.006 MON. The shMON unstake fee was 0.680782% of the ray.
+          </p>
+          <p>
+            LFJ’s LB factory holds 78 pairs and Bean’s holds 80. The LB quoter for 1 WMON returned 0.022906 USDC, in line with the v4 price. Joe v1’s 16 pairs are inside the constant-product count above. The clip gas, the ten minute round, and the 5 MON reserve are unchanged.
+          </p>
+          <p className={styles.note}>
+            Landed +0.014139141 MON. Creation gas 318,301. Wallet left at 97.175215973 MON. The same size now comes back 0.059445328 MON.
+          </p>
+        </section>
+
         <section id="rule">
           <h2><span className={styles.idx}>10</span>The rule the desk keeps</h2>
           <p>
-            Profit has to exceed <code>gas_limit × price</code>, and the limit has to be high enough that the call succeeds. The 0.006 MON cycle did that once. The receipt is +0.020775385 MON after the swap limit and the unwrap. The same call after that receipt loses 0.032090292 MON. The solvent Uniswap v2 book was 20,911 pairs and zero hits. Pancake v2 was 13,057 solvent pairs and one mock-token cycle. No pair on any of the eight factories held an extra 0.02 MON or an extra 0.02 USDC above its reserve. That skim line was not reopened below 0.02. The pair counts had not changed when the fill was sent.
+            Profit has to exceed <code>gas_limit × price</code>, and the limit has to be high enough that the call succeeds. The 0.006 MON cycle did that once. The receipt is +0.020775385 MON after the swap limit and the unwrap. The same call after that receipt loses 0.032090292 MON. The 0.081016337 MON UNCLE cycle did it once. The receipt is +0.014139141 MON. The same size after that receipt comes back 0.059445328 MON. The solvent Uniswap v2 book was 20,911 pairs and zero hits. Pancake v2 was 13,057 solvent pairs and one mock-token cycle. A same-block read of 39,369 pairs found no extra WMON and no extra USDC above the reserve.
           </p>
           <p>
             A quote is not a send. The signer sends when the settled gain is larger than the limit the wallet will put on the transaction, checked with <code>eth_call</code> first, because a revert bills that limit in full. The clip gas limit stays 420,000. The rough gas figure on the spread desk stays a half million gas at 100 gwei. The signing wallet keeps 5 MON. Rounds stay ten minutes apart, and a round sends at most 20 clips.
@@ -540,6 +593,7 @@ export default function ResearchTape() {
             <li>DYOR pairs: WMON/USDC <code className={styles.addr}>0xBE8345287c5bA716941f50A80020911AC2e07c68</code>, USDC/NADXBT <code className={styles.addr}>0x7789D1E9DC0ddA50DF30e66b9DFf53D862393b1E</code>, WMON/NADXBT <code className={styles.addr}>0xFdcB57E198D123545A9E71FDd0DEA424E13B2720</code>. Router <code className={styles.addr}>0x26CEb692410c4b3C12D63e01CFc03eEA103fc474</code>. The clearing simulation is a fork of block 113,785,475 and a live estimate at block 113,787,261. Rebuild the list with <code>eth_createAccessList</code>.</li>
             <li>Kuru books that answered: <code className={styles.addr}>0x40c49f171202f91ff5d2fae34c22dd2bfdd22af0</code>, <code className={styles.addr}>0xa6afd386135b7d41a6c40c525abc4a1019b0d132</code>, <code className={styles.addr}>0x851145eaefdc37956b08da829fa31722199f3f07</code>, <code className={styles.addr}>0x065c9d28e428a0db40191a54d33d5b7c71a9c394</code>.</li>
             <li>The fill, from the rebalancer gas wallet <code className={styles.addr}>0xC2cF684A3931143FD877F02222085713842a090E</code>: swap <code className={styles.addr}>0xeb3e75d70f43b979cd5f942eb9febbd06712ae9eab008030ef07caf972002b50</code> in block 113,791,208, unwrap <code className={styles.addr}>0x40dbbe260991fcadc9b74bedde130aab2dc15d7409554cf6553bb4d109d3bc63</code> in block 113,791,211.</li>
+            <li>The uncapped fill, same wallet: creation <code className={styles.addr}>0xca88170e3f920d5e3a9d32e2737254788c2a0cf3b60720953d6c79a41faac218</code> in block 113,798,632. UNCLE <code className={styles.addr}>0x483A6a93c352c9666dFE84693E5B957d555D7777</code>. Pancake router <code className={styles.addr}>0xB1Bc24c34e88f7D43D5923034E3a14B24DaACfF9</code>. Purps router <code className={styles.addr}>0x22aDf91b491abc7a50895Cd5c5c194EcCC93f5E2</code>.</li>
             <li>Spread receipts on mainnet: <code className={styles.addr}>0xedc5a196e891690fb9681b20eb03a621173c43df8b1747e4259e4d736853fba5</code> and <code className={styles.addr}>0x0b75431aed1b0f4c1d918dc229ff6307af093ca6ca076bcfaece783c32ff4e9a</code>.</li>
           </ul>
         </section>
@@ -558,7 +612,7 @@ export default function ResearchTape() {
         </section>
 
         <footer className={styles.foot}>
-          <p>PolicyPilot desk · Tape 016 · Published 16 October 2026. The fill is a mainnet receipt. It is not an offer to trade, and it does not quote a rate of return. The product that sends clips and spreads is unchanged by this page.</p>
+          <p>PolicyPilot desk · Tape 016 · Published 16 October 2026. Both fills are mainnet receipts. They are not an offer to trade, and they do not quote a rate of return. The product that sends clips and spreads is unchanged by this page.</p>
           <p style={{ marginTop: '0.8rem' }}><a href={`${BP}/`}>Back to PolicyPilot</a></p>
         </footer>
       </article></Linked>
