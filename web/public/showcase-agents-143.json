@@ -10,7 +10,7 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-16T14:30:26.726Z",
+ "updatedAt": "2026-10-16T14:31:52.660Z",
  "totals": {
   "allowed": 1304,
   "blocked": 403,
@@ -137,69 +137,61 @@
  ],
  "recent": [
   {
-   "ts": "2026-10-16T14:30:26.723Z",
+   "ts": "2026-10-16T14:31:52.657Z",
    "persona": "tester",
    "actor": "agent",
-   "label": "Policy tester unwraps 0.5 WMON → MON (allowed)",
+   "label": "Policy tester wraps exactly the 0.5 MON cap (boundary: allowed)",
    "status": "allowed",
-   "tx": "0xb0246bf1de7f634f7f917d787d571c5683b16fc95d6e6b06eadeef4556bf7786"
+   "tx": "0x1e940d9872242d175f880361f496828c0dc485fd0db38d62c1da07b3ce78c431"
   },
   {
-   "ts": "2026-10-16T14:30:25.774Z",
+   "ts": "2026-10-16T14:31:51.765Z",
    "persona": "mm",
    "actor": "agent",
-   "label": "Market maker buys 0.4983434447 MON with 0.011582 USDC on Kuru (order book)",
+   "label": "Market maker sells 0.5 MON → USDC on Kuru (order book)",
    "status": "allowed",
-   "tx": "0xb140ffb49aebf182e320e03b6c6fa14f592681373ddf651374e4df8e55f7fff1"
+   "tx": "0x09428de06391c3ec18c2d08de591fdc487e54c099c41ac63d4403305617d557c"
   },
   {
-   "ts": "2026-10-16T14:30:24.467Z",
+   "ts": "2026-10-16T14:31:50.540Z",
    "persona": "dca1",
    "actor": "agent",
-   "label": "DCA bot unwraps 0.89749426354782312 WMON → MON",
+   "label": "DCA bot buys USDC with 0.3 MON on Uniswap v3",
    "status": "allowed",
-   "tx": "0xa820be2c5e9d3b6baff546af6060cc2bab1aea726efc0d26aafcb497d64f52f5"
+   "tx": "0x0fafd1022e630d85ca49224cc2d8081f62c6024710f39004fb7ac7be485ff569"
   },
   {
-   "ts": "2026-10-16T14:30:23.675Z",
+   "ts": "2026-10-16T14:31:49.320Z",
    "persona": "rogue",
    "actor": "agent",
    "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
    "status": "blocked",
    "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
-   "tx": "0x83f1710da4eed2f8490e6427f7e70500cae835f2a7d65d676d5afb7fe7751963"
+   "tx": "0xeccb85dde2fa7348784e0d65f33608d5aa05d6a92fe30e96e83969fb9dac7536"
   },
   {
-   "ts": "2026-10-16T14:30:23.030Z",
+   "ts": "2026-10-16T14:31:48.651Z",
    "persona": "payroll",
    "actor": "agent",
    "label": "Payroll pays 0.3 MON to the team treasury",
    "status": "allowed",
-   "tx": "0xe0bef8adadab2fac1c980cbc8b4d5c705ad7cfa94ad4a14d0f5c45c801498c9d"
+   "tx": "0x0ef2a9b8cf357fbd2959e3db4770126644476e5d1884b2eaea13b93de353f302"
   },
   {
-   "ts": "2026-10-16T14:30:22.009Z",
+   "ts": "2026-10-16T14:31:47.401Z",
    "persona": "staker",
    "actor": "agent",
-   "label": "Staker unwraps 0.3 WMON → MON",
+   "label": "Staker swaps 0.3 MON → USDC on Kuru (order book)",
    "status": "allowed",
-   "tx": "0x605b886bd5a2b3d1c9da3e96e698f57b635eee964039eea17d9f8c13b9d4d8ca"
+   "tx": "0x1db18d54f27e05e53d84ca4f9499844935686fcb93edca4214f07cc20dda4761"
   },
   {
-   "ts": "2026-10-16T14:30:21.249Z",
+   "ts": "2026-10-16T14:31:46.655Z",
    "persona": "dca",
    "actor": "agent",
    "label": "DCA bot buys USDC with 0.3 MON on PancakeSwap v3",
    "status": "allowed",
-   "tx": "0x72a8da5213d3119cb82e0f7d9218a03fdf3ed0bee426c591021f6de69556c54f"
-  },
-  {
-   "ts": "2026-10-16T14:29:59.182Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 0.2 MON across venues 1 → 2. Pool MON 0.60580854072017947 → 0.605897038485821959. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0xc5680682240aee85d6ce81c5753699a6308840bcfc02f359627cf59546dfc348"
+   "tx": "0xdd790ad4be71c117e8c7d3e3a56d6ce6619ad0ee25a752447f001f70fb0807e4"
   },
   {
    "ts": "2026-10-16T14:19:45.722Z",
@@ -627,6 +619,15 @@
    "label": "DCA bot buys USDC with 0.3 MON on PancakeSwap v3",
    "status": "allowed",
    "tx": "0x3969c55823c46ff0ddf9a30bf810f854f70ea777cf35916e7c562f35192b54c9"
+  },
+  {
+   "ts": "2026-10-16T13:15:55.854Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries a Uniswap swap that pays itself instead of the vault",
+   "status": "blocked",
+   "reason": "RecipientMustBeVault(0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E)",
+   "tx": "0x3b59554327c4cc8f14a1c9a63754e72a4d845a6b67af6871c06532d5d39ce8e3"
   }
  ],
  "status": "running (GitHub Actions)"
