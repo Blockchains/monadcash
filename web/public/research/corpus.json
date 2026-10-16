@@ -2,7 +2,7 @@
   "schema": "policypilot.tape.corpus.v1",
   "published": "2026-10-16",
   "chainId": 143,
-  "description": "Training set for the PolicyPilot Monad desk tape. Every lesson is a measured print or a rule. A short outcome means the route finished under the gas Monad bills. clears_floor_not_sent is the NADXBT simulation. landed_fill is a receipt: the NADXBT swap, the UNCLE creation, the direct AFF hop, then the Pancake v3 AUSD creation. no_spare_gas is the Bean shramp simulation: the net is above zero and the call reverts one gas below the limit, so it was not sent. negative_quote means the router returned less than the input before gas. clears_with_spare is the Pancake v3 AUSD simulation that preceded the receipt. armed means a seeker sends only when a fresh simulation still clears. This file does not rewrite the earlier short prints. The hourly public read is live.json.",
+  "description": "Training set for the PolicyPilot Monad desk tape. Every lesson is a measured print or a rule. A short outcome means the route finished under the gas Monad bills. clears_floor_not_sent is the NADXBT simulation. landed_fill is a receipt: the NADXBT swap, the UNCLE creation, the direct AFF hop, then the Pancake v3 AUSD creation. no_spare_gas is the Bean shramp simulation: the net is above zero and the call reverts one gas below the limit, so it was not sent. negative_quote means the router returned less than the input before gas. clears_with_spare is the Pancake v3 AUSD simulation that preceded the receipt. armed means a seeker sends only when a fresh simulation still clears. A follow-up requote of the AUSD cross grossed 17491377189166996 wei and was not sent. The direct seeker indexed 34994 legs and sent 0. This file does not rewrite the earlier short prints. The hourly public read is live.json.",
   "page": "https://blockchains.github.io/policypilot-monad/research/",
   "live": "https://blockchains.github.io/policypilot-monad/research/live.json",
   "lessons": [
@@ -1271,6 +1271,162 @@
         {
           "rel": "pool",
           "href": "https://monadvision.com/address/0x74d80eE400D3026FDd2520265cC98300710b25D4"
+        },
+        {
+          "rel": "docs",
+          "href": "https://docs.monad.xyz/developer-essentials/gas-pricing"
+        }
+      ]
+    },
+    {
+      "id": "ausd-cross-again",
+      "kind": "quote",
+      "outcome": "short_of_gas_limit",
+      "chainId": 143,
+      "title": "AUSD cross, quoted again",
+      "lesson": "At block 113901365 Pancake v3 fee 500 into Uniswap v3 fee 500, through AUSD, size 300000000000000000 wei, returned 317491377189166996 wei. Gross 17491377189166996 wei, which is +0.017491377 MON. A two-leg v3 bill is about 0.033 MON. The same path on one Pancake router, fee 500 into fee 2500, was negative from 0.05 MON to 2 MON. Not sent.",
+      "facts": {
+        "block": 113901365,
+        "sizeWei": "300000000000000000",
+        "backWei": "317491377189166996",
+        "grossWei": "17491377189166996"
+      },
+      "links": [
+        {
+          "rel": "token",
+          "href": "https://monadvision.com/address/0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a"
+        },
+        {
+          "rel": "pancake-quoter",
+          "href": "https://monadvision.com/address/0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997"
+        },
+        {
+          "rel": "uniswap-quoter",
+          "href": "https://monadvision.com/address/0x661e93cca42afacb172121ef892830ca3b70f08d"
+        },
+        {
+          "rel": "docs",
+          "href": "https://docs.monad.xyz/developer-essentials/gas-pricing"
+        }
+      ]
+    },
+    {
+      "id": "ausd-octo-cake",
+      "kind": "quote",
+      "outcome": "short_of_gas_limit",
+      "chainId": 143,
+      "title": "AUSD, OctoSwap into Pancake v2",
+      "lesson": "At block 113901365 OctoSwap into Pancake v2, through AUSD, size 500000000000000000 wei, returned 509514651112247209 wei. Gross 9514651112247209 wei, which is +0.009514651 MON. A direct pair creation bills about 0.025 MON. Not sent.",
+      "facts": {
+        "block": 113901365,
+        "sizeWei": "500000000000000000",
+        "backWei": "509514651112247209",
+        "grossWei": "9514651112247209"
+      },
+      "links": [
+        {
+          "rel": "token",
+          "href": "https://monadvision.com/address/0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a"
+        },
+        {
+          "rel": "octo-router",
+          "href": "https://monadvision.com/address/0x60fd5aa15debd5ffdefb5129fd9fd8a34d80d608"
+        },
+        {
+          "rel": "pancake-router",
+          "href": "https://monadvision.com/address/0xB1Bc24c34e88f7D43D5923034E3a14B24DaACfF9"
+        },
+        {
+          "rel": "docs",
+          "href": "https://docs.monad.xyz/developer-essentials/gas-pricing"
+        }
+      ]
+    },
+    {
+      "id": "woo-usdc",
+      "kind": "quote",
+      "outcome": "short_of_gas_limit",
+      "chainId": 143,
+      "title": "Uniswap v2 USDC into WooFi",
+      "lesson": "At block 113903556 Uniswap v2 turned 5000000000000000000 wei of WMON into 116211 USDC, and WooRouterV2 querySwap turned that USDC back into 5001346145555117390 wei. Gross 1346145555117390 wei, which is +0.001346146 MON. The same direction at 10 MON and 20 MON was negative. Metric and BrownFi getAmountsOut on WMON to USDC reverted. Not sent.",
+      "facts": {
+        "block": 113903556,
+        "sizeWei": "5000000000000000000",
+        "usdcOut": "116211",
+        "backWei": "5001346145555117390",
+        "grossWei": "1346145555117390"
+      },
+      "links": [
+        {
+          "rel": "woo-router",
+          "href": "https://monadvision.com/address/0x4c4af8dbc524681930a27b2f1af5bcc8062e6fb7"
+        },
+        {
+          "rel": "uni-router",
+          "href": "https://monadvision.com/address/0x4B2ab38DBF28D31D467aA8993f6c2585981D6804"
+        },
+        {
+          "rel": "docs",
+          "href": "https://docs.monad.xyz/developer-essentials/gas-pricing"
+        }
+      ]
+    },
+    {
+      "id": "balancer-weth-wbtc",
+      "kind": "quote",
+      "outcome": "negative_quote",
+      "chainId": 143,
+      "title": "Balancer WETH and WBTC against v3",
+      "lesson": "Buying WETH on Balancer pool 0x067abd928147282fb06475a09f6be22cee933ea3 with 1000000000000000000 wei and selling on the best v3 quote lost 1287098533266452 wei. The WBTC pool 0xad4779c425fefdf8c0fddf72ec53be34bae0809d lost 51322462900273191 wei on the same size. Not sent.",
+      "facts": {
+        "sizeWei": "1000000000000000000",
+        "wethGrossWei": "-1287098533266452",
+        "wbtcGrossWei": "-51322462900273191"
+      },
+      "links": [
+        {
+          "rel": "router",
+          "href": "https://monadvision.com/address/0x9da18982a33fd0c7051b19f0d7c76f2d5e7e017c"
+        },
+        {
+          "rel": "weth-pool",
+          "href": "https://monadvision.com/address/0x067abd928147282fb06475a09f6be22cee933ea3"
+        },
+        {
+          "rel": "wbtc-pool",
+          "href": "https://monadvision.com/address/0xad4779c425fefdf8c0fddf72ec53be34bae0809d"
+        },
+        {
+          "rel": "docs",
+          "href": "https://docs.monad.xyz/developer-essentials/gas-pricing"
+        }
+      ]
+    },
+    {
+      "id": "someswap-cp-revert",
+      "kind": "quote",
+      "outcome": "no_atomic_exit",
+      "chainId": 143,
+      "title": "SomeSwap constant-product hop, router reverted",
+      "lesson": "Direct seeker run 38897053998 indexed 34994 WMON legs and found 5 constant-product hops above 0.02 MON. The best print was USDC, Uniswap into SomeSwap, size 2000000000000000000 wei, gross 26086633724792099 wei. SomeSwap getAmountsOut reverted on that USDC amount, so the print is not a router quote. The job ended with 0 sends. Its last AUSD simulation at block 113900962, size 1000000000000000000 wei, netted -72662843140486926 wei after a 332123 gas limit.",
+      "facts": {
+        "pairs": 34994,
+        "hops": 5,
+        "sends": 0,
+        "sizeWei": "2000000000000000000",
+        "cpGrossWei": "26086633724792099",
+        "ausdNetWei": "-72662843140486926",
+        "ausdBlock": 113900962,
+        "ausdGas": 332123
+      },
+      "links": [
+        {
+          "rel": "someswap-router",
+          "href": "https://monadvision.com/address/0x000799B28aE9C3E9ca70B7Ff67b191519ab80fEE"
+        },
+        {
+          "rel": "run",
+          "href": "https://github.com/Blockchains/policypilot-monad/actions/runs/38897053998"
         },
         {
           "rel": "docs",

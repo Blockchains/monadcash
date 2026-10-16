@@ -11,7 +11,7 @@ const CANONICAL = `${ORIGIN}${BP}/research/`;
 const SHARE_IMAGE = `${ORIGIN}${BP}/icon-512.png`;
 const TITLE = 'Monad desk tape: the gas limit is the trade';
 const DESCRIPTION =
-  'PolicyPilot desk tape, 16 October 2026. Monad bills the gas limit. Four receipts landed, the last +0.001729094 MON. A wider pass across 100 v3 pools, seven v2 routers, and 34 Curve stableswap pools found no new quote that clears the gas limit. The closest was +0.021119229 MON gross, under a two-leg bill. It was not sent.';
+  'PolicyPilot desk tape, 16 October 2026. Monad bills the gas limit. Four receipts landed, the last +0.001729094 MON. A wider pass across 100 v3 pools, seven v2 routers, and 34 Curve stableswap pools found no new quote that clears the gas limit. The closest was +0.021119229 MON gross, under a two-leg bill. A follow-up requoted that cross at +0.017491377 MON, indexed 34,994 v2 legs, and sent nothing.';
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     siteName: 'PolicyPilot',
     type: 'article',
     publishedTime: '2026-10-16T01:40:00.000Z',
-    modifiedTime: '2026-10-16T12:45:00.000Z',
+    modifiedTime: '2026-10-16T13:05:00.000Z',
     locale: 'en_US',
     images: [{ url: SHARE_IMAGE, width: 512, height: 512, alt: 'PolicyPilot' }],
   },
@@ -129,14 +129,14 @@ export default function ResearchTape() {
         <header>
           <p className={styles.kicker}>
             <a href={`${BP}/`}>PolicyPilot</a>
-            <span>Desk tape 017</span>
+            <span>Desk tape 018</span>
             <span>Monad mainnet</span>
             <span>Chain 143</span>
           </p>
           <hr className={styles.rule} />
           <h1>The gas limit is the trade.</h1>
           <p className={styles.dek}>
-            This is the whole pass, including every route that finished short. Monad bills the gas limit, the base fee does not fall below 100 gwei, and the chain is public, so the calls are public. A settlement moved tokens. A quote is an <code>eth_call</code>. An index mid is someone else’s price, and it is labeled as a mid. Four cycles were sent. The receipts are below. The second one had no size cap. A later pass treated 1,000 MON as an ordinary size and did not send. The same two shapes were priced again, from 0.001 MON to 2 MON, and did not send. A direct pair hop then landed +0.000366572 MON. A Pancake v3 round trip then landed +0.001729094 MON. A wider pass across 100 v3 pools, seven v2 routers, and 34 Curve stableswap pools did not send.
+            This is the whole pass, including every route that finished short. Monad bills the gas limit, the base fee does not fall below 100 gwei, and the chain is public, so the calls are public. A settlement moved tokens. A quote is an <code>eth_call</code>. An index mid is someone else’s price, and it is labeled as a mid. Four cycles were sent. The receipts are below. The second one had no size cap. A later pass treated 1,000 MON as an ordinary size and did not send. The same two shapes were priced again, from 0.001 MON to 2 MON, and did not send. A direct pair hop then landed +0.000366572 MON. A Pancake v3 round trip then landed +0.001729094 MON. A wider pass across 100 v3 pools, seven v2 routers, and 34 Curve stableswap pools did not send. A follow-up requoted that book, indexed 34,994 v2 legs, and did not send.
           </p>
           <p className={styles.meta}>
             <time dateTime="2026-10-16">16 October 2026</time>
@@ -154,6 +154,7 @@ export default function ResearchTape() {
             <a href="#shapes">15 The same shapes</a>
             <a href="#fraction">16 A fraction</a>
             <a href="#wider">17 The wider book</a>
+            <a href="#follow">18 The follow-up</a>
             <a href="#settled">06 Settled, and short</a>
             <a href="#shares">07 Share tokens</a>
             <a href="#books">08 Pools and books</a>
@@ -167,7 +168,7 @@ export default function ResearchTape() {
             <div className={styles.stat}><b className={styles.down}>294,057</b><span>gas on the swap receipt</span></div>
             <div className={styles.stat}><b className={styles.up}>97.38</b><span>MON left on the wallet</span></div>
           </div>
-            <p className={styles.meta}>39,296 v2 pairs read · 35,000 solvent · 2 cycles above 0.005 MON · 0 skims. Uncapped pass: 39,369 pairs, 0 same-block excess, one UNCLE fill. Thousand-MON pass: no send. Same-shape pass: no send. Direct AFF fill: +0.000366572 MON in block 113,887,873. AUSD fill: +0.001729094 MON in block 113,890,792. Wider pass: no send. Closest gross +0.021119229 MON.</p>
+            <p className={styles.meta}>39,296 v2 pairs read · 35,000 solvent · 2 cycles above 0.005 MON · 0 skims. Uncapped pass: 39,369 pairs, 0 same-block excess, one UNCLE fill. Thousand-MON pass: no send. Same-shape pass: no send. Direct AFF fill: +0.000366572 MON in block 113,887,873. AUSD fill: +0.001729094 MON in block 113,890,792. Wider pass: no send. Closest gross +0.021119229 MON. Follow-up: no send. Requote +0.017491377 MON. Seeker sends 0.</p>
           <p className={styles.meta}>
             Training set for agents: <a href={`${BP}/research/corpus.json`}>corpus.json</a>, <a href={`${BP}/research/corpus.jsonl`}>corpus.jsonl</a>, hourly <a href={`${BP}/research/live.json`}>live.json</a>, and <a href={`${BP}/llms.txt`}>llms.txt</a>.
           </p>
@@ -722,10 +723,43 @@ export default function ResearchTape() {
           </p>
         </section>
 
+        <section id="follow">
+          <h2><span className={styles.idx}>18</span>The follow-up</h2>
+          <p>
+            The same AUSD cross was quoted again at block 113,901,365. Pancake fee 500 into Uniswap fee 500, size 0.3 MON, came back 0.317491377 MON. Gross +0.017491377 MON. A two-leg v3 bill is still about 0.033 MON. The same path on one Pancake router, fee 500 into fee 2,500, was negative at every size from 0.05 MON to 2 MON. It was not sent.
+          </p>
+          <div className={styles.grid2}>
+            <div className={styles.row}><div>Size</div><div className={styles.num}>0.300000000 MON</div></div>
+            <div className={styles.row}><div>Quoted back</div><div className={styles.num}>0.317491377 MON</div></div>
+            <div className={styles.row}><div>Gross, before gas</div><div className={styles.num}>+0.017491377 MON</div></div>
+            <div className={styles.row}><div>Two-leg bill</div><div className={styles.num}>about 0.033 MON</div></div>
+            <div className={styles.row}><div>Block</div><div className={styles.num}>113,901,365</div></div>
+            <div className={styles.row}><div>Sent</div><div className={styles.num}>no</div></div>
+          </div>
+          <p>
+            v2 router crosses on the same block, including OctoSwap, peaked at AUSD, OctoSwap into Pancake, size 0.5 MON. Back 0.509514651 MON. Gross +0.009514651 MON. A direct pair creation bills about 0.025 MON. The quote is short of that bill.
+          </p>
+          <p>
+            WooFi <code>querySwap</code> of the USDC that Uniswap v2 returns, sold back to WMON, was quoted at block 113,903,556. Size 5 MON, Uniswap out 116,211 USDC, WooFi back 5.001346146 MON. Gross +0.001346146 MON. The same direction at 10 MON and 20 MON was negative. Metric and BrownFi <code>getAmountsOut</code> on WMON to USDC reverted. Those are not quotes.
+          </p>
+          <p>
+            Balancer <code>querySwapSingleTokenExactIn</code> on the WETH pool <code className={styles.addr}>0x067abd928147282fb06475a09f6be22cee933ea3</code>, then the best v3 sell, lost 0.001287099 MON on 1 MON. The WBTC pool <code className={styles.addr}>0xad4779c425fefdf8c0fddf72ec53be34bae0809d</code> lost 0.051322463 MON on 1 MON. Neither was sent.
+          </p>
+          <p>
+            The direct seeker, run 38897053998, indexed 34,994 WMON legs and found 5 constant-product hops above 0.02 MON. The best print was USDC, Uniswap into SomeSwap, size 2 MON, gross +0.026086634 MON. SomeSwap <code>getAmountsOut</code> reverted on that USDC amount, so the print is not a router quote. The job ended with 0 sends. Its last AUSD simulation, block 113,900,962, size 1 MON, net −0.072662843 MON after a 332,123 gas limit.
+          </p>
+          <p>
+            Two clip calls landed while that job ran. <code className={styles.addr}>0x45bbe816dbcdfa7c97e4c5e130c5785650d1e1308a804f370739a287090a3e07</code> in block 113,900,683, gas 371,736, native delta −0.037708117 MON. <code className={styles.addr}>0xf7dcf187beaf9989f28079f5ac793538b75e198fc1395676ccd1150457b0daac</code> in block 113,902,798, gas 371,777, native delta −0.037674239 MON. Both call the clip pool. The wallet after the second was 95.983532617 MON. They are not arb receipts.
+          </p>
+          <p className={styles.note}>
+            No new send. The best fresh gross was +0.017491377 MON, and the gas limit is larger than that.
+          </p>
+        </section>
+
         <section id="rule">
           <h2><span className={styles.idx}>10</span>The rule the desk keeps</h2>
           <p>
-            Profit has to exceed <code>gas_limit × price</code>, and the limit has to be high enough that the call succeeds. The 0.006 MON cycle did that once. The receipt is +0.020775385 MON after the swap limit and the unwrap. The same call after that receipt loses 0.032090292 MON. The 0.081016337 MON UNCLE cycle did it once. The receipt is +0.014139141 MON. The same size after that receipt comes back 0.059445328 MON. The solvent Uniswap v2 book was 20,911 pairs and zero hits. Pancake v2 was 13,057 solvent pairs and one mock-token cycle. A same-block read of 39,369 pairs found no extra WMON and no extra USDC above the reserve. The thousand-MON pass had one Monad net above zero, +0.000784632 MON, and that call reverts one gas below the limit. It was not sent. The same-shape pass priced both fill sizes from 0.001 MON to 2 MON and priced the best new hop, AFF at 0.2 MON through the routers. The net was −0.005548824 MON, with 1,460 gas of room. It was not sent. Calling those two pairs directly, and signing 15,000 gas above the floor, landed +0.000366572 MON in block 113,887,873. A Pancake v3 AUSD round trip at 1 MON landed +0.001729094 MON in block 113,890,792. The signed limit on that receipt is 332,184. The earlier simulation at 331,111 gas stays on the blotter as a simulation. A later pass quoted 100 v3 pools, seven v2 routers, and 34 Curve stableswap pools. The best new gross was +0.021119229 MON. It was not sent.
+            Profit has to exceed <code>gas_limit × price</code>, and the limit has to be high enough that the call succeeds. The 0.006 MON cycle did that once. The receipt is +0.020775385 MON after the swap limit and the unwrap. The same call after that receipt loses 0.032090292 MON. The 0.081016337 MON UNCLE cycle did it once. The receipt is +0.014139141 MON. The same size after that receipt comes back 0.059445328 MON. The solvent Uniswap v2 book was 20,911 pairs and zero hits. Pancake v2 was 13,057 solvent pairs and one mock-token cycle. A same-block read of 39,369 pairs found no extra WMON and no extra USDC above the reserve. The thousand-MON pass had one Monad net above zero, +0.000784632 MON, and that call reverts one gas below the limit. It was not sent. The same-shape pass priced both fill sizes from 0.001 MON to 2 MON and priced the best new hop, AFF at 0.2 MON through the routers. The net was −0.005548824 MON, with 1,460 gas of room. It was not sent. Calling those two pairs directly, and signing 15,000 gas above the floor, landed +0.000366572 MON in block 113,887,873. A Pancake v3 AUSD round trip at 1 MON landed +0.001729094 MON in block 113,890,792. The signed limit on that receipt is 332,184. The earlier simulation at 331,111 gas stays on the blotter as a simulation. A later pass quoted 100 v3 pools, seven v2 routers, and 34 Curve stableswap pools. The best new gross was +0.021119229 MON. It was not sent. A follow-up requoted that cross at +0.017491377 MON, and the direct seeker finished with 0 sends.
           </p>
           <p>
             A quote is not a send. The signer sends when the settled gain is larger than the limit the wallet will put on the transaction, checked with <code>eth_call</code> first, because a revert bills that limit in full. The clip gas limit stays 420,000. The rough gas figure on the spread desk stays a half million gas at 100 gwei. The signing wallet keeps 5 MON. Rounds stay ten minutes apart, and a round sends at most 20 clips.
@@ -751,6 +785,7 @@ export default function ResearchTape() {
             <li>The direct AFF fill, same wallet: creation <code className={styles.addr}>0x2b9abaee48e68ccbce0a93227b809dc217fd179b80da2b0e375767fabcba8fee</code> in block 113,887,873. Pancake pair <code className={styles.addr}>0x454E6EeA8237C4f45e76663fe4DD399D4460e225</code>. Uniswap pair <code className={styles.addr}>0xAe4623e4423dc7A07139F387574708b742002DDa</code>. Created address <code className={styles.addr}>0x6b0d2fa6d43bbc17cc52d10335fcd82940a88fb4</code>.</li>
             <li>The AUSD fill, same wallet: creation <code className={styles.addr}>0x7dd7ec22473b38d9ae226d3c79ffd2a189ac2ff3c7026c4bb31cb0d6a1e200e7</code> in block 113,890,792. Pancake SmartRouter <code className={styles.addr}>0x21114915Ac6d5A2e156931e20B20b038dEd0Be7C</code>. AUSD <code className={styles.addr}>0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a</code>. Created address <code className={styles.addr}>0x5adb947c9663bf427bf0f42c5b9f216efd100cb7</code>. The simulation before it signed 331,111 gas and netted +0.002600041 MON. Wider quotes at block 113,886,544 sat under that bill.</li>
             <li>The wider pass, not a send. Requote of the landed AUSD path at block 113,896,596. Cross quote Pancake fee 500 into Uniswap fee 500 at block 113,898,376. mUSD <code className={styles.addr}>0xacA92E438df0B2401fF60dA7E4337B687a2435DA</code>. EURW <code className={styles.addr}>0x1111B3DED9F1fE1801AD4ebeF8E2788183a24111</code>. cbBTC <code className={styles.addr}>0xd18B7EC58Cdf4876f6AFebd3Ed1730e4Ce10414b</code>. wstETH <code className={styles.addr}>0x10Aeaf63194db8d453d4D85a06E5eFE1dd0b5417</code>. sMON <code className={styles.addr}>0xA3227C5969757783154C60bF0bC1944180ed81B9</code>. Curve stableswap factory <code className={styles.addr}>0x8271e06e5887fe5ba05234f5315c19f3ec90e8ad</code>.</li>
+            <li>The follow-up, not a send. AUSD cross requote at block 113,901,365, gross +0.017491377 MON. OctoSwap into Pancake AUSD at 0.5 MON, gross +0.009514651 MON. WooRouterV2 <code className={styles.addr}>0x4c4af8dbc524681930a27b2f1af5bcc8062e6fb7</code> at block 113,903,556, gross +0.001346146 MON. Balancer WETH pool <code className={styles.addr}>0x067abd928147282fb06475a09f6be22cee933ea3</code>. Balancer WBTC pool <code className={styles.addr}>0xad4779c425fefdf8c0fddf72ec53be34bae0809d</code>. Direct seeker run 38897053998, 0 sends. SomeSwap router <code className={styles.addr}>0x000799B28aE9C3E9ca70B7Ff67b191519ab80fEE</code> reverted on the constant-product hop.</li>
             <li>Spread receipts on mainnet: <code className={styles.addr}>0xedc5a196e891690fb9681b20eb03a621173c43df8b1747e4259e4d736853fba5</code> and <code className={styles.addr}>0x0b75431aed1b0f4c1d918dc229ff6307af093ca6ca076bcfaece783c32ff4e9a</code>.</li>
           </ul>
         </section>
@@ -769,7 +804,7 @@ export default function ResearchTape() {
         </section>
 
         <footer className={styles.foot}>
-          <p>PolicyPilot desk · Tape 017 · Published 16 October 2026. Four fills are mainnet receipts. The wider pass did not send. The closest gross was +0.021119229 MON, under the gas limit. They are not an offer to trade, and they do not quote a rate of return. The product that sends clips and spreads is unchanged by this page.</p>
+          <p>PolicyPilot desk · Tape 018 · Published 16 October 2026. Four fills are mainnet receipts. The follow-up did not send. The best fresh gross was +0.017491377 MON, under the gas limit. They are not an offer to trade, and they do not quote a rate of return. The product that sends clips and spreads is unchanged by this page.</p>
           <p style={{ marginTop: '0.8rem' }}><a href={`${BP}/`}>Back to PolicyPilot</a></p>
         </footer>
       </article></Linked>
