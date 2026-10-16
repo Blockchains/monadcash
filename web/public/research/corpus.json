@@ -2,7 +2,7 @@
   "schema": "policypilot.tape.corpus.v1",
   "published": "2026-10-16",
   "chainId": 143,
-  "description": "Training set for the PolicyPilot Monad desk tape. Every lesson is a measured print or a rule. A short outcome means the route finished under the gas Monad bills. clears_floor_not_sent is the NADXBT simulation. landed_fill is a receipt: the NADXBT swap, the UNCLE creation, the direct AFF hop, then the Pancake v3 AUSD creation. no_spare_gas is the Bean shramp simulation: the net is above zero and the call reverts one gas below the limit, so it was not sent. negative_quote means the router returned less than the input before gas. clears_with_spare is the Pancake v3 AUSD simulation that preceded the receipt. armed means a seeker sends only when a fresh simulation still clears. A follow-up requote of the AUSD cross grossed 17491377189166996 wei and was not sent. The direct seeker indexed 34994 legs and sent 0. This file does not rewrite the earlier short prints. The hourly public read is live.json.",
+  "description": "Training set for the PolicyPilot Monad desk tape. Every lesson is a measured print or a rule. A short outcome means the route finished under the gas Monad bills. clears_floor_not_sent is the NADXBT simulation. landed_fill is a receipt: the NADXBT swap, the UNCLE creation, the direct AFF hop, then the Pancake v3 AUSD creation. no_spare_gas is the Bean shramp simulation: the net is above zero and the call reverts one gas below the limit, so it was not sent. negative_quote means the router returned less than the input before gas. clears_with_spare is the Pancake v3 AUSD simulation that preceded the receipt. armed means a seeker sends only when a fresh simulation still clears. A follow-up requote of the AUSD cross grossed 17491377189166996 wei and was not sent. The direct seeker indexed 34994 legs and sent 0. The next set peaked at 19961537523717674 wei on one Uniswap router and was not sent. This file does not rewrite the earlier short prints. The hourly public read is live.json.",
   "page": "https://blockchains.github.io/policypilot-monad/research/",
   "live": "https://blockchains.github.io/policypilot-monad/research/live.json",
   "lessons": [
@@ -1427,6 +1427,97 @@
         {
           "rel": "run",
           "href": "https://github.com/Blockchains/policypilot-monad/actions/runs/38897053998"
+        },
+        {
+          "rel": "docs",
+          "href": "https://docs.monad.xyz/developer-essentials/gas-pricing"
+        }
+      ]
+    },
+    {
+      "id": "ausd-uni-fees",
+      "kind": "quote",
+      "outcome": "short_of_gas_limit",
+      "chainId": 143,
+      "title": "AUSD, Uniswap fee 100 into fee 500",
+      "lesson": "At block 113914517 one Uniswap router, AUSD fee 100 into fee 500, size 250000000000000000 wei, returned 269961537523717674 wei. Gross 19961537523717674 wei, which is +0.019961538 MON. The same path at 0.2 MON grossed 18766458974641885 wei and at 0.5 MON grossed 7153367820758623 wei. A two-leg v3 bill is about 0.033 MON. Not sent. Forty-four fee tiers answered at 0.1 MON across Pancake, Uniswap, Capricorn, Monday, OctoSwap, and zkSwap.",
+      "facts": {
+        "block": 113914517,
+        "sizeWei": "250000000000000000",
+        "backWei": "269961537523717674",
+        "grossWei": "19961537523717674",
+        "liveTiers": 44
+      },
+      "links": [
+        {
+          "rel": "token",
+          "href": "https://monadvision.com/address/0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a"
+        },
+        {
+          "rel": "quoter",
+          "href": "https://monadvision.com/address/0x661e93cca42afacb172121ef892830ca3b70f08d"
+        },
+        {
+          "rel": "docs",
+          "href": "https://docs.monad.xyz/developer-essentials/gas-pricing"
+        }
+      ]
+    },
+    {
+      "id": "v4-ausd-again",
+      "kind": "quote",
+      "outcome": "short_of_gas_limit",
+      "chainId": 143,
+      "title": "Uniswap v4 AUSD into v3 fee 500",
+      "lesson": "At block 113913272 Uniswap v4 AUSD, fee 10000, tick spacing 200, size 100000000000000000 wei, sold on Uniswap v3 fee 500, returned 110307578071976653 wei. Gross 10307578071976653 wei, which is +0.010307578 MON. The v4 fee 500 MON/USDC pool returned 23207 USDC units on 1 MON. Native MON fee 100 returned 14 USDC units from 0.1 MON through 50 MON. Not sent.",
+      "facts": {
+        "block": 113913272,
+        "sizeWei": "100000000000000000",
+        "backWei": "110307578071976653",
+        "grossWei": "10307578071976653",
+        "fee": 10000,
+        "tickSpacing": 200
+      },
+      "links": [
+        {
+          "rel": "v4-quoter",
+          "href": "https://monadvision.com/address/0xa222dd357a9076d1091ed6aa2e16c9742dd26891"
+        },
+        {
+          "rel": "v3-quoter",
+          "href": "https://monadvision.com/address/0x661e93cca42afacb172121ef892830ca3b70f08d"
+        },
+        {
+          "rel": "docs",
+          "href": "https://docs.monad.xyz/developer-essentials/gas-pricing"
+        }
+      ]
+    },
+    {
+      "id": "chog-aethon-kuru",
+      "kind": "quote",
+      "outcome": "short_of_gas_limit",
+      "chainId": 143,
+      "title": "CHOG, Aethon, and the Kuru touch",
+      "lesson": "CHOG, Uniswap fee 3000 into Capricorn fee 10000, grossed 843009941430748 wei at 100000000000000000 wei and was negative at 0.5 MON. Aethon, selling the USDC from Pancake fee 500, grossed 668985134424591 wei at 0.1 MON and was negative at 0.5 MON. Atlantis was negative at 0.1 MON. Kuru MON/USDC bestBidAsk was 23250000000000000 bid and 23289000000000000 ask. The book is not crossed. A Gecko WBTC price on pool 0x481c4905f01b2544f60c1b9d35b6a6cacd7d3200 did not survive the quoter, which returned 2 WBTC units for 0.1 MON. Not sent.",
+      "facts": {
+        "chogGrossWei": "843009941430748",
+        "aethonGrossWei": "668985134424591",
+        "kuruBidWei": "23250000000000000",
+        "kuruAskWei": "23289000000000000"
+      },
+      "links": [
+        {
+          "rel": "chog",
+          "href": "https://monadvision.com/address/0x350035555E10d9AfAF1566AaebfCeD5BA6C27777"
+        },
+        {
+          "rel": "aethon",
+          "href": "https://monadvision.com/address/0x8510e4c073fb7fe75b8e767a1856f85586e24679"
+        },
+        {
+          "rel": "kuru",
+          "href": "https://monadvision.com/address/0x065c9d28e428a0db40191a54d33d5b7c71a9c394"
         },
         {
           "rel": "docs",
