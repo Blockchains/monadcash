@@ -1,5 +1,7 @@
 # PolicyPilot (Monad) – bounded transaction execution reference implementation
 
+**Desk tape (16 Oct 2026):** [The gas limit is the trade](https://blockchains.github.io/policypilot-monad/research/) — the full Monad mainnet blotter, keywords and contracts linked, including a simulation that clears the gas floor and was not sent. Training corpus: [json](https://blockchains.github.io/policypilot-monad/research/corpus.json), [jsonl](https://blockchains.github.io/policypilot-monad/research/corpus.jsonl). Hourly public read of block, base fee, and the shMON unstake fee: [live.json](https://blockchains.github.io/policypilot-monad/research/live.json).
+
 **Pitch video (2 min):** [watch](https://blockchains.github.io/policypilot-monad/demo.html) · [download MP4](https://blockchains.github.io/policypilot-monad/pitch.mp4)
 
 **Demo video:** [watch](https://blockchains.github.io/policypilot-monad/demo.html) · [download MP4](https://blockchains.github.io/policypilot-monad/demo.mp4)

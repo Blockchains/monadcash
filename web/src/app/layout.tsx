@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 export const metadata: Metadata = {
+  metadataBase: new URL('https://blockchains.github.io'),
   title: 'PolicyPilot · Love agents. Love control.',
   description: 'Put a harness on your AI agent’s spending on Monad: budget, per-action cap, allowed services, kill switch. Enforced on-chain.',
   manifest: `${BP}/manifest.webmanifest`,

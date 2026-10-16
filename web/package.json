@@ -5,7 +5,7 @@
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",
-    "prebuild": "node scripts/gen-icons.mjs",
+    "prebuild": "node scripts/gen-icons.mjs && node scripts/write-corpus.mjs",
     "icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
