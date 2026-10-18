@@ -1,11 +1,11 @@
 name: daily-sweep
 run-name: "daily-sweep${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && ' (dry run)' || '' }}${{ github.event_name == 'workflow_dispatch' && inputs.max_per_agent_mon != '' && ' (capped test)' || '' }}"
-# Once a day every team agent returns its gas surplus above the 8 MON floor to the deployer (hard-coded in
-# runner/daily-sweep.mjs, never from input), so the deployer can re-fund agents and vaults for the next day.
-# Team VAULTS are not swept here: AgentVault.withdraw() is onlyOwner on all 13 team vaults and the owner key is never
-# in GitHub. The vault half + the re-fund run owner-side: runner/owner-daily-cycle.sh (box, deployer key).
-# Sequencing: agent-refill skips 04:00-04:50 UTC and whenever this workflow is running; this job waits for any running
-# agent-refill before sending. Backup cron at 04:37 only acts if no real sweep succeeded in the last 20h.
+# PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED.
+# Daily cycle, GitHub-only (runner/daily-sweep.mjs): agents exit the team clip/spread pools, send MON above their target
+# (20; idle 0.5) to the hard-coded deployer, then ShowcaseRefiller.refill(true) puts vaults back to 1 MON (rogue 0.5)
+# and agents back to target. Agents never go below target, so the sweep cannot strand them.
+# Triggers: crons below (throttled by GitHub on this repo) + runner/kick-workflows.sh from the showcase loop after 04:07 UTC.
+# One real sweep per day (guard). agent-refill skips 04:00-04:50 UTC and while this runs; this waits for a running refill.
 # Never pauses or unpauses vaults. Kill switch: repo variable DAILY_SWEEP_ENABLED = 'false' (unset = enabled).
 on:
   schedule:
@@ -15,24 +15,25 @@ on:
     inputs:
       dry_run: { description: 'Simulate only (send nothing)', type: boolean, default: true }
       max_per_agent_mon: { description: 'Test cap per agent in MON (blank = full surplus)', type: string, default: '' }
+      kick: { description: 'Dispatched by runner/kick-workflows.sh (treated like a scheduled run)', type: boolean, default: false }
 permissions: { contents: read, actions: read }
 concurrency: { group: daily-sweep, cancel-in-progress: false }
 jobs:
   sweep:
     if: ${{ vars.DAILY_SWEEP_ENABLED != 'false' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     env: { RPC: 'https://rpc.monad.xyz', GH_TOKEN: '${{ github.token }}', REPO: '${{ github.repository }}' }
     steps:
-      - name: Guard (one real sweep per day; wait for a running agent-refill)
+      - name: Guard (one real sweep per UTC day; wait for a running agent-refill)
         id: guard
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = schedule ]; then
-            since=$(date -u -d '20 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          if [ "${{ github.event_name }}" = schedule ] || [ "${{ inputs.kick }}" = true ]; then
+            since=$(date -u +%Y-%m-%dT04:00:00Z)   # one real sweep per UTC day (counted from 04:00 UTC)
             n=$(gh run list -R "$REPO" -w daily-sweep.yml --status success -L 30 --json databaseId,displayTitle,createdAt \
               | jq --arg s "$since" --argjson me "${{ github.run_id }}" '[.[]|select(.displayTitle=="daily-sweep" and .createdAt>$s and .databaseId!=$me)]|length')
-            if [ "$n" -gt 0 ]; then echo "a real sweep already succeeded in the last 20h: skipping"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+            if [ "$n" -gt 0 ]; then echo "a real sweep already succeeded since $since: skipping"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           fi
           for i in $(seq 1 40); do
             busy=$(gh run list -R "$REPO" -w agent-refill.yml -L 10 --json status | jq '[.[]|select(.status=="in_progress")]|length')

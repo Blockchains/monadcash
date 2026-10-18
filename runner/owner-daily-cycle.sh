@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # OWNER-SIDE half of the daily cycle. Runs ONLY where the deployer key lives (the box), never in GitHub.
 # AgentVault.withdraw()/deposit() are onlyOwner, so agents cannot do this part.
-#   runner/owner-daily-cycle.sh sweep    # every team vault: withdraw(owner, MON balance) -> deployer (never emergencyWithdrawAll, never pauses)
+#   runner/owner-daily-cycle.sh sweep    # every team vault: withdraw(owner, MON above its targetMon) -> deployer (never emergencyWithdrawAll, never pauses)
 #   runner/owner-daily-cycle.sh refund   # deployer: plain-transfer each team vault up to its target, then top agents up to AGENT_TARGET
 #   runner/owner-daily-cycle.sh all      # sweep then refund (run ~10 min after the 04:07 UTC GitHub daily-sweep)
 # DRY_RUN=1 (default) simulates every call with eth_call --from <owner> and does NOT load the key.
@@ -14,7 +14,7 @@ cd "$(dirname "$0")/.."
 export PATH="$HOME/.foundry/bin:$PATH"
 OWNER=0xc0c4E411e41bECAD6DA860F67063C2D6363a6113
 R=${RPC:-https://rpc.monad.xyz}; CFG=runner/agent-refill-config-143.json
-DRY=${DRY_RUN:-1}; RESERVE=${RESERVE:-5}; AGENT_TARGET=${AGENT_TARGET:-30}; IDLE_AGENT_TARGET=${IDLE_AGENT_TARGET:-2}
+DRY=${DRY_RUN:-1}; RESERVE=${RESERVE:-5}; AGENT_TARGET=${AGENT_TARGET:-20}; IDLE_AGENT_TARGET=${IDLE_AGENT_TARGET:-0.5}
 IDLE_IDS=" dca3 staker3 payroll3 rogue3 "   # not run by showcase-agents.yml: keep them at gas dust
 TOK="0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A 0x754704Bc059F8C67012fEd69BC8A327a5aafb603 0xA3227C5969757783154C60bF0bC1944180ed81B9 0x0c65A0BC65a5D819235B71F554D210D3F80E0852 0x8498312A6B3CbD158bf0c93AbdCF29E6e4F55081"
 [ "$(jq -r .owner $CFG | tr A-F a-f)" = "$(echo $OWNER | tr A-F a-f)" ] || { echo "config owner != hard-coded deployer"; exit 1; }
@@ -31,8 +31,8 @@ echo "deployer before: $(eth $OWNER) MON (dry_run=$DRY)"
 sweep() {
   pairs | while read id v a t; do
     [ "$(cast call $v 'owner()(address)' --rpc-url $R | tr A-F a-f)" = "$(echo $OWNER | tr A-F a-f)" ] || { echo "$id: not owned by deployer, skip"; continue; }
-    b=$(cast balance $v --rpc-url $R)
-    if [ "$b" != 0 ]; then echo "sweep $id $v $(cast from-wei $b) MON: $(tx $v 'withdraw(address,uint256)' $OWNER $b)"; else echo "sweep $id: empty"; fi
+    b=$(cast balance $v --rpc-url $R); keep=$(cast to-wei $t); x=$(python3 -c "print(max(0,$b-$keep))")
+    if [ "$x" != 0 ]; then echo "sweep $id $v $(cast from-wei $x) MON above $t: $(tx $v 'withdraw(address,uint256)' $OWNER $x)"; else echo "sweep $id: at/below $t MON"; fi
     if [ "${TOKENS:-0}" = 1 ]; then for t in $TOK; do tb=$(cast call $t 'balanceOf(address)(uint256)' $v --rpc-url $R | cut -d' ' -f1)
       [ "$tb" != 0 ] && echo "  token $t $tb: $(tx $v 'withdrawToken(address,address,uint256)' $t $OWNER $tb)"; done; fi
   done; }

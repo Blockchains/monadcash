@@ -1,7 +1,8 @@
-// Agent self-refill for the PolicyPilot team showcase vaults (GitHub Actions, agent keys only).
-// Each agent tops up ONLY its own team vault(s) listed in runner/agent-refill-config-143.json, from its own spare gas:
-//   - target per vault (20 MON; rogue vaults 0.5), at most maxPerAgentPerRunMon (10) per agent per run
-//   - never sends from an agent below agentFloorMon (8) and never takes it below the floor (gas included)
+// 30-minute refill for the PolicyPilot showcase agents (operated by the team). GitHub Actions, agent keys only.
+//   1. ShowcaseRefiller.refill(false): anything below its min goes back to target (vaults 1 MON, rogue 0.5; agents 20,
+//      idle "3" agents 0.5). The refiller can only pay its fixed allowlist and never tops above target.
+//   2. fallback: an agent tops up ONLY its own vault (config), from MON above its own targetMon, max 1 MON per run
+//   3. alerts: paused team vault, refiller float below 1 day of burn, any team vault above 1.5 MON native
 //   - destinations come only from the committed config; the on-chain owner/executor must match, the key must derive
 //     to the configured agent address, and vaults that are also in showcase-config-143.json must match it exactly
 //   - paused vaults are never touched (no setPaused here: unpause stays manual) and are reported for the alert issue
@@ -20,8 +21,10 @@ const RPC = E.RPC || 'https://rpc.monad.xyz';
 const DRY = E.DRY_RUN === '1';
 const OUT = E.OUT || 'agent-refill.json';
 const EXP = 'https://monadvision.com';
-const FLOOR = parseEther(CFG.agentFloorMon), CAP = parseEther(CFG.maxPerAgentPerRunMon);
-const MIN_SEND = parseEther(CFG.minSendMon), ALERT_SPARE = parseEther(CFG.alertSpareBelowMon);
+const CAP = parseEther(CFG.maxPerAgentPerRunMon);
+const REFILLER = getAddress(CFG.refiller), FLOAT_ALERT = parseEther(CFG.alertFloatBelowMon), VAULT_ALERT = parseEther(CFG.alertVaultAboveMon);
+const refAbi = parseAbi(['function owner() view returns (address)', 'function refill(bool full) returns (uint256)', 'function pending(bool full) view returns (uint256 total, uint256 count)', 'function readyAt() view returns (uint256)', 'function isCaller(address) view returns (bool)']);
+const MIN_SEND = parseEther(CFG.minSendMon);
 const OWNER = getAddress(CFG.owner);
 const chain = { id: CFG.chainId, name: 'Monad', nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 }, rpcUrls: { default: { http: [RPC] } } };
 const pc = createPublicClient({ chain, transport: http(RPC, { retryCount: 5, retryDelay: 800, timeout: 20_000 }) });
@@ -39,12 +42,12 @@ if (pc.chain.id !== Number(await pc.getChainId())) throw new Error('RPC chain id
 if (getAddress(SHOW.owner) !== OWNER) throw new Error('owner in refill config differs from showcase-config-143.json');
 const allowed = new Set(CFG.agents.flatMap(a => a.vaults.map(v => getAddress(v.vault))));
 
-const res = { dryRun: DRY, floorMon: CFG.agentFloorMon, capMon: CFG.maxPerAgentPerRunMon, agents: [], vaults: [], txs: [], paused: [], problems: [] };
+const res = { dryRun: DRY, floorMon: 'per-agent targetMon', capMon: CFG.maxPerAgentPerRunMon, agents: [], vaults: [], txs: [], paused: [], problems: [] };
 const agents = [];
 for (const a of CFG.agents) {
   const agent = getAddress(a.agent);
   const s = SHOW.agents.find(x => x.id === a.id);
-  const row = { id: a.id, agent, hasKey: false, before: null, after: null, sent: 0n, note: '' };
+  const row = { id: a.id, agent, floor: parseEther(a.targetMon), hasKey: false, before: null, after: null, sent: 0n, note: '' };
   res.agents.push(row);
   if (s && (getAddress(s.agent) !== agent || !a.vaults.some(v => getAddress(v.vault) === getAddress(s.vault)))) { row.note = 'config mismatch with showcase-config-143.json: skipped'; res.problems.push(`${a.id}: ${row.note}`); continue; }
   const key = (E[a.secret] || '').trim();
@@ -55,7 +58,7 @@ for (const a of CFG.agents) {
   } else row.note = `${a.secret} not available: read-only`;
   if (row.note && key) res.problems.push(`${a.id}: ${row.note}`);
   row.hasKey = !!acct;
-  agents.push({ cfg: a, row, acct });
+  agents.push({ cfg: a, row, acct, wc: acct ? createWalletClient({ account: acct, chain, transport: http(RPC, { retryCount: 2, timeout: 20_000 }) }) : null });
 }
 
 // ---- snapshot before ----
@@ -77,11 +80,35 @@ for (const { cfg, row } of agents) {
   }
 }
 
-// ---- refill ----
+// ---- refiller (box-free float): normal refill of anything below its min, never above target ----
+res.refiller = { address: REFILLER, note: '' };
+try {
+  if (getAddress(await pc.readContract({ address: REFILLER, abi: refAbi, functionName: 'owner' })) !== OWNER) throw new Error('refiller owner is not the team owner');
+  res.refiller.floatBefore = await bal(REFILLER);
+  const [p, ready] = await Promise.all([pc.readContract({ address: REFILLER, abi: refAbi, functionName: 'pending', args: [false] }), pc.readContract({ address: REFILLER, abi: refAbi, functionName: 'readyAt' })]);
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  if (p[0] === 0n) res.refiller.note = 'nothing below min';
+  else if (ready > now) res.refiller.note = `cooldown until ${new Date(Number(ready) * 1000).toISOString()}`;
+  else if (res.refiller.floatBefore === 0n) res.refiller.note = 'float empty';
+  else if (DRY) res.refiller.note = `dry-run: would refill ${fmt(p[0])} MON to ${p[1]} recipients`;
+  else {
+    let c = null, cb = 0n;
+    for (const x of agents) { if (!x.acct) continue; const b = await bal(x.row.agent); if (b > cb && await pc.readContract({ address: REFILLER, abi: refAbi, functionName: 'isCaller', args: [x.row.agent] })) { c = x; cb = b; } }
+    if (!c) throw new Error('no keyed agent can call the refiller');
+    const est = await pc.estimateContractGas({ address: REFILLER, abi: refAbi, functionName: 'refill', args: [false], account: c.row.agent });
+    const hash = await c.wc.writeContract({ address: REFILLER, abi: refAbi, functionName: 'refill', args: [false], gas: est * 13n / 10n });
+    const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
+    res.txs.push({ id: c.cfg.id, from: REFILLER, to: 'allowlist (refill(false))', amountMon: formatEther(p[0]), hash, status: r.status, block: r.blockNumber.toString() });
+    res.refiller.note = `refill(false) by ${c.cfg.id}: ${r.status}`; log(res.refiller.note, `${EXP}/tx/${hash}`);
+    if (r.status !== 'success') res.problems.push(`refiller refill ${hash} ${r.status}`);
+  }
+} catch (e) { res.refiller.note = `failed: ${errMsg(e)}`; res.problems.push(`refiller: ${res.refiller.note}`); }
+
+// ---- fallback: an agent tops up its own vault from MON above its own target ----
 for (const { cfg, row, acct } of agents) {
   if (!acct) { for (const vr of res.vaults.filter(x => x.id === cfg.id)) if (vr.ok) vr.note = 'agent key not available: not refilled'; continue; }
   const wc = createWalletClient({ account: acct, chain, transport: http(RPC, { retryCount: 2, timeout: 20_000 }) });
-  let left = CAP;
+  const FLOOR = row.floor; let left = CAP;
   for (const vr of res.vaults.filter(x => x.id === cfg.id)) {
     if (!vr.ok) continue;
     if (vr.paused) { vr.note = 'paused: not refilled (unpause is manual)'; continue; }
@@ -92,7 +119,7 @@ for (const { cfg, row, acct } of agents) {
       if (p) { vr.paused = true; vr.note = 'paused: not refilled (unpause is manual)'; if (!res.paused.some(x => x.vault === vr.vault)) res.paused.push({ id: cfg.id, vault: vr.vault }); continue; }
       const deficit = vr.target > vb ? vr.target - vb : 0n;
       if (deficit < MIN_SEND) { vr.note = 'at target'; continue; }
-      if (ab <= FLOOR) { vr.note = `agent at/below ${CFG.agentFloorMon} MON floor: not refilled`; continue; }
+      if (ab <= FLOOR) { vr.note = `agent at/below its ${cfg.targetMon} MON target: left to the refiller`; continue; }
       const fees = await pc.estimateFeesPerGas();
       const gas = (await pc.estimateGas({ account: row.agent, to: vr.vault, value: MIN_SEND })) * 12n / 10n;
       const gasCost = gas * fees.maxFeePerGas; // Monad charges the gas limit
@@ -112,15 +139,18 @@ for (const { cfg, row, acct } of agents) {
 
 // ---- snapshot after + alert ----
 let spare = 0n;
-for (const { row } of agents) { row.after = await bal(row.agent); if (row.hasKey && row.after > FLOOR) spare += row.after - FLOOR; }
+for (const { row } of agents) { row.after = await bal(row.agent); if (row.hasKey && row.after > row.floor) spare += row.after - row.floor; }
 for (const vr of res.vaults) vr.after = await bal(vr.vault).catch(() => null);
 res.combinedSpareMon = formatEther(spare);
-res.alert = { paused: res.paused, lowSpare: spare < ALERT_SPARE, thresholdMon: CFG.alertSpareBelowMon };
-res.alert.active = res.paused.length > 0 || res.alert.lowSpare;
+const floatNow = await bal(REFILLER).catch(() => null); res.refiller.floatAfter = floatNow;
+res.floatMon = floatNow == null ? '?' : formatEther(floatNow);
+const above = res.vaults.filter(v => v.after != null && v.after > VAULT_ALERT).map(v => ({ id: v.id, vault: v.vault, mon: formatEther(v.after) }));
+res.alert = { paused: res.paused, lowFloat: floatNow != null && floatNow < FLOAT_ALERT, floatMon: res.floatMon, floatThresholdMon: CFG.alertFloatBelowMon, vaultsAbove: above, vaultThresholdMon: CFG.alertVaultAboveMon };
+res.alert.active = res.paused.length > 0 || res.alert.lowFloat || above.length > 0;
 
 // ---- step summary ----
 const L = [];
-L.push(`## Agent refill ${DRY ? '(dry run)' : ''}`, '', `Floor per agent: **${CFG.agentFloorMon} MON** · cap per agent per run: **${CFG.maxPerAgentPerRunMon} MON** · combined spare gas above floor after run: **${fmt(spare)} MON** (alert below ${CFG.alertSpareBelowMon})`, '');
+L.push(`## Agent refill ${DRY ? '(dry run)' : ''}`, '', `Refiller [${short(REFILLER)}](${EXP}/address/${REFILLER}): ${res.refiller.note} · float **${res.refiller.floatBefore == null ? '?' : fmt(res.refiller.floatBefore)} → ${floatNow == null ? '?' : fmt(floatNow)} MON** (alert below ${CFG.alertFloatBelowMon}) · vaults above ${CFG.alertVaultAboveMon} MON: ${above.length ? above.map(v => v.id).join(', ') : 'none'} · agent MON above target: ${fmt(spare)}`, '');
 L.push('### Team vaults', '', '| vault | address | paused | before | after | target | result |', '|---|---|---|---:|---:|---:|---|');
 for (const v of res.vaults) L.push(`| ${v.id} | [${short(v.vault)}](${EXP}/address/${v.vault}) | ${v.paused} | ${v.before == null ? '?' : fmt(v.before)} | ${v.after == null ? '?' : fmt(v.after)} | ${fmt(v.target)} | ${v.note} |`);
 L.push('', '### Agent gas wallets', '', '| agent | address | key | before | after | sent |', '|---|---|---|---:|---:|---:|');

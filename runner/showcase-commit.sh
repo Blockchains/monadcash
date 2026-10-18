@@ -5,6 +5,8 @@
 #   - if the rebase still fails: reset to origin, re-append the local ledger lines, rebuild the snapshot, commit again
 set -uo pipefail
 cd "$(dirname "$0")/.."
+# box-free trigger for agent-refill / daily-sweep (GitHub cron is throttled on this repo); never blocks the commit
+[ -f runner/kick-workflows.sh ] && timeout 60 bash runner/kick-workflows.sh || true
 LEDGER=${LEDGER:-runner/ledger/showcase-143.jsonl}; PUBLIC_OUT=${PUBLIC_OUT:-web/public/showcase-agents-143.json}
 BRANCH=${BRANCH:-${GITHUB_REF_NAME:-main}}; N=${1:-0}; MSG="showcase: agent round ${GITHUB_RUN_NUMBER:-local}.${N} [skip ci]"
 git config user.name "policypilot-showcase-bot"; git config user.email "showcase-bot@users.noreply.github.com"

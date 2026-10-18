@@ -1,5 +1,7 @@
 name: agent-refill
-# Agents refill their OWN team showcase vaults from their own spare gas (no deployer/owner key, no new secrets).
+# PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED.
+# Every 30 min: ShowcaseRefiller tops vaults (1 MON, rogue 0.5) and agents (20 MON, idle 0.5) back to target from its
+# float; an agent may also top its own vault from MON above its own target. Agent keys only (no deployer key).
 # Every 30 min plus two offset backup crons (GitHub cron can lag or drop runs); the concurrency group queues runs so
 # only one ever sends at a time. Logic + safety limits: runner/agent-refill.mjs, addresses: runner/agent-refill-config-143.json
 #   - each agent tops up only its own vault(s) to the target (20 MON; rogue vaults 0.5), max 10 MON per agent per run
@@ -17,6 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run: { description: 'Simulate only (send nothing, no issue changes)', type: boolean, default: false }
+      kick: { description: 'Dispatched by runner/kick-workflows.sh (treated like a scheduled run)', type: boolean, default: false }
 permissions: { contents: read, issues: write, actions: read }
 concurrency: { group: agent-refill, cancel-in-progress: false }
 jobs:
@@ -33,7 +36,7 @@ jobs:
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
           hm=$(date -u +%H%M); skip=false
-          if [ "${{ github.event_name }}" = schedule ] && [ "$hm" -ge 0400 ] && [ "$hm" -lt 0450 ]; then skip=true; fi
+          if { [ "${{ github.event_name }}" = schedule ] || [ "${{ inputs.kick }}" = true ]; } && [ "$hm" -ge 0400 ] && [ "$hm" -lt 0450 ]; then skip=true; fi
           busy=$(gh run list -R "${{ github.repository }}" -w daily-sweep.yml -L 5 --json status 2>/dev/null | jq '[.[]|select(.status=="in_progress" or .status=="queued")]|length' || echo 0)
           [ "${busy:-0}" != 0 ] && skip=true
           echo "skip=$skip" >> "$GITHUB_OUTPUT"; [ "$skip" = true ] && echo "::notice::daily-sweep window: refill skipped" || true
@@ -69,19 +72,21 @@ jobs:
         env: { GH_TOKEN: '${{ github.token }}', REPO: '${{ github.repository }}', RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' }
         run: |
           set -euo pipefail
-          TITLE='agent-refill: owner action needed (paused team vault or low agent gas)'
+          TITLE='agent-refill: owner action needed (paused vault, low refiller float or vault above 1.5 MON)'
           if [ -f "$OUT" ]; then
-            ACTIVE=$(jq -r '.alert.active' "$OUT"); SPARE=$(jq -r '.combinedSpareMon' "$OUT")
+            ACTIVE=$(jq -r '.alert.active' "$OUT")
             PAUSED=$(jq -r '[.paused[]|"- `\(.id)` \(.vault) is **paused** (owner: `setPaused(false)`)"]|join("\n")' "$OUT")
-            LOW=$(jq -r 'if .alert.lowSpare then "- Combined agent spare gas above the \(.floorMon) MON floor is **\(.combinedSpareMon) MON** (alert below \(.alert.thresholdMon)); agents can no longer keep the vaults topped up. The deployer must fund the agent gas wallets." else "" end' "$OUT")
-            STATE=$(jq -r '[(.paused|map(.id)|sort|join(",")), (if .alert.lowSpare then "lowspare" else "" end)]|join(";")' "$OUT")
+            LOW=$(jq -r 'if .alert.lowFloat then "- ShowcaseRefiller float is **\(.alert.floatMon) MON** (alert below \(.alert.floatThresholdMon) = ~1 day of burn). Top it up with a plain MON transfer from any wallet to \(.refiller.address) (anyone can fund; only the deployer can withdraw)." else "" end' "$OUT")
+            ABOVE=$(jq -r '[.alert.vaultsAbove[]|"- vault `\(.id)` \(.vault) holds **\(.mon) MON** (> \(.alert.vaultThresholdMon)); only the owner can withdraw it (`runner/owner-daily-cycle.sh sweep`)"]|join("\n")' "$OUT")
+            LOW=$(printf '%s\n%s' "$LOW" "$ABOVE")
+            STATE=$(jq -r '[(.paused|map(.id)|sort|join(",")), (if .alert.lowFloat then "lowfloat" else "" end), (.alert.vaultsAbove|map(.id)|sort|join(","))]|join(";")' "$OUT")
           else
-            ACTIVE=true; SPARE='?'; PAUSED=''; LOW='- The refill script failed before writing its result; check the run log.'; STATE=failed
+            ACTIVE=true; PAUSED=''; LOW='- The refill script failed before writing its result; check the run log.'; STATE=failed
           fi
           NUM=$(gh issue list -R "$REPO" --state all --limit 200 --json number,title,state | jq -r --arg t "$TITLE" '[.[]|select(.title==$t)]|sort_by(.number)|.[0].number // empty')
           if [ "$ACTIVE" != "true" ]; then
             if [ -n "$NUM" ] && [ "$(gh issue view "$NUM" -R "$REPO" --json state -q .state)" = OPEN ]; then
-              gh issue close "$NUM" -R "$REPO" --comment "Resolved: no paused team vault and combined agent spare gas is ${SPARE} MON. Run: $RUN_URL"
+              gh issue close "$NUM" -R "$REPO" --comment "Resolved: no paused team vault, refiller float OK, no vault above the limit. Run: $RUN_URL"
             fi
             exit 0
           fi

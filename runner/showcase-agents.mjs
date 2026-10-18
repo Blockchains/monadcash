@@ -149,7 +149,9 @@ const swapCall = async (vault, router, tin, tout, amt, label) => { const [q, fee
   return { label, action: { kind: 'call', target: router, value: tin === T.WMON ? amt : 0n, data: encodeFunctionData({ abi: routerAbi, functionName: 'exactInputSingle', args: [{ tokenIn: tin, tokenOut: tout, fee, recipient: vault, amountIn: amt, amountOutMinimum: minOut, sqrtPriceLimitX96: 0n }] }), opts: tin === T.WMON ? { outToken: tout, minOut } : { approveToken: tin, approveAmount: amt, outToken: tout, minOut } } }; };
 const minBig = (a, b) => (a < b ? a : b);
 /** Largest MON execute/executeCall will accept: per-action cap, vault balance, and budget still left. */
-const spendSize = (cap, bal, budget, spent) => { const rem = budget > spent ? budget - spent : 0n; return minBig(minBig(cap, bal), rem); };
+// Sustainable mode: value actions are dust-sized so MON circulates and essentially only gas is lost (vaults sit at 1 MON).
+const MAX_SPEND = parseEther(E.SHOWCASE_MAX_SPEND_MON || '0.01');
+const spendSize = (cap, bal, budget, spent) => { const rem = budget > spent ? budget - spent : 0n; return minBig(minBig(minBig(cap, bal), rem), MAX_SPEND); };
 const wrapCall = (amt, label) => ({ label, action: { kind: 'call', target: T.WMON, value: amt, data: encodeFunctionData({ abi: wmonAbi, functionName: 'deposit' }), opts: { outToken: T.WMON, minOut: amt } } });
 const unwrapCall = (w, label) => ({ label, action: { kind: 'call', target: T.WMON, value: 0n, data: encodeFunctionData({ abi: wmonAbi, functionName: 'withdraw', args: [w] }), opts: { minOut: w } } });
 /** Kuru MON → USDC (sell base for quote). Quoted with a plain simulation from the vault. */
@@ -361,6 +363,9 @@ const CLIP_IMMUTABLES = clipArtifact.immutables;
 const CLIP_GAS = 420_000n;
 /** Hard cap on confirmed clips in one showcase round. Stops earlier if the quote goes flat or the wallet would drop through 5 MON. */
 const CLIP_MAX_PER_ROUND = 20;
+/** Sustainable mode: clip/spread size is capped to dust (pool loss <= 0.50% of this per clip) and the payer keeps CLIP_KEEP_MON (agents sit near 20 MON). */
+const CLIP_MAX_WEI = parseEther(E.CLIP_MAX_MON || '0.05');
+const CLIP_KEEP_WEI = parseEther(E.CLIP_KEEP_MON || '1');
 function clipAffordable(balance, keep, limit, price) {
   return balance > keep + limit * price;
 }
@@ -481,13 +486,14 @@ async function proveSpreadOnce() {
     const code = await pc.getCode({ address: row.pool });
     if (currentSpreadCode(code)) { pool = row.pool; break; }
   }
-  const keep = parseEther('5');
+  const keep = CLIP_KEEP_WEI;
   const spendable = payer.bal > keep ? payer.bal - keep : 0n;
   const overhead = pool ? parseEther('0.15') : parseEther('0.4');
-  if (spendable <= overhead) { log('proveSpread: keeping 5 MON in', payer.id, `(${formatEther(payer.bal)} MON)`); return; }
+  if (spendable <= overhead) { log('proveSpread: keeping', formatEther(keep), 'MON in', payer.id, `(${formatEther(payer.bal)} MON)`); return; }
   const fund = spendable - overhead;
   const poolBalNow = pool ? await pc.getBalance({ address: pool }) : 0n;
-  const room = pool ? (poolBalNow + fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : poolBalNow + fund) : (fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : fund);
+  const room0 = pool ? (poolBalNow + fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : poolBalNow + fund) : (fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : fund);
+  const room = room0 > CLIP_MAX_WEI ? CLIP_MAX_WEI : room0;
   const trip = await bestSpread(room);
   if (!trip) { log('proveSpread: no size stays inside a 0.50% shortfall'); return; }
   const prev = ledger.filter(x => x.persona === 'spread' && x.status === 'captured').reduce((m, r) => { const a = capturedWei(r); return a > m ? a : m; }, 0n);
@@ -563,13 +569,14 @@ async function proveClipOnce() {
     const code = await pc.getCode({ address: row.pool });
     if (currentClipCode(code)) { pool = row.pool; break; }
   }
-  const keep = parseEther('5');
+  const keep = CLIP_KEEP_WEI;
   const spendable = payer.bal > keep ? payer.bal - keep : 0n;
   const overhead = pool ? parseEther('0.15') : parseEther('0.4');
-  if (spendable <= overhead) { log('proveClip: keeping 5 MON in', payer.id, `(${formatEther(payer.bal)} MON)`); return; }
+  if (spendable <= overhead) { log('proveClip: keeping', formatEther(keep), 'MON in', payer.id, `(${formatEther(payer.bal)} MON)`); return; }
   const fund = spendable - overhead;
   const poolBalNow = pool ? await pc.getBalance({ address: pool }) : 0n;
-  const room = pool ? (poolBalNow + fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : poolBalNow + fund) : (fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : fund);
+  const room0 = pool ? (poolBalNow + fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : poolBalNow + fund) : (fund > SPREAD_CAP_WEI ? SPREAD_CAP_WEI : fund);
+  const room = room0 > CLIP_MAX_WEI ? CLIP_MAX_WEI : room0;
   const trip = await bestSpread(room);
   if (!trip) { log('proveClip: no size stays inside a 0.50% shortfall'); return; }
   log('proveClip', payer.id, formatEther(trip.amount), 'MON', 'venues', trip.sell, '→', trip.buy, 'quoted gain', formatEther(trip.profit), 'MON. Gas is paid on top and can be larger.');
@@ -648,7 +655,7 @@ async function proveClipOnce() {
     const minBase = parseGwei('100');
     const base = block.baseFeePerGas && block.baseFeePerGas > minBase ? block.baseFeePerGas : minBase;
     const price = base + parseGwei('2');
-    if (!clipAffordable(bal, keep, limit, price)) { log('proveClip: keeping 5 MON in', payer.id, 'after', sent, 'clips'); break; }
+    if (!clipAffordable(bal, keep, limit, price)) { log('proveClip: keeping', formatEther(keep), 'MON in', payer.id, 'after', sent, 'clips'); break; }
     const fees = await spreadFees();
     const before = held;
     let hash;
