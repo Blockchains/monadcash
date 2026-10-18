@@ -5,8 +5,8 @@ run-name: "daily-sweep${{ github.event_name == 'workflow_dispatch' && inputs.dry
 #   1. agents exit the team clip/spread pools
 #   2. each agent calls sweepToOwner() on its ShowcaseAgentVault: everything above exactly 1 MON goes to the vault's
 #      immutable owner = the deployer 0xc0c4…6113 (no destination input exists); paused vaults are unpaused first
-#   3. each agent sends its own MON above target (20; idle 0.5) to the hard-coded deployer
-#   4. ShowcaseRefiller v3 refill(true): vaults back to 1 MON, agents back to target (agents never go below target)
+#   3. each agent sends its own MON above target (3; idle 0.5) to the hard-coded deployer
+#   4. ShowcaseRefiller v4 refill(true): vaults back to 1 MON, agents back to target (agents never go below target)
 #   5. heartbeat: web/public/ops-status-143.json
 # Triggers: two crons + runner/kick-workflows.sh (every showcase round after 04:07 UTC) + ops-watchdog.yml (after 05:00 UTC).
 # One real sweep per UTC day (guard); everything is idempotent anyway (sweep-to-1 and top-up-to-target).

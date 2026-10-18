@@ -1,5 +1,5 @@
 // 30-minute refill for the PolicyPilot showcase agents (operated by the team). GitHub Actions, agent keys only.
-//   1. ShowcaseRefiller.refill(false): anything below its min goes back to target (vaults 1 MON, rogue 0.5; agents 20,
+//   1. ShowcaseRefiller.refill(false): anything below its min goes back to target (vaults 1 MON, rogue 0.5; agents 3,
 //      idle "3" agents 0.5). The refiller can only pay its fixed allowlist and never tops above target.
 //   2. fallback: an agent tops up ONLY its own vault (config), from MON above its own targetMon, max 1 MON per run
 //   3. alerts: deployer below alertDeployerBelowMon, still-paused team vault, refiller float below 1 day of burn, any team vault above 1.5 MON native

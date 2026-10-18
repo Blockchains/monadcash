@@ -2,10 +2,10 @@ name: agent-refill
 # PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED. Agent keys only (no deployer key).
 # Every 30 min (runner/agent-refill.mjs, addresses: runner/agent-refill-config-143.json):
 #   1. auto-unpause: any paused team ShowcaseAgentVault is unpaused by its own agent (pausing stays owner-only)
-#   2. ShowcaseRefiller v3 refill(false): vaults back to exactly 1 MON, agents to 20 MON (idle "3" agents 0.5), from its float
+#   2. ShowcaseRefiller v4 refill(false): vaults back to exactly 1 MON, agents to 3 MON (idle "3" agents 0.5), from its float
 #   3. fallback: an agent tops up only its own vault from MON above its own target (max 1 MON per run)
 #   4. alerts (ONE issue mentioning @Blockchains, reopened not duplicated): vault still paused, refiller float below
-#      ~1 day of burn, deployer below 50 MON, or a vault above 1.5 MON
+#      25 MON (~3+ days of burn), deployer below 20 MON, or a vault above 1.5 MON
 #   5. heartbeat: web/public/ops-status-143.json (raw + Pages)
 # Robustness: RPC fallback over 5 public Monad RPCs with retries, explicit nonce + stuck-tx replacement (runner/chain-util.mjs),
 # idempotent (everything is "top up to target"), concurrency group, three offset crons + runner/kick-workflows.sh (from
@@ -77,7 +77,7 @@ jobs:
           if [ -f "$OUT" ]; then
             ACTIVE=$(jq -r '.alert.active' "$OUT")
             PAUSED=$(jq -r '[.paused[]|"- `\(.id)` \(.vault) is **still paused** after auto-unpause (owner: `setPaused(false)` or `unpause()`)"]|join("\n")' "$OUT")
-            LOW=$(jq -r 'if .alert.lowFloat then "- ShowcaseRefiller float is **\(.alert.floatMon) MON** (alert below \(.alert.floatThresholdMon) = ~1 day of burn). Top it up with a plain MON transfer from any wallet to \(.refiller.address) (anyone can fund; only the deployer can withdraw)." else "" end' "$OUT")
+            LOW=$(jq -r 'if .alert.lowFloat then "- ShowcaseRefiller float is **\(.alert.floatMon) MON** (alert below \(.alert.floatThresholdMon) = ~3+ days of burn). Top it up with a plain MON transfer from any wallet to \(.refiller.address) (anyone can fund; only the deployer can withdraw)." else "" end' "$OUT")
             ABOVE=$(jq -r '[.alert.vaultsAbove[]|"- vault `\(.id)` \(.vault) holds **\(.mon) MON** (> \(.alert.vaultThresholdMon)); the next daily-sweep returns everything above 1 MON via sweepToOwner()"]|join("\n")' "$OUT")
             DEP=$(jq -r 'if .alert.lowDeployer then "- Deployer holds **\(.alert.deployerMon) MON** (alert below \(.alert.deployerThresholdMon)); it funds the refiller float." else "" end' "$OUT")
             LOW=$(printf '%s\n%s\n%s' "$LOW" "$ABOVE" "$DEP")

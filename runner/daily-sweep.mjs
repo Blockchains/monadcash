@@ -2,7 +2,7 @@
 //   1. every agent exits its shares of the team clip/spread pools (MON comes back to the agent itself)
 //   1b. every agent calls sweepToOwner() on its ShowcaseAgentVault: everything above exactly 1 MON goes to the vault's
 //       immutable owner (the deployer); a paused vault is unpaused first (agent-callable unpause; pausing is owner-only)
-//   2. every agent sends its MON above its targetMon (20; idle "3" agents 0.5) to the hard-coded deployer
+//   2. every agent sends its MON above its targetMon (3; idle "3" agents 0.5) to the hard-coded deployer
 //   3. one agent calls ShowcaseRefiller.refill(true): vaults back to 1 MON (rogue 0.5) and agents back to target
 //   4. reports any team vault holding > alertVaultAboveMon (1.5) native MON (owner-only withdraw: alert issue)
 //   - destination is the hard-coded DEPLOYER constant below (never from input/env/config; config owner must match it)
@@ -144,7 +144,7 @@ res.vaultsSweptMon = formatEther(res.vaults.reduce((s, v) => s + (v.swept || 0n)
 res.vaultsAbove = res.vaults.filter(v => v.after > VAULT_ALERT).map(v => ({ id: v.id, vault: v.vault, mon: formatEther(v.after) }));
 const vaultMon = res.vaults.reduce((s, v) => s + v.after, 0n);
 
-const L = [`## Daily sweep ${DRY ? '(dry run)' : ''}`, '', `Destination (hard-coded): deployer [${DEPLOYER}](${EXP}/address/${DEPLOYER}) · vaults keep exactly 1 MON · agents keep their target (20 MON; idle 0.5) · per-agent cap: ${res.maxPerAgentMon}`, '',
+const L = [`## Daily sweep ${DRY ? '(dry run)' : ''}`, '', `Destination (hard-coded): deployer [${DEPLOYER}](${EXP}/address/${DEPLOYER}) · vaults keep exactly 1 MON · agents keep their target (3 MON; idle 0.5) · per-agent cap: ${res.maxPerAgentMon}`, '',
   `Deployer: **${fmt(res.deployerBefore)} → ${fmt(res.deployerAfter)} MON** · refiller float [${short(REFILLER)}](${EXP}/address/${REFILLER}): **${fmt(res.floatBefore)} → ${fmt(res.floatAfter)} MON** · refill: ${res.refill.note}`, '', '### Agent gas wallets', '', '| agent | address | target | before | pool exit | swept | after | note |', '|---|---|---:|---:|---:|---:|---:|---|'];
 for (const a of res.agents) L.push(`| ${a.id} | [${short(a.agent)}](${EXP}/address/${a.agent}) | ${fmt(a.target)} | ${fmt(a.before)} | ${fmt(a.poolOut)} | ${fmt(a.sent)} | ${fmt(a.after)} | ${a.note} |`);
 L.push('', '### Team vaults (ShowcaseAgentVaults: sweepToOwner() keeps exactly 1 MON; the refiller tops up to 1 MON, never above)', '', '| vault | address | paused | MON before | swept | MON after | tokens (raw units) | note |', '|---|---|---|---:|---:|---:|---|---|');

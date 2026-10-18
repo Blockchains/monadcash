@@ -16,7 +16,7 @@ cd "$(dirname "$0")/.."
 export PATH="$HOME/.foundry/bin:$PATH"
 OWNER=0xc0c4E411e41bECAD6DA860F67063C2D6363a6113
 R=${RPC:-https://rpc.monad.xyz}; CFG=runner/agent-refill-config-143.json
-DRY=${DRY_RUN:-1}; RESERVE=${RESERVE:-5}; AGENT_TARGET=${AGENT_TARGET:-20}; IDLE_AGENT_TARGET=${IDLE_AGENT_TARGET:-0.5}
+DRY=${DRY_RUN:-1}; RESERVE=${RESERVE:-5}; AGENT_TARGET=${AGENT_TARGET:-3}; IDLE_AGENT_TARGET=${IDLE_AGENT_TARGET:-0.5}
 IDLE_IDS=" dca3 staker3 payroll3 rogue3 "   # not run by showcase-agents.yml: keep them at gas dust
 TOK="0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A 0x754704Bc059F8C67012fEd69BC8A327a5aafb603 0xA3227C5969757783154C60bF0bC1944180ed81B9 0x0c65A0BC65a5D819235B71F554D210D3F80E0852 0x8498312A6B3CbD158bf0c93AbdCF29E6e4F55081"
 [ "$(jq -r .owner $CFG | tr A-F a-f)" = "$(echo $OWNER | tr A-F a-f)" ] || { echo "config owner != hard-coded deployer"; exit 1; }

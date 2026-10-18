@@ -1,8 +1,8 @@
 {
- "note": "PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED. Box-free daily cycle: the 13 team vaults are ShowcaseAgentVaults (factory 0x7611405605a9D630f3E7F4703897FcF1Dc17f945); daily-sweep has each agent call sweepToOwner() (everything above exactly 1 MON goes to the immutable owner = deployer) and return its own MON above targetMon to the deployer, then ShowcaseRefiller v3 refill(true) tops vaults to 1 MON and agents to target. agent-refill (every 30 min) auto-unpauses vaults (agent-callable unpause), calls refill(false) and alerts on still-paused vaults, low float, low deployer, or vaults above alertVaultAboveMon. retiredVaults = the old owner-withdraw-only AgentVaults (left at 1 MON / 0.5 MON, no longer used).",
+ "note": "PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED. Box-free daily cycle: the 13 team vaults are ShowcaseAgentVaults (factory 0x7611405605a9D630f3E7F4703897FcF1Dc17f945); daily-sweep has each agent call sweepToOwner() (everything above exactly 1 MON goes to the immutable owner = deployer) and return its own MON above targetMon to the deployer, then ShowcaseRefiller v4 refill(true) tops vaults to 1 MON and agents to target (3 MON, idle 0.5; low-burn mode). agent-refill (every 30 min) auto-unpauses vaults (agent-callable unpause), calls refill(false) and alerts on still-paused vaults, low float, low deployer, or vaults above alertVaultAboveMon. retiredVaults = the old owner-withdraw-only AgentVaults (left at 1 MON / 0.5 MON, no longer used).",
  "chainId": 143,
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
- "agentFloorMon": "20",
+ "agentFloorMon": "3",
  "maxPerAgentPerRunMon": "1",
  "minSendMon": "0.1",
  "agents": [
@@ -16,7 +16,7 @@
      "targetMon": "1"
     }
    ],
-   "targetMon": "20"
+   "targetMon": "3"
   },
   {
    "id": "staker",
@@ -28,7 +28,7 @@
      "targetMon": "1"
     }
    ],
-   "targetMon": "20"
+   "targetMon": "3"
   },
   {
    "id": "payroll",
@@ -40,7 +40,7 @@
      "targetMon": "1"
     }
    ],
-   "targetMon": "20"
+   "targetMon": "3"
   },
   {
    "id": "rogue",
@@ -52,7 +52,7 @@
      "targetMon": "1"
     }
    ],
-   "targetMon": "20"
+   "targetMon": "3"
   },
   {
    "id": "dca1",
@@ -64,7 +64,7 @@
      "targetMon": "1"
     }
    ],
-   "targetMon": "20"
+   "targetMon": "3"
   },
   {
    "id": "mm",
@@ -76,7 +76,7 @@
      "targetMon": "1"
     }
    ],
-   "targetMon": "20"
+   "targetMon": "3"
   },
   {
    "id": "rebalancer",
@@ -88,7 +88,7 @@
      "targetMon": "1"
     }
    ],
-   "targetMon": "20"
+   "targetMon": "3"
   },
   {
    "id": "tipper",
@@ -100,7 +100,7 @@
      "targetMon": "1"
     }
    ],
-   "targetMon": "20"
+   "targetMon": "3"
   },
   {
    "id": "tester",
@@ -112,7 +112,7 @@
      "targetMon": "1"
     }
    ],
-   "targetMon": "20"
+   "targetMon": "3"
   },
   {
    "id": "dca3",
@@ -163,10 +163,10 @@
    "targetMon": "0.5"
   }
  ],
- "refiller": "0xB5FF7b0548C03fE29D36870f0f2A6fAFf20DF0Fe",
- "alertFloatBelowMon": "110",
+ "refiller": "0x6B4EA80c7207E25116eCDFB3E0C6F3DCC359573c",
+ "alertFloatBelowMon": "25",
  "alertVaultAboveMon": "1.5",
- "alertDeployerBelowMon": "50",
+ "alertDeployerBelowMon": "20",
  "vaultFactory": "0x7611405605a9D630f3E7F4703897FcF1Dc17f945",
  "retiredVaults": {
   "dca": "0xe5546Be7747b0910ba50593F91f9E00B4ACeF0e9",

@@ -254,7 +254,7 @@ async function act(p, round) {
   const a = st.agents[p.id]; const ag = new VaultAgent(a.vault, pc, wcOf(p.id));
   let nx; try { nx = await nextAction(p, round); } catch (e) { if (e.skip) { skip(p, e.message); return; } log(p.name, 'build failed', errMsg(e)); rec({ persona: p.id, actor: 'runner', status: 'error', label: `${p.name}: could not build action: ${errMsg(e)}` }); return; }
   if (DRY_RUN) { const sim = await ag.simulate(nx.action); log('[dry-run]', p.name, nx.label, '→', sim.ok ? `would pass (gas ${sim.gas})` : `would be blocked: ${sim.error}${sim.args ? '(' + sim.args.map(String).join(', ') + ')' : ''}`); return { status: sim.ok ? 'allowed' : 'blocked', dry: true, expectBlocked: !!nx.expectBlocked }; }
-  const r = await ag.run(nx.action, { broadcastBlocked: !!nx.expectBlocked, blockedGas: 80_000n, gasBuffer: 1.12 });
+  const r = await ag.run(nx.action, { broadcastBlocked: !!nx.expectBlocked, blockedGas: 80_000n, gasBuffer: GAS_BUFFER });
   if (r.status === 'blocked' && !r.onchain) { log(p.name, 'skipped (would be blocked off-chain):', r.reason, nx.label); rec({ persona: p.id, actor: 'agent', label: nx.label, status: 'precheck-blocked', reason: r.reason }); return r; }
   const reason = r.status === 'blocked' ? `${r.reason}${r.args ? '(' + r.args.map(String).join(', ') + ')' : ''}` : undefined;
   log(p.name, r.status, nx.label, reason ?? '', `${EXP}/tx/${r.hash}`, `gas ${r.gasUsed}`);
@@ -369,10 +369,19 @@ const CLIP_IMMUTABLES = clipArtifact.immutables;
 /** Fork measurement 2026-10-15 was 396,776 gas. 420,000 covers a cold clip. Monad charges the limit. */
 const CLIP_GAS = 420_000n;
 /** Hard cap on confirmed clips in one showcase round. Stops earlier if the quote goes flat or the wallet would drop through 5 MON. */
-const CLIP_MAX_PER_ROUND = 20;
+const CLIP_MAX_PER_ROUND = 20; // hard cap (a maximum, not a target)
+/** Low-burn mode (months of runway): rounds stay 10 min apart, but each round sends only PERSONAS_PER_ROUND persona txs
+ *  (least-recently-active persona first, so every vault acts many times a day) and the clip runs CLIPS_PER_ROUND clips
+ *  only when the last clip tx is older than CLIP_EVERY_MIN. Measured gas: clip 0.036 MON, mm 0.056, dca 0.043,
+ *  staker 0.04, rebalancer 0.019, tipper/payroll 0.016, rogue/tester blocked 0.008. */
+const CLIPS_PER_ROUND = Math.min(CLIP_MAX_PER_ROUND, Math.max(0, Number(E.CLIPS_PER_ROUND ?? 1)));
+const CLIP_EVERY_MIN = Number(E.CLIP_EVERY_MIN ?? 60);
+const PERSONAS_PER_ROUND = Math.max(1, Number(E.PERSONAS_PER_ROUND ?? 1));
+const GAS_BUFFER = Number(E.GAS_BUFFER ?? 1.05); // Monad charges the full gas limit: estimate + 5%
+const lastTxAt = id => { for (let i = ledger.length - 1; i >= 0; i--) { const x = ledger[i]; if (x.persona === id && x.tx) return Date.parse(x.ts) || 0; } return 0; };
 /** Sustainable mode: clip/spread size is capped to dust (pool loss <= 0.50% of this per clip) and the payer keeps CLIP_KEEP_MON (agents sit near 20 MON). */
-const CLIP_MAX_WEI = parseEther(E.CLIP_MAX_MON || '0.05');
-const CLIP_KEEP_WEI = parseEther(E.CLIP_KEEP_MON || '1');
+const CLIP_MAX_WEI = parseEther(E.CLIP_MAX_MON || '0.01');
+const CLIP_KEEP_WEI = parseEther(E.CLIP_KEEP_MON || '0.5');
 function clipAffordable(balance, keep, limit, price) {
   return balance > keep + limit * price;
 }
@@ -619,7 +628,7 @@ async function proveClipOnce() {
   let sent = 0;
   let misses = 0;
   const busyRpc = e => /429|rate|Too Many|timeout|ETIMEDOUT|ECONNRESET|headers/i.test(errMsg(e));
-  while (sent < CLIP_MAX_PER_ROUND) {
+  while (sent < CLIPS_PER_ROUND) {
     let held;
     try {
       held = await pc.getBalance({ address: pool });
@@ -682,18 +691,26 @@ async function proveClipOnce() {
     rec({ persona: 'clip', actor: 'runner', status: 'captured', amountWei: live.amount.toString(), payer: payer.id, pool, tx: r.transactionHash, sell: live.sell, buy: live.buy, label: `Clipped ${formatEther(live.amount)} MON across venues ${live.sell} → ${live.buy}. Pool MON ${formatEther(before)} → ${formatEther(after)}. Gas is paid separately and can be larger than the gain.`, quotedProfit: formatEther(live.profit), poolBefore: formatEther(before), poolAfter: formatEther(after), gasUsed: r.gasUsed, fee: r.gasUsed * r.effectiveGasPrice });
     log('proveClip', sent, `${EXP}/tx/${r.transactionHash}`, 'pool', formatEther(before), '→', formatEther(after));
   }
-  log('proveClip round done', sent, 'of', CLIP_MAX_PER_ROUND);
+  log('proveClip round done', sent, 'of', CLIPS_PER_ROUND, `(hard cap ${CLIP_MAX_PER_ROUND})`);
 }
-/** One round: every persona gets a turn, each isolated by try/catch so one failure never blocks the others. */
+/** One round: personas in least-recently-active order, each isolated by try/catch so one failure never blocks the others. */
 async function runRound() {
   const MAX_FEE = parseEther(E.MAX_FEE_MON || '0.15'); const MIN_GAS = parseEther(E.MIN_AGENT_GAS || '0.08'); let guard = false;
-  await within(proveClip(), 480_000, 'proveClip').catch(e => log('proveClip', errMsg(e)));
-  await within(proveSpread(), 360_000, 'proveSpread').catch(e => log('proveSpread', errMsg(e)));
+  const clipAge = Date.now() - lastTxAt('clip');
+  if (CLIPS_PER_ROUND > 0 && clipAge >= CLIP_EVERY_MIN * 60_000 - 90_000) { // 90 s slack for round-start drift
+    await within(proveClip(), 480_000, 'proveClip').catch(e => log('proveClip', errMsg(e)));
+    await within(proveSpread(), 360_000, 'proveSpread').catch(e => log('proveSpread', errMsg(e)));
+  } else log(`clip: last clip tx ${Math.round(clipAge / 60_000)} min ago (every ${CLIP_EVERY_MIN} min): not this round`);
   await within(resolveVaults(), 120_000, 'resolveVaults').catch(e => log('resolveVaults', errMsg(e)));
-  for (const p of PERSONAS) {
+  // rotation: least-recently-active persona first; stop after PERSONAS_PER_ROUND on-chain txs (skips cost nothing)
+  const order = [...PERSONAS].sort((a, b) => lastTxAt(a.id) - lastTxAt(b.id));
+  let sentTx = 0;
+  for (const p of order) {
+    if (sentTx >= PERSONAS_PER_ROUND) break;
     try {
       const why = await within(preflight(p, MIN_GAS), 60_000, 'preflight'); if (why) { skip(p, why); continue; }
       const r = await within(act(p, roundOf(p.id)), 240_000, 'act');
+      if (r?.hash) sentTx++;
       if (r?.feeWei && r.feeWei > MAX_FEE) { log(`SPEND GUARD: ${p.name} fee ${formatEther(r.feeWei)} > ${formatEther(MAX_FEE)} MON`); guard = true; }
     } catch (e) { log(p.name, 'error', errMsg(e)); rec({ persona: p.id, actor: 'runner', status: 'error', label: `${p.name}: ${errMsg(e)}` }); }
   }

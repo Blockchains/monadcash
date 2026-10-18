@@ -6,6 +6,7 @@ import {ShowcaseRefiller} from "../src/ShowcaseRefiller.sol";
 /// PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED.
 /// Fixed config for the Monad mainnet ShowcaseRefiller: the 13 team agent wallets + 13 team vaults
 /// (same addresses as runner/agent-refill-config-143.json). Agents first so gas is served before vaults.
+/// v4 (2026-10-18, low-burn mode): active agents min 1 / target 3 MON (~2 days of rotated usage), idle 0.2 / 0.5.
 /// v3 (2026-10-18): vaults are the ShowcaseAgentVaults whose agents sweepToOwner() everything above 1 MON daily.
 library ShowcaseRefillerConfig {
     address internal constant DEPLOYER = 0xc0c4E411e41bECAD6DA860F67063C2D6363a6113;
@@ -47,10 +48,10 @@ library ShowcaseRefillerConfig {
         s = new ShowcaseRefiller.Slot[](26);
         callers = new address[](13);
         for (uint256 i; i < 13; ++i) {
-            // Sustainable mode (v2): agents 20 MON (~1.7 days of measured gas, refilled below 6), idle "3" agents 0.5,
+            // Low-burn mode (v4): active agents 3 MON (~2 days of rotated usage, refilled below 1), idle "3" agents 0.5,
             // v3: the 13 ShowcaseAgentVaults (ShowcaseVaultFactory), every vault exactly 1 MON (refilled below 0.5). The refiller never tops anything above its target.
             bool idle = i >= 9; // the "3" agents are not run by showcase-agents.yml: gas dust only
-            s[i] = ShowcaseRefiller.Slot(payable(agents[i]), idle ? 0.2 ether : 6 ether, idle ? 0.5 ether : 20 ether);
+            s[i] = ShowcaseRefiller.Slot(payable(agents[i]), idle ? 0.2 ether : 1 ether, idle ? 0.5 ether : 3 ether);
             s[13 + i] = ShowcaseRefiller.Slot(payable(vaults[i]), 0.5 ether, 1 ether);
             callers[i] = agents[i];
         }
