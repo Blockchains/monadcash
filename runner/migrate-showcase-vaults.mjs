@@ -3,6 +3,7 @@
 // ShowcaseAgentVault (agent-callable sweepToOwner()/unpause()) created by ShowcaseVaultFactory.
 //   node runner/migrate-showcase-vaults.mjs plan            -> prints the copied policies (read-only)
 //   MONAD_MAINNET_PRIVATE_KEY=... node runner/migrate-showcase-vaults.mjs create <depositMon>
+// HISTORICAL (one-time, 2026-10-18). Since PR #43 the team vaults' caps/budgets are max; the copied caps are not recorded.
 // The key is read from env and never printed. Output: runner/showcase-vaults-v4-143.json
 import fs from 'node:fs'; import path from 'node:path';
 import { createPublicClient, createWalletClient, http, parseEther, formatEther, parseAbi, getAddress, parseEventLogs } from 'viem';
@@ -48,7 +49,7 @@ for (const p of plan) {
   const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
   if (r.status !== 'success') throw new Error(`${p.id} create reverted ${hash}`);
   const ev = parseEventLogs({ abi: fAbi, logs: r.logs, eventName: 'VaultCreated' })[0];
-  out.vaults[p.id] = { vault: getAddress(ev.args.vault), executor: p.executor, old: p.old, createdTx: hash, perPaymentCapMon: formatEther(p.perPaymentCap), budgetMon: formatEther(BUDGET) };
+  out.vaults[p.id] = { vault: getAddress(ev.args.vault), executor: p.executor, old: p.old, createdTx: hash }; // caps/budget not recorded: limits were removed on 2026-10-18 (PR #43)
   fs.writeFileSync(OUTF, JSON.stringify(out, null, 2) + '\n');
   console.log(p.id, out.vaults[p.id].vault, hash);
 }
