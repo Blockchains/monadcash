@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-18T22:13:53.077Z",
+ "updatedAt": "2026-10-18T22:24:00.243Z",
  "totals": {
-  "allowed": 2017,
+  "allowed": 2018,
   "blocked": 874,
   "ownerTxs": 31,
   "skipped": 39
@@ -39,7 +39,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 321,
+   "allowed": 322,
    "blocked": 0
   },
   {
@@ -128,6 +128,22 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-18T22:24:00.237Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker swaps 0.01 MON → USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0x8d74c42ec8b69d60827b5ec97881da7daa34c7eef368ac1a74c908dd617e68b3"
+  },
+  {
+   "ts": "2026-10-18T22:23:57.228Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 0.01 MON across venues 1 → 2. Pool MON 0.010254645615356914 → 0.010406378899026476. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x1b9caa0de4245968b97097073ce37154e1452540c82f0ec927ed8631d317e055"
+  },
   {
    "ts": "2026-10-18T22:13:53.072Z",
    "persona": "dca",
@@ -598,23 +614,6 @@
    "label": "Clipped 0.05 MON across venues 2 → 1. Pool MON 0.05 → 0.050044469369546855. Gas is paid separately and can be larger than the gain.",
    "status": "captured",
    "tx": "0xe477c2e7c1bc570f78b3e4f0b7fb3afac875d2a320e97974625b740a7afbc784"
-  },
-  {
-   "ts": "2026-10-18T18:41:58.891Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Added 0.000019504062008619 MON so the clip pool can run the larger size",
-   "status": "topped",
-   "tx": "0x50de70feb1055b67dce713c8ed363af563edef2eab92c4f966b47860721a9983"
-  },
-  {
-   "ts": "2026-10-18T18:31:55.305Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester wraps cap + 1 wei (0.500000000000000001 MON): expects PerPaymentCapExceeded",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(500000000000000001, 500000000000000000)",
-   "tx": "0x14be9ade0949fdf509ca193b694f960938bc95f74c1663204874fa2ce48a6463"
   }
  ],
  "status": "running (GitHub Actions)"
