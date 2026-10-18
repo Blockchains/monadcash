@@ -393,7 +393,7 @@ const LOSS_BPS = 50n;
 const lossAllowance = amount => amount * LOSS_BPS / 10_000n;
 const insideLoss = (amount, back) => back > 0n && back + lossAllowance(amount) >= amount;
 // Same grid as web/src/lib/spread.ts PROFIT_SIZES. The largest size inside the loss band is used, up to the pool cap.
-const SPREAD_SIZES = ['0.05', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1', '1.5', '2', '3', '5', '8', '10'].map(s => parseEther(s));
+const SPREAD_SIZES = ['0.01', '0.05', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1', '1.5', '2', '3', '5', '8', '10'].map(s => parseEther(s));
 function maskRuntime(code, slots) {
   const hex = String(code).toLowerCase();
   if (!hex.startsWith('0x')) return hex;
