@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-18T20:23:20.356Z",
+ "updatedAt": "2026-10-18T20:33:22.395Z",
  "totals": {
-  "allowed": 2007,
+  "allowed": 2008,
   "blocked": 873,
   "ownerTxs": 31,
   "skipped": 39
@@ -123,11 +123,19 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 164,
+   "allowed": 165,
    "blocked": 310
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-18T20:33:22.390Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester wraps 0.02 MON, above its old 0.01 MON cap (allowed: caps lifted)",
+   "status": "allowed",
+   "tx": "0xd59c82f7781ecef1ca4f87006082522f827c0ec7ae4a12a6d42708a8ca9ce7c9"
+  },
   {
    "ts": "2026-10-18T20:23:20.351Z",
    "persona": "tipper",
@@ -607,15 +615,6 @@
    "label": "Tipper tips 0.01 MON to the Staker agent",
    "status": "allowed",
    "tx": "0x4fa0192e1de8d912a779c0d4dad78e5a8f1491d0809de7d511fe3be7e0d933c7"
-  },
-  {
-   "ts": "2026-10-18T18:21:33.050Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to withdraw the vault to itself (owner-only)",
-   "status": "blocked",
-   "reason": "NotOwner",
-   "tx": "0xb17e05428cb0357573b87036eef964d1c575d7f996390cf6f690673b0d233e40"
   }
  ],
  "status": "running (GitHub Actions)"
