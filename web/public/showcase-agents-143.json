@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-18T21:33:42.188Z",
+ "updatedAt": "2026-10-18T21:43:44.272Z",
  "totals": {
-  "allowed": 2013,
+  "allowed": 2014,
   "blocked": 874,
   "ownerTxs": 31,
   "skipped": 39
@@ -99,7 +99,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 108,
+   "allowed": 109,
    "blocked": 0
   },
   {
@@ -128,6 +128,14 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-18T21:43:44.266Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.01 MON → WMON (WMON 0.05 < target 0.5)",
+   "status": "allowed",
+   "tx": "0x0d410d1307bad717b7f261e6fd9c5ced7276dc879e94a258edad71aafa889fae"
+  },
   {
    "ts": "2026-10-18T21:33:42.183Z",
    "persona": "mm",
@@ -607,14 +615,6 @@
    "label": "Market maker sells 0.01 MON → USDC on Kuru (order book)",
    "status": "allowed",
    "tx": "0x756a2ce74bc42cb9a02aa69fc80d51f09027c26c4ac9dfea14637a034b96c206"
-  },
-  {
-   "ts": "2026-10-18T18:31:48.686Z",
-   "persona": "dca1",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.01 MON on PancakeSwap v3",
-   "status": "allowed",
-   "tx": "0x8987bd9777c743f0b94413bacbb1d21690840c47e77fdb46a564d4c720e3511e"
   }
  ],
  "status": "running (GitHub Actions)"
