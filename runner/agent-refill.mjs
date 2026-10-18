@@ -133,3 +133,4 @@ const md = L.join('\n') + '\n';
 if (E.GITHUB_STEP_SUMMARY) fs.appendFileSync(E.GITHUB_STEP_SUMMARY, md); else console.log(md);
 fs.writeFileSync(OUT, JSON.stringify(res, (k, v) => (typeof v === 'bigint' ? formatEther(v) : v), 1));
 log('done:', res.txs.length, 'tx(s), combined spare', fmt(spare), 'MON, paused', res.paused.length, res.alert.active ? '(ALERT)' : '');
+process.exit(0); // viem keeps sockets open; do not hang the job
