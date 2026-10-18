@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-18T19:53:05.830Z",
+ "updatedAt": "2026-10-18T20:03:09.191Z",
  "totals": {
-  "allowed": 2004,
+  "allowed": 2005,
   "blocked": 873,
   "ownerTxs": 31,
   "skipped": 39
@@ -22,7 +22,7 @@
    "id": "dca",
    "name": "DCA bot",
    "emoji": "📈",
-   "about": "Buys the largest USDC clip the vault will allow on Uniswap and PancakeSwap every round, then periodically swaps it back to MON and unwraps.",
+   "about": "Buys a dust-sized USDC clip on Uniswap and PancakeSwap each turn, then periodically swaps it back to MON and unwraps. The vault no longer caps the size; the runner keeps it dust-sized.",
    "vault": "0x9F776CE2aCcD8e466ebbB8710a088C2004061e9f",
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "perActionCapMON": "0.03",
@@ -34,7 +34,7 @@
    "id": "staker",
    "name": "Staker",
    "emoji": "🥩",
-   "about": "Stakes the largest MON clip the vault will allow into Kintsu (sMON), aPriori (aprMON) and Magma (gMON), wraps and unwraps WMON, and swaps that same size on Kuru.",
+   "about": "Stakes a dust-sized MON clip into Kintsu (sMON), aPriori (aprMON) and Magma (gMON), wraps and unwraps WMON, and swaps that same size on Kuru. The vault no longer caps the size.",
    "vault": "0xF75a44463d66d75C70aEEd23677FF2FA2937673F",
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
@@ -46,7 +46,7 @@
    "id": "payroll",
    "name": "Payroll",
    "emoji": "💸",
-   "about": "Pays the largest MON salary the vault will allow to an allowlist of team-owned addresses.",
+   "about": "Pays a dust-sized MON salary to team-owned addresses only (the team treasury and other team agents). The vault no longer caps the amount.",
    "vault": "0xD8Bf001147e81220bB893aA3A5e01704D7F1a9E3",
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "perActionCapMON": "0.03",
@@ -58,7 +58,7 @@
    "id": "rogue",
    "name": "Rogue agent",
    "emoji": "😈",
-   "about": "Deliberately tries out-of-policy actions (over cap, strangers, draining tokens, paying itself, owner-only calls). Every attempt is sent on-chain and reverted by the vault.",
+   "about": "Formerly tried out-of-policy actions that the vault reverted. The vault’s caps and budget are now lifted, so those attempts would succeed; to keep funds from leaking it now only makes harmless moves: dust-sized payments to team addresses (the team treasury or another team agent), and an owner-only withdraw attempt that the vault still reverts.",
    "vault": "0x8a4bbdf4d605f3e28eAAD00B54D0c51758454C3e",
    "agent": "0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E",
    "perActionCapMON": "0.01",
@@ -82,19 +82,19 @@
    "id": "mm",
    "name": "Kuru market maker",
    "emoji": "📗",
-   "about": "Two-sided flow on Kuru’s on-chain order book: sells the largest MON clip the vault will allow for USDC, then buys MON back with the USDC (approval capped by the vault), round after round.",
+   "about": "Two-sided flow on Kuru’s on-chain order book: sells a dust-sized MON clip for USDC, then buys MON back with that USDC (exact approval, reset after the call), round after round.",
    "vault": "0x83F9B56947A3515BeCDE5eEb630d120529A58F40",
    "agent": "0x8fdaB828628F211BC10E074Fa550430cf5048462",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 238,
+   "allowed": 239,
    "blocked": 0
   },
   {
    "id": "rebalancer",
    "name": "Wrap/unwrap rebalancer",
    "emoji": "⚖️",
-   "about": "Keeps the vault near a 50/50 split of MON and WMON, moving the whole gap in one wrap or unwrap up to the per-action cap. Only WMON.deposit/withdraw are allowlisted.",
+   "about": "Keeps the vault near a 50/50 split of MON and WMON with one dust-sized wrap or unwrap per turn. The vault no longer caps the size.",
    "vault": "0x485f6645FE15835Cb485a562c3DaeAB25E0EE856",
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
@@ -106,7 +106,7 @@
    "id": "tipper",
    "name": "Tipper",
    "emoji": "🪙",
-   "about": "Pays the full per-action cap to an allowlist of team addresses. The cap is the largest tip the vault will accept.",
+   "about": "Tips a dust-sized amount to team addresses only. The vault no longer has a per-action cap.",
    "vault": "0xb4eC8cE35AEbcED38E3189045f8F0f4912B7B1CC",
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "perActionCapMON": "0.005",
@@ -118,7 +118,7 @@
    "id": "tester",
    "name": "Policy tester",
    "emoji": "🧪",
-   "about": "Probes the exact edges of its policy: wraps exactly the cap (allowed), then cap + 1 wei (blocked), replays a used requestId (blocked), swaps on Uniswap with the output sent to itself (blocked), pays a stranger (blocked). Blocked attempts are broadcast so the revert is public.",
+   "about": "Probes what is still enforced now that caps are lifted: wraps a dust amount, then twice that (both allowed: there is no per-action cap), replays a used requestId (still reverts) and unwraps. It no longer pays strangers or sends swap output elsewhere.",
    "vault": "0xaacBbbAd578519D04CE65E90ca129209AD7bB597",
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
@@ -128,6 +128,14 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-18T20:03:09.185Z",
+   "persona": "mm",
+   "actor": "agent",
+   "label": "Market maker sells 0.01 MON → USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0xc8cf04a6181b321b3ad7f2f9e0c9584332e59ad3ff67539fd051990e901b6af6"
+  },
   {
    "ts": "2026-10-18T19:53:05.825Z",
    "persona": "dca1",
@@ -609,14 +617,6 @@
    "status": "blocked",
    "reason": "RequestAlreadyExecuted(0x26729668271740997817c8e3ad9116edad7ed6c12422ca5d775bb99e90622f6e)",
    "tx": "0xb7559e6c576155d9c9038535be044246a11f4fd53bd47455b57c9f4876e3b4a3"
-  },
-  {
-   "ts": "2026-10-18T18:11:23.011Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.01 MON to the Payroll agent",
-   "status": "allowed",
-   "tx": "0x9aa9ca1848a6b549d12903bf87305b45e71c028913269d971d6c4249a9de0537"
   }
  ],
  "status": "running (GitHub Actions)"
