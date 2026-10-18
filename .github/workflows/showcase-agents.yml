@@ -57,8 +57,10 @@ jobs:
           DURATION_MIN: ${{ github.event_name == 'workflow_dispatch' && inputs.duration_minutes || '' }}
           INTERVAL_S: ${{ github.event_name == 'workflow_dispatch' && inputs.interval_seconds || '' }}
           BRANCH: ${{ github.ref_name }}
+          # gh CLI auth for runner/kick-workflows.sh (dispatches agent-refill / daily-sweep / ops-watchdog) and the mid-run kill-switch check
+          GH_TOKEN: ${{ github.token }}
         run: bash runner/showcase-loop.sh
       - name: Final commit (anything left uncommitted)
         if: ${{ always() && vars.SHOWCASE_ENABLED == 'true' && !(github.event_name == 'workflow_dispatch' && inputs.check_only) }}
-        env: { BRANCH: "${{ github.ref_name }}" }
+        env: { BRANCH: "${{ github.ref_name }}", GH_TOKEN: "${{ github.token }}" }
         run: bash runner/showcase-commit.sh final
