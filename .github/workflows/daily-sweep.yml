@@ -1,0 +1,69 @@
+name: daily-sweep
+run-name: "daily-sweep${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && ' (dry run)' || '' }}${{ github.event_name == 'workflow_dispatch' && inputs.max_per_agent_mon != '' && ' (capped test)' || '' }}"
+# Once a day every team agent returns its gas surplus above the 8 MON floor to the deployer (hard-coded in
+# runner/daily-sweep.mjs, never from input), so the deployer can re-fund agents and vaults for the next day.
+# Team VAULTS are not swept here: AgentVault.withdraw() is onlyOwner on all 13 team vaults and the owner key is never
+# in GitHub. The vault half + the re-fund run owner-side: runner/owner-daily-cycle.sh (box, deployer key).
+# Sequencing: agent-refill skips 04:00-04:50 UTC and whenever this workflow is running; this job waits for any running
+# agent-refill before sending. Backup cron at 04:37 only acts if no real sweep succeeded in the last 20h.
+# Never pauses or unpauses vaults. Kill switch: repo variable DAILY_SWEEP_ENABLED = 'false' (unset = enabled).
+on:
+  schedule:
+    - cron: '7 4 * * *'
+    - cron: '37 4 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run: { description: 'Simulate only (send nothing)', type: boolean, default: true }
+      max_per_agent_mon: { description: 'Test cap per agent in MON (blank = full surplus)', type: string, default: '' }
+permissions: { contents: read, actions: read }
+concurrency: { group: daily-sweep, cancel-in-progress: false }
+jobs:
+  sweep:
+    if: ${{ vars.DAILY_SWEEP_ENABLED != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env: { RPC: 'https://rpc.monad.xyz', GH_TOKEN: '${{ github.token }}', REPO: '${{ github.repository }}' }
+    steps:
+      - name: Guard (one real sweep per day; wait for a running agent-refill)
+        id: guard
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = schedule ]; then
+            since=$(date -u -d '20 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+            n=$(gh run list -R "$REPO" -w daily-sweep.yml --status success -L 30 --json databaseId,displayTitle,createdAt \
+              | jq --arg s "$since" --argjson me "${{ github.run_id }}" '[.[]|select(.displayTitle=="daily-sweep" and .createdAt>$s and .databaseId!=$me)]|length')
+            if [ "$n" -gt 0 ]; then echo "a real sweep already succeeded in the last 20h: skipping"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          fi
+          for i in $(seq 1 40); do
+            busy=$(gh run list -R "$REPO" -w agent-refill.yml -L 10 --json status | jq '[.[]|select(.status=="in_progress")]|length')
+            [ "$busy" = 0 ] && break; echo "agent-refill is running; waiting ($i)"; sleep 15
+          done
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.guard.outputs.skip != 'true'
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.skip != 'true'
+        with: { node-version: 22 }
+      - name: Install runner deps
+        if: steps.guard.outputs.skip != 'true'
+        run: cd runner && npm ci --no-audit --no-fund
+      - name: Sweep agent surplus to the deployer
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          OUT: /tmp/daily-sweep.json
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
+          MAX_PER_AGENT_MON: ${{ github.event_name == 'workflow_dispatch' && inputs.max_per_agent_mon || '' }}
+          AGENT_KEY_DCA: ${{ secrets.AGENT_KEY_DCA }}
+          AGENT_KEY_STAKER: ${{ secrets.AGENT_KEY_STAKER }}
+          AGENT_KEY_PAYROLL: ${{ secrets.AGENT_KEY_PAYROLL }}
+          AGENT_KEY_ROGUE: ${{ secrets.AGENT_KEY_ROGUE }}
+          AGENT_KEY_DCA1: ${{ secrets.AGENT_KEY_DCA1 }}
+          AGENT_KEY_MM: ${{ secrets.AGENT_KEY_MM }}
+          AGENT_KEY_REBALANCER: ${{ secrets.AGENT_KEY_REBALANCER }}
+          AGENT_KEY_TIPPER: ${{ secrets.AGENT_KEY_TIPPER }}
+          AGENT_KEY_TESTER: ${{ secrets.AGENT_KEY_TESTER }}
+          AGENT_KEY_DCA3: ${{ secrets.AGENT_KEY_DCA3 }}
+          AGENT_KEY_STAKER3: ${{ secrets.AGENT_KEY_STAKER3 }}
+          AGENT_KEY_PAYROLL3: ${{ secrets.AGENT_KEY_PAYROLL3 }}
+          AGENT_KEY_ROGUE3: ${{ secrets.AGENT_KEY_ROGUE3 }}
+        run: node runner/daily-sweep.mjs

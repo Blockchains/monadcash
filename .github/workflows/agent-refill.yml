@@ -7,6 +7,7 @@ name: agent-refill
 #   - destinations are hard-coded in the committed config and verified on-chain (owner, executor, key → agent)
 #   - never pauses, unpauses or rotates vaults. Unpause stays manual: a paused team vault, or combined agent spare gas
 #     below 30 MON, opens/updates ONE issue that mentions @Blockchains (reopened instead of duplicated)
+# Skips 04:00-04:50 UTC (scheduled runs) and whenever daily-sweep.yml is queued/running, so the two never send at once.
 # Kill switch: set repo variable AGENT_REFILL_ENABLED to 'false' (unset = enabled).
 on:
   schedule:
@@ -16,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run: { description: 'Simulate only (send nothing, no issue changes)', type: boolean, default: false }
-permissions: { contents: read, issues: write }
+permissions: { contents: read, issues: write, actions: read }
 concurrency: { group: agent-refill, cancel-in-progress: false }
 jobs:
   refill:
@@ -27,12 +28,25 @@ jobs:
       RPC: https://rpc.monad.xyz
       OUT: /tmp/agent-refill.json
     steps:
+      - name: Sweep window (skip 04:00-04:50 UTC on schedule, or while daily-sweep runs)
+        id: window
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          hm=$(date -u +%H%M); skip=false
+          if [ "${{ github.event_name }}" = schedule ] && [ "$hm" -ge 0400 ] && [ "$hm" -lt 0450 ]; then skip=true; fi
+          busy=$(gh run list -R "${{ github.repository }}" -w daily-sweep.yml -L 5 --json status 2>/dev/null | jq '[.[]|select(.status=="in_progress" or .status=="queued")]|length' || echo 0)
+          [ "${busy:-0}" != 0 ] && skip=true
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"; [ "$skip" = true ] && echo "::notice::daily-sweep window: refill skipped" || true
       - uses: actions/checkout@v4
+        if: steps.window.outputs.skip != 'true'
       - uses: actions/setup-node@v4
+        if: steps.window.outputs.skip != 'true'
         with: { node-version: 22 }
       - name: Install runner deps
+        if: steps.window.outputs.skip != 'true'
         run: cd runner && npm ci --no-audit --no-fund
       - name: Refill team vaults from agent spare gas
+        if: steps.window.outputs.skip != 'true'
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
           # agent executor keys only (GitHub masks secret values in logs; the script never prints them)
@@ -51,7 +65,7 @@ jobs:
           AGENT_KEY_ROGUE3: ${{ secrets.AGENT_KEY_ROGUE3 }}
         run: node runner/agent-refill.mjs
       - name: Alert issue (paused vault / low agent spare gas)
-        if: ${{ always() && !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        if: ${{ always() && steps.window.outputs.skip != 'true' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
         env: { GH_TOKEN: '${{ github.token }}', REPO: '${{ github.repository }}', RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' }
         run: |
           set -euo pipefail
