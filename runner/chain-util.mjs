@@ -13,7 +13,7 @@ export const rpcTransport = (urls = rpcList()) =>
   fallback(urls.map(u => http(u, { retryCount: 2, retryDelay: 700, timeout: 15_000 })), { rank: false, retryCount: 4, retryDelay: 1_000 });
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const short = e => String(e?.shortMessage || e?.message || e).split('\n')[0].slice(0, 160);
+const short = e => [e?.shortMessage, e?.details, e?.cause?.details].filter(Boolean).map(x => String(x).split('\n')[0]).join(' / ').slice(0, 200) || String(e?.message || e).split('\n')[0].slice(0, 200);
 
 /**
  * Send one tx with nonce management and stuck-tx replacement.
@@ -43,8 +43,13 @@ export async function sendSafe({ pc, wc, tx, log = () => {}, waitMs = 45_000, bu
       } catch (e) {
         const m = short(e);
         if (/nonce too low|nonce.*(used|lower)/i.test(m) && sent.length === 0) { log(`nonce ${nonce} taken by another tx; re-reading nonce`); lost = true; break; }
-        if (/already known|underpriced|replacement|fee too low|base fee|nonce too low/i.test(m)) log(`nonce ${nonce}: rejected (${m})`);
-        else throw e;
+        if (/already known|underpriced|replacement|fee too low|base fee|nonce too low/i.test(m)) {
+          log(`nonce ${nonce}: rejected (${m})`);
+          if (sent.length === 0 && /underpriced|fee too low|base fee/i.test(m)) { // never entered the pool: bump right away
+            maxFee = maxFee * 13n / 10n; tip = tip * 13n / 10n; if (maxFee < est.maxFeePerGas) maxFee = est.maxFeePerGas * 13n / 10n; if (tip > maxFee) tip = maxFee;
+            log(`nonce ${nonce}: bumping fees to maxFee ${formatGwei(maxFee)} gwei`); continue;
+          }
+        } else throw e;
       }
       const deadline = Date.now() + waitMs;
       while (Date.now() < deadline) {
