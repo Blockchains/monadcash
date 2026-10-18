@@ -1,0 +1,28 @@
+name: ops-watchdog
+# PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED. No keys at all (GITHUB_TOKEN only).
+# Hourly-ish: re-dispatches a missed agent-refill / daily-sweep, re-deploys Pages when the heartbeat there is stale,
+# and opens ONE issue (mentions @Blockchains) only on repeated failure (runner/ops-watchdog.sh).
+# Triggers: two odd-minute crons (GitHub throttles this repo's crons) + runner/kick-workflows.sh from every showcase round.
+# Kill switch: repo variable OPS_WATCHDOG_ENABLED = 'false'.
+on:
+  schedule:
+    - cron: '17 * * * *'
+    - cron: '47 * * * *'
+  workflow_dispatch:
+    inputs:
+      kick: { description: 'Dispatched by runner/kick-workflows.sh', type: boolean, default: false }
+permissions: { contents: write, issues: write, actions: write }
+concurrency: { group: ops-watchdog, cancel-in-progress: false }
+jobs:
+  watch:
+    if: ${{ vars.OPS_WATCHDOG_ENABLED != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env: { GH_TOKEN: '${{ github.token }}', OUT: /tmp/ops-watchdog.json }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check and re-dispatch
+        run: bash runner/ops-watchdog.sh
+      - name: Heartbeat (web/public/ops-status-143.json)
+        if: always()
+        run: bash runner/ops-status.sh watchdog "$OUT"

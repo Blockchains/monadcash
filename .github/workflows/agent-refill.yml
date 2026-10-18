@@ -1,15 +1,16 @@
 name: agent-refill
-# PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED.
-# Every 30 min: ShowcaseRefiller tops vaults (1 MON, rogue 0.5) and agents (20 MON, idle 0.5) back to target from its
-# float; an agent may also top its own vault from MON above its own target. Agent keys only (no deployer key).
-# Every 30 min plus two offset backup crons (GitHub cron can lag or drop runs); the concurrency group queues runs so
-# only one ever sends at a time. Logic + safety limits: runner/agent-refill.mjs, addresses: runner/agent-refill-config-143.json
-#   - each agent tops up only its own vault(s) to the target (20 MON; rogue vaults 0.5), max 10 MON per agent per run
-#   - an agent never sends below its 8 MON gas floor (showcase clips keep 5 MON + ~1.3 MON per round of real spend)
-#   - destinations are hard-coded in the committed config and verified on-chain (owner, executor, key → agent)
-#   - never pauses, unpauses or rotates vaults. Unpause stays manual: a paused team vault, or combined agent spare gas
-#     below 30 MON, opens/updates ONE issue that mentions @Blockchains (reopened instead of duplicated)
-# Skips 04:00-04:50 UTC (scheduled runs) and whenever daily-sweep.yml is queued/running, so the two never send at once.
+# PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED. Agent keys only (no deployer key).
+# Every 30 min (runner/agent-refill.mjs, addresses: runner/agent-refill-config-143.json):
+#   1. auto-unpause: any paused team ShowcaseAgentVault is unpaused by its own agent (pausing stays owner-only)
+#   2. ShowcaseRefiller v3 refill(false): vaults back to exactly 1 MON, agents to 20 MON (idle "3" agents 0.5), from its float
+#   3. fallback: an agent tops up only its own vault from MON above its own target (max 1 MON per run)
+#   4. alerts (ONE issue mentioning @Blockchains, reopened not duplicated): vault still paused, refiller float below
+#      ~1 day of burn, deployer below 50 MON, or a vault above 1.5 MON
+#   5. heartbeat: web/public/ops-status-143.json (raw + Pages)
+# Robustness: RPC fallback over 5 public Monad RPCs with retries, explicit nonce + stuck-tx replacement (runner/chain-util.mjs),
+# idempotent (everything is "top up to target"), concurrency group, three offset crons + runner/kick-workflows.sh (from
+# every showcase round) + ops-watchdog.yml re-dispatch when a run is missed.
+# Skips 04:00-04:50 UTC (scheduled/kicked runs) and whenever daily-sweep.yml is queued/running.
 # Kill switch: set repo variable AGENT_REFILL_ENABLED to 'false' (unset = enabled).
 on:
   schedule:
@@ -20,7 +21,7 @@ on:
     inputs:
       dry_run: { description: 'Simulate only (send nothing, no issue changes)', type: boolean, default: false }
       kick: { description: 'Dispatched by runner/kick-workflows.sh (treated like a scheduled run)', type: boolean, default: false }
-permissions: { contents: read, issues: write, actions: read }
+permissions: { contents: write, issues: write, actions: read }
 concurrency: { group: agent-refill, cancel-in-progress: false }
 jobs:
   refill:
@@ -48,7 +49,7 @@ jobs:
       - name: Install runner deps
         if: steps.window.outputs.skip != 'true'
         run: cd runner && npm ci --no-audit --no-fund
-      - name: Refill team vaults from agent spare gas
+      - name: Auto-unpause, refill from the ShowcaseRefiller, fallback top-ups
         if: steps.window.outputs.skip != 'true'
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
@@ -67,30 +68,31 @@ jobs:
           AGENT_KEY_PAYROLL3: ${{ secrets.AGENT_KEY_PAYROLL3 }}
           AGENT_KEY_ROGUE3: ${{ secrets.AGENT_KEY_ROGUE3 }}
         run: node runner/agent-refill.mjs
-      - name: Alert issue (paused vault / low agent spare gas)
+      - name: Alert issue (still-paused vault / low float / low deployer / vault above 1.5 MON)
         if: ${{ always() && steps.window.outputs.skip != 'true' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
         env: { GH_TOKEN: '${{ github.token }}', REPO: '${{ github.repository }}', RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' }
         run: |
           set -euo pipefail
-          TITLE='agent-refill: owner action needed (paused vault, low refiller float or vault above 1.5 MON)'
+          TITLE='agent-refill: owner action needed (paused vault, low refiller float or vault above 1.5 MON)'  # title kept stable so the same issue is reused
           if [ -f "$OUT" ]; then
             ACTIVE=$(jq -r '.alert.active' "$OUT")
-            PAUSED=$(jq -r '[.paused[]|"- `\(.id)` \(.vault) is **paused** (owner: `setPaused(false)`)"]|join("\n")' "$OUT")
+            PAUSED=$(jq -r '[.paused[]|"- `\(.id)` \(.vault) is **still paused** after auto-unpause (owner: `setPaused(false)` or `unpause()`)"]|join("\n")' "$OUT")
             LOW=$(jq -r 'if .alert.lowFloat then "- ShowcaseRefiller float is **\(.alert.floatMon) MON** (alert below \(.alert.floatThresholdMon) = ~1 day of burn). Top it up with a plain MON transfer from any wallet to \(.refiller.address) (anyone can fund; only the deployer can withdraw)." else "" end' "$OUT")
-            ABOVE=$(jq -r '[.alert.vaultsAbove[]|"- vault `\(.id)` \(.vault) holds **\(.mon) MON** (> \(.alert.vaultThresholdMon)); only the owner can withdraw it (`runner/owner-daily-cycle.sh sweep`)"]|join("\n")' "$OUT")
-            LOW=$(printf '%s\n%s' "$LOW" "$ABOVE")
-            STATE=$(jq -r '[(.paused|map(.id)|sort|join(",")), (if .alert.lowFloat then "lowfloat" else "" end), (.alert.vaultsAbove|map(.id)|sort|join(","))]|join(";")' "$OUT")
+            ABOVE=$(jq -r '[.alert.vaultsAbove[]|"- vault `\(.id)` \(.vault) holds **\(.mon) MON** (> \(.alert.vaultThresholdMon)); the next daily-sweep returns everything above 1 MON via sweepToOwner()"]|join("\n")' "$OUT")
+            DEP=$(jq -r 'if .alert.lowDeployer then "- Deployer holds **\(.alert.deployerMon) MON** (alert below \(.alert.deployerThresholdMon)); it funds the refiller float." else "" end' "$OUT")
+            LOW=$(printf '%s\n%s\n%s' "$LOW" "$ABOVE" "$DEP")
+            STATE=$(jq -r '[(.paused|map(.id)|sort|join(",")), (if .alert.lowFloat then "lowfloat" else "" end), (.alert.vaultsAbove|map(.id)|sort|join(",")), (if .alert.lowDeployer then "lowdeployer" else "" end)]|join(";")' "$OUT")
           else
             ACTIVE=true; PAUSED=''; LOW='- The refill script failed before writing its result; check the run log.'; STATE=failed
           fi
           NUM=$(gh issue list -R "$REPO" --state all --limit 200 --json number,title,state | jq -r --arg t "$TITLE" '[.[]|select(.title==$t)]|sort_by(.number)|.[0].number // empty')
           if [ "$ACTIVE" != "true" ]; then
             if [ -n "$NUM" ] && [ "$(gh issue view "$NUM" -R "$REPO" --json state -q .state)" = OPEN ]; then
-              gh issue close "$NUM" -R "$REPO" --comment "Resolved: no paused team vault, refiller float OK, no vault above the limit. Run: $RUN_URL"
+              gh issue close "$NUM" -R "$REPO" --comment "Resolved: no paused team vault, refiller float and deployer OK, no vault above the limit. Run: $RUN_URL"
             fi
             exit 0
           fi
-          BODY=$(printf '@Blockchains owner action needed for the PolicyPilot team showcase.\n\n%s\n%s\n\nUnpause stays manual (agent-refill never pauses, unpauses or rotates vaults).\n\nLast checked: %s\n\n<!-- agent-refill-state: %s -->\n' "$PAUSED" "$LOW" "$RUN_URL" "$STATE")
+          BODY=$(printf '@Blockchains owner action needed for the PolicyPilot team showcase.\n\n%s\n%s\n\nagent-refill auto-unpauses ShowcaseAgentVaults with the agent key; this issue means something still needs the owner.\n\nLast checked: %s\n\n<!-- agent-refill-state: %s -->\n' "$PAUSED" "$LOW" "$RUN_URL" "$STATE")
           if [ -z "$NUM" ]; then
             gh issue create -R "$REPO" --title "$TITLE" --body "$BODY"; exit 0
           fi
@@ -104,3 +106,6 @@ jobs:
             gh issue edit "$NUM" -R "$REPO" --body "$BODY"
             if [ "$OLDSTATE" != "$STATE" ]; then gh issue comment "$NUM" -R "$REPO" --body "@Blockchains the alert changed (${OLDSTATE:-none} → ${STATE}). $RUN_URL"; fi
           fi
+      - name: Heartbeat (web/public/ops-status-143.json)
+        if: ${{ always() && steps.window.outputs.skip != 'true' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        run: bash runner/ops-status.sh refill "$OUT"

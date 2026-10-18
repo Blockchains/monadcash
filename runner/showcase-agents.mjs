@@ -329,7 +329,14 @@ async function preflight(p, MIN_GAS) {
   const a = st.agents[p.id]; if (a.skip) return a.skip;
   const me = acct(p.id).address;
   const [paused, gas, bal, budget, spent] = await Promise.all([vread(a.vault, 'paused'), pc.getBalance({ address: me }), pc.getBalance({ address: a.vault }), vread(a.vault, 'budget'), vread(a.vault, 'totalSpent')]);
-  if (paused) return 'vault is paused (owner must setPaused(false); CI holds no owner key)';
+  if (paused) { // ShowcaseAgentVaults: the agent may clear the pause flag (pausing stays owner-only)
+    try {
+      const h = await wcOf(p.id).writeContract({ address: a.vault, abi: parseAbi(['function unpause()']), functionName: 'unpause' });
+      const r = await pc.waitForTransactionReceipt({ hash: h, timeout: 60_000 });
+      if (r.status !== 'success' || await vread(a.vault, 'paused')) return `vault is paused (auto-unpause ${h} ${r.status})`;
+      log(p.name, 'vault was paused: auto-unpaused by its agent', h);
+    } catch (e) { return `vault is paused (auto-unpause unavailable: ${String(e?.shortMessage || e).split('\n')[0].slice(0, 80)})`; }
+  }
   if (gas < MIN_GAS) return `agent gas ${formatEther(gas)} MON < ${formatEther(MIN_GAS)} MON (owner must top up the agent wallet)`;
   if (p.attack) return null; // blocked attempts need gas only
   const rem = budget > spent ? budget - spent : 0n;

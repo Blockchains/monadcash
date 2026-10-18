@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # OWNER-SIDE half of the daily cycle. Runs ONLY where the deployer key lives (the box), never in GitHub.
+# RETIRED for the team vaults (2026-10-18): the 13 team vaults are now ShowcaseAgentVaults whose agents sweep them
+# to 1 MON daily on GitHub (daily-sweep.yml). This script only acts on the addresses in agent-refill-config-143.json.
 # AgentVault.withdraw()/deposit() are onlyOwner, so agents cannot do this part.
 #   runner/owner-daily-cycle.sh sweep    # every team vault: withdraw(owner, MON above its targetMon) -> deployer (never emergencyWithdrawAll, never pauses)
 #   runner/owner-daily-cycle.sh refund   # deployer: plain-transfer each team vault up to its target, then top agents up to AGENT_TARGET

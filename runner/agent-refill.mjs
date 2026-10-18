@@ -2,22 +2,25 @@
 //   1. ShowcaseRefiller.refill(false): anything below its min goes back to target (vaults 1 MON, rogue 0.5; agents 20,
 //      idle "3" agents 0.5). The refiller can only pay its fixed allowlist and never tops above target.
 //   2. fallback: an agent tops up ONLY its own vault (config), from MON above its own targetMon, max 1 MON per run
-//   3. alerts: paused team vault, refiller float below 1 day of burn, any team vault above 1.5 MON native
+//   3. alerts: deployer below alertDeployerBelowMon, still-paused team vault, refiller float below 1 day of burn, any team vault above 1.5 MON native
 //   - destinations come only from the committed config; the on-chain owner/executor must match, the key must derive
 //     to the configured agent address, and vaults that are also in showcase-config-143.json must match it exactly
-//   - paused vaults are never touched (no setPaused here: unpause stays manual) and are reported for the alert issue
+//   - paused ShowcaseAgentVaults are auto-unpaused by their own agent (unpause(); pausing stays owner-only); anything
+//     still paused is reported for the alert issue
+//   - every send goes through chain-util sendSafe (nonce management, stuck-tx replacement) over an RPC fallback list
 //   - balances are re-read right before every send
 // Keys come from AGENT_KEY_<ID> env vars and are never printed. DRY_RUN=1 simulates and sends nothing.
 // Outputs: markdown to $GITHUB_STEP_SUMMARY (or stdout) and machine-readable result to $OUT (default agent-refill.json).
 import fs from 'node:fs'; import path from 'node:path';
-import { createPublicClient, createWalletClient, http, parseEther, formatEther, parseAbi, getAddress } from 'viem';
+import { createPublicClient, createWalletClient, parseEther, formatEther, parseAbi, getAddress, encodeFunctionData } from 'viem';
+import { rpcTransport, rpcList, sendSafe } from './chain-util.mjs';
 import { privateKeyToAccount } from 'viem/accounts';
 
 const E = process.env;
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const CFG = JSON.parse(fs.readFileSync(E.REFILL_CONFIG || path.join(HERE, 'agent-refill-config-143.json'), 'utf8'));
 const SHOW = JSON.parse(fs.readFileSync(path.join(HERE, 'showcase-config-143.json'), 'utf8'));
-const RPC = E.RPC || 'https://rpc.monad.xyz';
+const RPCS = rpcList(E), RPC = RPCS[0];
 const DRY = E.DRY_RUN === '1';
 const OUT = E.OUT || 'agent-refill.json';
 const EXP = 'https://monadvision.com';
@@ -27,8 +30,9 @@ const refAbi = parseAbi(['function owner() view returns (address)', 'function re
 const MIN_SEND = parseEther(CFG.minSendMon);
 const OWNER = getAddress(CFG.owner);
 const chain = { id: CFG.chainId, name: 'Monad', nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 }, rpcUrls: { default: { http: [RPC] } } };
-const pc = createPublicClient({ chain, transport: http(RPC, { retryCount: 5, retryDelay: 800, timeout: 20_000 }) });
-const vaultAbi = parseAbi(['function owner() view returns (address)', 'function executor() view returns (address)', 'function paused() view returns (bool)']);
+const pc = createPublicClient({ chain, transport: rpcTransport(RPCS) });
+const DEPLOYER_ALERT = parseEther(CFG.alertDeployerBelowMon || '50');
+const vaultAbi = parseAbi(['function owner() view returns (address)', 'function executor() view returns (address)', 'function paused() view returns (bool)', 'function unpause()', 'function KEEP() view returns (uint256)']);
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 const errMsg = e => String(e?.shortMessage || e?.message || e).split('\n')[0].slice(0, 200);
 const fmt = w => Number(formatEther(w)).toFixed(4);
@@ -58,7 +62,7 @@ for (const a of CFG.agents) {
   } else row.note = `${a.secret} not available: read-only`;
   if (row.note && key) res.problems.push(`${a.id}: ${row.note}`);
   row.hasKey = !!acct;
-  agents.push({ cfg: a, row, acct, wc: acct ? createWalletClient({ account: acct, chain, transport: http(RPC, { retryCount: 2, timeout: 20_000 }) }) : null });
+  agents.push({ cfg: a, row, acct, wc: acct ? createWalletClient({ account: acct, chain, transport: rpcTransport(RPCS) }) : null });
 }
 
 // ---- snapshot before ----
@@ -80,6 +84,26 @@ for (const { cfg, row } of agents) {
   }
 }
 
+// ---- auto-unpause: ShowcaseAgentVaults let their own agent clear the pause flag (pausing stays owner-only) ----
+res.unpaused = [];
+for (const pz of [...res.paused]) {
+  const x = agents.find(a => a.cfg.id === pz.id);
+  const note = m => { const vr = res.vaults.find(v => v.vault === pz.vault); if (vr) vr.note = m; };
+  if (!x?.acct) { note('paused; no agent key to unpause'); continue; }
+  if (DRY) { note('dry-run: would unpause'); continue; }
+  try {
+    await pc.simulateContract({ address: pz.vault, abi: vaultAbi, functionName: 'unpause', account: x.acct });
+    const data = encodeFunctionData({ abi: vaultAbi, functionName: 'unpause' });
+    const gas = (await pc.estimateGas({ account: x.row.agent, to: pz.vault, data })) * 13n / 10n;
+    const { hash, receipt: r, attempts } = await sendSafe({ pc, wc: x.wc, tx: { to: pz.vault, data, gas }, log: m => log(pz.id, m) });
+    res.txs.push({ id: pz.id, from: x.row.agent, to: pz.vault, amountMon: '0 (unpause)', hash, status: r.status, block: r.blockNumber.toString(), attempts });
+    if (r.status === 'success' && !(await read(pz.vault, 'paused'))) {
+      res.paused = res.paused.filter(q => q.vault !== pz.vault); res.unpaused.push({ ...pz, hash, block: r.blockNumber.toString() });
+      const vr = res.vaults.find(v => v.vault === pz.vault); if (vr) vr.paused = false; note(`auto-unpaused by its agent (${hash.slice(0, 10)}…)`); log(pz.id, 'auto-unpaused', `${EXP}/tx/${hash}`);
+    } else res.problems.push(`${pz.id}: unpause tx ${hash} ${r.status}`);
+  } catch (e) { note(`paused; unpause not possible (${errMsg(e)})`); res.problems.push(`${pz.id}: unpause failed: ${errMsg(e)}`); }
+}
+
 // ---- refiller (box-free float): normal refill of anything below its min, never above target ----
 res.refiller = { address: REFILLER, note: '' };
 try {
@@ -96,8 +120,7 @@ try {
     for (const x of agents) { if (!x.acct) continue; const b = await bal(x.row.agent); if (b > cb && await pc.readContract({ address: REFILLER, abi: refAbi, functionName: 'isCaller', args: [x.row.agent] })) { c = x; cb = b; } }
     if (!c) throw new Error('no keyed agent can call the refiller');
     const est = await pc.estimateContractGas({ address: REFILLER, abi: refAbi, functionName: 'refill', args: [false], account: c.row.agent });
-    const hash = await c.wc.writeContract({ address: REFILLER, abi: refAbi, functionName: 'refill', args: [false], gas: est * 13n / 10n });
-    const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
+    const { hash, receipt: r } = await sendSafe({ pc, wc: c.wc, tx: { to: REFILLER, data: encodeFunctionData({ abi: refAbi, functionName: 'refill', args: [false] }), gas: est * 13n / 10n }, log: m => log(c.cfg.id, m) });
     res.txs.push({ id: c.cfg.id, from: REFILLER, to: 'allowlist (refill(false))', amountMon: formatEther(p[0]), hash, status: r.status, block: r.blockNumber.toString() });
     res.refiller.note = `refill(false) by ${c.cfg.id}: ${r.status}`; log(res.refiller.note, `${EXP}/tx/${hash}`);
     if (r.status !== 'success') res.problems.push(`refiller refill ${hash} ${r.status}`);
@@ -107,16 +130,16 @@ try {
 // ---- fallback: an agent tops up its own vault from MON above its own target ----
 for (const { cfg, row, acct } of agents) {
   if (!acct) { for (const vr of res.vaults.filter(x => x.id === cfg.id)) if (vr.ok) vr.note = 'agent key not available: not refilled'; continue; }
-  const wc = createWalletClient({ account: acct, chain, transport: http(RPC, { retryCount: 2, timeout: 20_000 }) });
+  const wc = agents.find(x => x.cfg.id === cfg.id).wc;
   const FLOOR = row.floor; let left = CAP;
   for (const vr of res.vaults.filter(x => x.id === cfg.id)) {
     if (!vr.ok) continue;
-    if (vr.paused) { vr.note = 'paused: not refilled (unpause is manual)'; continue; }
+    if (vr.paused) { vr.note = vr.note || 'paused: not refilled'; continue; }
     if (!allowed.has(vr.vault)) throw new Error('destination not in config'); // belt and braces
     try {
       // re-read everything right before sending
       const [vb, ab, p] = await Promise.all([bal(vr.vault), bal(row.agent), read(vr.vault, 'paused')]);
-      if (p) { vr.paused = true; vr.note = 'paused: not refilled (unpause is manual)'; if (!res.paused.some(x => x.vault === vr.vault)) res.paused.push({ id: cfg.id, vault: vr.vault }); continue; }
+      if (p) { vr.paused = true; vr.note = 'paused: not refilled'; if (!res.paused.some(x => x.vault === vr.vault)) res.paused.push({ id: cfg.id, vault: vr.vault }); continue; }
       const deficit = vr.target > vb ? vr.target - vb : 0n;
       if (deficit < MIN_SEND) { vr.note = 'at target'; continue; }
       if (ab <= FLOOR) { vr.note = `agent at/below its ${cfg.targetMon} MON target: left to the refiller`; continue; }
@@ -127,8 +150,7 @@ for (const { cfg, row, acct } of agents) {
       const amt = floorTo(min(deficit, left, spare));
       if (amt < MIN_SEND) { vr.note = `spare above floor too small (${fmt(spare)} MON)`; continue; }
       if (DRY) { vr.note = `dry-run: would send ${fmt(amt)} MON`; log(cfg.id, vr.note); continue; }
-      const hash = await wc.sendTransaction({ to: vr.vault, value: amt, gas, maxFeePerGas: fees.maxFeePerGas, maxPriorityFeePerGas: fees.maxPriorityFeePerGas });
-      const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 });
+      const { hash, receipt: r } = await sendSafe({ pc, wc, tx: { to: vr.vault, value: amt, gas }, log: m => log(cfg.id, m) });
       const ok = r.status === 'success';
       res.txs.push({ id: cfg.id, from: row.agent, to: vr.vault, amountMon: formatEther(amt), hash, status: r.status, block: r.blockNumber.toString() });
       if (ok) { left -= amt; row.sent += amt; vr.note = `+${fmt(amt)} MON`; } else { vr.note = `tx ${r.status}`; res.problems.push(`${cfg.id}: refill tx ${hash} ${r.status}`); }
@@ -145,19 +167,22 @@ res.combinedSpareMon = formatEther(spare);
 const floatNow = await bal(REFILLER).catch(() => null); res.refiller.floatAfter = floatNow;
 res.floatMon = floatNow == null ? '?' : formatEther(floatNow);
 const above = res.vaults.filter(v => v.after != null && v.after > VAULT_ALERT).map(v => ({ id: v.id, vault: v.vault, mon: formatEther(v.after) }));
-res.alert = { paused: res.paused, lowFloat: floatNow != null && floatNow < FLOAT_ALERT, floatMon: res.floatMon, floatThresholdMon: CFG.alertFloatBelowMon, vaultsAbove: above, vaultThresholdMon: CFG.alertVaultAboveMon };
-res.alert.active = res.paused.length > 0 || res.alert.lowFloat || above.length > 0;
+const depNow = await bal(OWNER).catch(() => null);
+res.deployerMon = depNow == null ? '?' : formatEther(depNow);
+res.alert = { deployerMon: res.deployerMon, deployerThresholdMon: CFG.alertDeployerBelowMon || '50', lowDeployer: depNow != null && depNow < DEPLOYER_ALERT, paused: res.paused, lowFloat: floatNow != null && floatNow < FLOAT_ALERT, floatMon: res.floatMon, floatThresholdMon: CFG.alertFloatBelowMon, vaultsAbove: above, vaultThresholdMon: CFG.alertVaultAboveMon };
+res.alert.active = res.paused.length > 0 || res.alert.lowFloat || res.alert.lowDeployer || above.length > 0;
+res.rpcs = RPCS; res.finishedAt = new Date().toISOString();
 
 // ---- step summary ----
 const L = [];
-L.push(`## Agent refill ${DRY ? '(dry run)' : ''}`, '', `Refiller [${short(REFILLER)}](${EXP}/address/${REFILLER}): ${res.refiller.note} · float **${res.refiller.floatBefore == null ? '?' : fmt(res.refiller.floatBefore)} → ${floatNow == null ? '?' : fmt(floatNow)} MON** (alert below ${CFG.alertFloatBelowMon}) · vaults above ${CFG.alertVaultAboveMon} MON: ${above.length ? above.map(v => v.id).join(', ') : 'none'} · agent MON above target: ${fmt(spare)}`, '');
+L.push(`## Agent refill ${DRY ? '(dry run)' : ''}`, '', `Refiller [${short(REFILLER)}](${EXP}/address/${REFILLER}): ${res.refiller.note} · float **${res.refiller.floatBefore == null ? '?' : fmt(res.refiller.floatBefore)} → ${floatNow == null ? '?' : fmt(floatNow)} MON** (alert below ${CFG.alertFloatBelowMon}) · deployer **${res.deployerMon} MON** · auto-unpaused: ${res.unpaused.length ? res.unpaused.map(u => u.id).join(', ') : 'none'} · vaults above ${CFG.alertVaultAboveMon} MON: ${above.length ? above.map(v => v.id).join(', ') : 'none'} · agent MON above target: ${fmt(spare)}`, '');
 L.push('### Team vaults', '', '| vault | address | paused | before | after | target | result |', '|---|---|---|---:|---:|---:|---|');
 for (const v of res.vaults) L.push(`| ${v.id} | [${short(v.vault)}](${EXP}/address/${v.vault}) | ${v.paused} | ${v.before == null ? '?' : fmt(v.before)} | ${v.after == null ? '?' : fmt(v.after)} | ${fmt(v.target)} | ${v.note} |`);
 L.push('', '### Agent gas wallets', '', '| agent | address | key | before | after | sent |', '|---|---|---|---:|---:|---:|');
 for (const a of res.agents) L.push(`| ${a.id} | [${short(a.agent)}](${EXP}/address/${a.agent}) | ${a.hasKey ? 'yes' : 'no'} | ${a.before == null ? '?' : fmt(a.before)} | ${a.after == null ? '?' : fmt(a.after)} | ${fmt(a.sent)} |`);
 L.push('', '### Transactions', '');
 if (res.txs.length) for (const t of res.txs) L.push(`- ${t.id}: ${t.amountMon} MON → ${short(t.to)} · ${t.status} · [${t.hash}](${EXP}/tx/${t.hash})`); else L.push('- none');
-if (res.paused.length) L.push('', `**Paused team vaults (owner must setPaused(false)):** ${res.paused.map(p => `${p.id} ${p.vault}`).join(', ')}`);
+if (res.paused.length) L.push('', `**Still paused after auto-unpause (owner: setPaused(false)):** ${res.paused.map(p => `${p.id} ${p.vault}`).join(', ')}`);
 if (res.problems.length) L.push('', '### Problems', '', ...res.problems.map(p => `- ${p}`));
 const md = L.join('\n') + '\n';
 if (E.GITHUB_STEP_SUMMARY) fs.appendFileSync(E.GITHUB_STEP_SUMMARY, md); else console.log(md);

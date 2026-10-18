@@ -1,12 +1,17 @@
 name: daily-sweep
 run-name: "daily-sweep${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && ' (dry run)' || '' }}${{ github.event_name == 'workflow_dispatch' && inputs.max_per_agent_mon != '' && ' (capped test)' || '' }}"
-# PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED.
-# Daily cycle, GitHub-only (runner/daily-sweep.mjs): agents exit the team clip/spread pools, send MON above their target
-# (20; idle 0.5) to the hard-coded deployer, then ShowcaseRefiller.refill(true) puts vaults back to 1 MON (rogue 0.5)
-# and agents back to target. Agents never go below target, so the sweep cannot strand them.
-# Triggers: crons below (throttled by GitHub on this repo) + runner/kick-workflows.sh from the showcase loop after 04:07 UTC.
-# One real sweep per day (guard). agent-refill skips 04:00-04:50 UTC and while this runs; this waits for a running refill.
-# Never pauses or unpauses vaults. Kill switch: repo variable DAILY_SWEEP_ENABLED = 'false' (unset = enabled).
+# PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED. Agent keys only (no deployer/owner key).
+# Daily cycle, GitHub-only (runner/daily-sweep.mjs):
+#   1. agents exit the team clip/spread pools
+#   2. each agent calls sweepToOwner() on its ShowcaseAgentVault: everything above exactly 1 MON goes to the vault's
+#      immutable owner = the deployer 0xc0c4…6113 (no destination input exists); paused vaults are unpaused first
+#   3. each agent sends its own MON above target (20; idle 0.5) to the hard-coded deployer
+#   4. ShowcaseRefiller v3 refill(true): vaults back to 1 MON, agents back to target (agents never go below target)
+#   5. heartbeat: web/public/ops-status-143.json
+# Triggers: two crons + runner/kick-workflows.sh (every showcase round after 04:07 UTC) + ops-watchdog.yml (after 05:00 UTC).
+# One real sweep per UTC day (guard); everything is idempotent anyway (sweep-to-1 and top-up-to-target).
+# RPC fallback + nonce/stuck-tx handling: runner/chain-util.mjs. agent-refill skips 04:00-04:50 UTC and while this runs.
+# Never pauses vaults. Kill switch: repo variable DAILY_SWEEP_ENABLED = 'false' (unset = enabled).
 on:
   schedule:
     - cron: '7 4 * * *'
@@ -16,7 +21,7 @@ on:
       dry_run: { description: 'Simulate only (send nothing)', type: boolean, default: true }
       max_per_agent_mon: { description: 'Test cap per agent in MON (blank = full surplus)', type: string, default: '' }
       kick: { description: 'Dispatched by runner/kick-workflows.sh (treated like a scheduled run)', type: boolean, default: false }
-permissions: { contents: read, actions: read }
+permissions: { contents: write, actions: read }
 concurrency: { group: daily-sweep, cancel-in-progress: false }
 jobs:
   sweep:
@@ -48,7 +53,7 @@ jobs:
       - name: Install runner deps
         if: steps.guard.outputs.skip != 'true'
         run: cd runner && npm ci --no-audit --no-fund
-      - name: Sweep agent surplus to the deployer
+      - name: Sweep vaults (to 1 MON) and agent surplus to the deployer, then re-fund from the refiller
         if: steps.guard.outputs.skip != 'true'
         env:
           OUT: /tmp/daily-sweep.json
@@ -68,3 +73,6 @@ jobs:
           AGENT_KEY_PAYROLL3: ${{ secrets.AGENT_KEY_PAYROLL3 }}
           AGENT_KEY_ROGUE3: ${{ secrets.AGENT_KEY_ROGUE3 }}
         run: node runner/daily-sweep.mjs
+      - name: Heartbeat (web/public/ops-status-143.json)
+        if: ${{ always() && steps.guard.outputs.skip != 'true' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        run: bash runner/ops-status.sh sweep /tmp/daily-sweep.json

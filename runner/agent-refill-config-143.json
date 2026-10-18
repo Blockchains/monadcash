@@ -1,5 +1,5 @@
 {
- "note": "Public config for .github/workflows/agent-refill.yml (no keys). Steady state (sustainable mode): vaults sit at 1 MON (rogue 0.5), agents at targetMon (20 = ~1.7 days of real gas; idle \"3\" agents 0.5). ShowcaseRefiller tops both up box-free; daily-sweep returns agent MON above targetMon to the deployer. Each agent may also top up ONLY its own team vault from MON above its target. Funds can only go to the vault addresses listed here; the runner also checks on-chain that the vault owner is `owner` and its executor is `agent`, and that the key in AGENT_KEY_<ID> derives to `agent`. Changing this file is the only way to change where funds go.",
+ "note": "PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED. Box-free daily cycle: the 13 team vaults are ShowcaseAgentVaults (factory 0x7611405605a9D630f3E7F4703897FcF1Dc17f945); daily-sweep has each agent call sweepToOwner() (everything above exactly 1 MON goes to the immutable owner = deployer) and return its own MON above targetMon to the deployer, then ShowcaseRefiller v3 refill(true) tops vaults to 1 MON and agents to target. agent-refill (every 30 min) auto-unpauses vaults (agent-callable unpause), calls refill(false) and alerts on still-paused vaults, low float, low deployer, or vaults above alertVaultAboveMon. retiredVaults = the old owner-withdraw-only AgentVaults (left at 1 MON / 0.5 MON, no longer used).",
  "chainId": 143,
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "agentFloorMon": "20",
@@ -12,7 +12,7 @@
    "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
    "vaults": [
     {
-     "vault": "0xe5546Be7747b0910ba50593F91f9E00B4ACeF0e9",
+     "vault": "0x9F776CE2aCcD8e466ebbB8710a088C2004061e9f",
      "targetMon": "1"
     }
    ],
@@ -24,7 +24,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "vaults": [
     {
-     "vault": "0xD1d25BD880282CD8e87dedf3E3A9a931f21346fa",
+     "vault": "0xF75a44463d66d75C70aEEd23677FF2FA2937673F",
      "targetMon": "1"
     }
    ],
@@ -36,7 +36,7 @@
    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
    "vaults": [
     {
-     "vault": "0xBB3b9a771Ff1ee29B47424dD9eEdF93ffad08240",
+     "vault": "0xD8Bf001147e81220bB893aA3A5e01704D7F1a9E3",
      "targetMon": "1"
     }
    ],
@@ -48,8 +48,8 @@
    "agent": "0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E",
    "vaults": [
     {
-     "vault": "0x7dC5A827bF7474378F8Fb76C6a6A4B59BAd68856",
-     "targetMon": "0.5"
+     "vault": "0x8a4bbdf4d605f3e28eAAD00B54D0c51758454C3e",
+     "targetMon": "1"
     }
    ],
    "targetMon": "20"
@@ -60,7 +60,7 @@
    "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
    "vaults": [
     {
-     "vault": "0x4443b84eF9FeeD617Af02dDE996b23748374DA81",
+     "vault": "0xAd6a379B6A0635aBcb8985eca6F68C6410220903",
      "targetMon": "1"
     }
    ],
@@ -72,7 +72,7 @@
    "agent": "0x8fdaB828628F211BC10E074Fa550430cf5048462",
    "vaults": [
     {
-     "vault": "0x2C9EC710CA04771B885F3417FE2F9eA0E638Dcf6",
+     "vault": "0x83F9B56947A3515BeCDE5eEb630d120529A58F40",
      "targetMon": "1"
     }
    ],
@@ -84,7 +84,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "vaults": [
     {
-     "vault": "0x221313ad5dC798189875053deb61A8a2a5a692aE",
+     "vault": "0x485f6645FE15835Cb485a562c3DaeAB25E0EE856",
      "targetMon": "1"
     }
    ],
@@ -96,7 +96,7 @@
    "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
    "vaults": [
     {
-     "vault": "0xD8aFa3A2f9b71AE287a08CF7547526081EB543Ee",
+     "vault": "0xb4eC8cE35AEbcED38E3189045f8F0f4912B7B1CC",
      "targetMon": "1"
     }
    ],
@@ -108,7 +108,7 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "vaults": [
     {
-     "vault": "0xC17350f1d9853D0b51135FD60F176A758705C5d6",
+     "vault": "0xaacBbbAd578519D04CE65E90ca129209AD7bB597",
      "targetMon": "1"
     }
    ],
@@ -120,7 +120,7 @@
    "agent": "0x9C7B91b83Ba6326f7eD0709cb0a054D5Ae72e7e3",
    "vaults": [
     {
-     "vault": "0x039De4FcBbC519AbCB52c37e5DB789a94D93A05f",
+     "vault": "0xaE348C07c0AA69d78E0f43eBdbB840b56E79daf7",
      "targetMon": "1"
     }
    ],
@@ -132,7 +132,7 @@
    "agent": "0xFC0Db107C2a9CA6bFDfaDba807cC46B84164F26e",
    "vaults": [
     {
-     "vault": "0x52498945c1910E9CCAB4a9790B3649AF20A3D367",
+     "vault": "0x5C2DA52e249d15dd59927e209379214334F428C9",
      "targetMon": "1"
     }
    ],
@@ -144,7 +144,7 @@
    "agent": "0x3f32493215bafA3727Da5E8ae20983f8D25107a0",
    "vaults": [
     {
-     "vault": "0xFCAA9172735049D24f93db8728404b479576ddd2",
+     "vault": "0xDF0AbdB53b24Ad37811f2Cc87043fabE42d777AD",
      "targetMon": "1"
     }
    ],
@@ -156,14 +156,31 @@
    "agent": "0xf85ed50DfB220b975732dAD4038660460dad5507",
    "vaults": [
     {
-     "vault": "0xAE71468367813FF18504643d5C56C2a024C1e51c",
-     "targetMon": "0.5"
+     "vault": "0x40260dB17D4c9476314f5105EF6bbC3a1Ad46f75",
+     "targetMon": "1"
     }
    ],
    "targetMon": "0.5"
   }
  ],
- "refiller": "0x5D80E5F8a3628fd892B38D5F05864849191F87FC",
+ "refiller": "0xB5FF7b0548C03fE29D36870f0f2A6fAFf20DF0Fe",
  "alertFloatBelowMon": "110",
- "alertVaultAboveMon": "1.5"
+ "alertVaultAboveMon": "1.5",
+ "alertDeployerBelowMon": "50",
+ "vaultFactory": "0x7611405605a9D630f3E7F4703897FcF1Dc17f945",
+ "retiredVaults": {
+  "dca": "0xe5546Be7747b0910ba50593F91f9E00B4ACeF0e9",
+  "staker": "0xD1d25BD880282CD8e87dedf3E3A9a931f21346fa",
+  "payroll": "0xBB3b9a771Ff1ee29B47424dD9eEdF93ffad08240",
+  "rogue": "0x7dC5A827bF7474378F8Fb76C6a6A4B59BAd68856",
+  "dca1": "0x4443b84eF9FeeD617Af02dDE996b23748374DA81",
+  "mm": "0x2C9EC710CA04771B885F3417FE2F9eA0E638Dcf6",
+  "rebalancer": "0x221313ad5dC798189875053deb61A8a2a5a692aE",
+  "tipper": "0xD8aFa3A2f9b71AE287a08CF7547526081EB543Ee",
+  "tester": "0xC17350f1d9853D0b51135FD60F176A758705C5d6",
+  "dca3": "0x039De4FcBbC519AbCB52c37e5DB789a94D93A05f",
+  "staker3": "0x52498945c1910E9CCAB4a9790B3649AF20A3D367",
+  "payroll3": "0xFCAA9172735049D24f93db8728404b479576ddd2",
+  "rogue3": "0xAE71468367813FF18504643d5C56C2a024C1e51c"
+ }
 }

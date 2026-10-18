@@ -6,6 +6,7 @@ import {ShowcaseRefiller} from "../src/ShowcaseRefiller.sol";
 /// PolicyPilot showcase agents (operated by the team). ALPHA / UNAUDITED.
 /// Fixed config for the Monad mainnet ShowcaseRefiller: the 13 team agent wallets + 13 team vaults
 /// (same addresses as runner/agent-refill-config-143.json). Agents first so gas is served before vaults.
+/// v3 (2026-10-18): vaults are the ShowcaseAgentVaults whose agents sweepToOwner() everything above 1 MON daily.
 library ShowcaseRefillerConfig {
     address internal constant DEPLOYER = 0xc0c4E411e41bECAD6DA860F67063C2D6363a6113;
     uint256 internal constant PER_CALL_CAP = 150 ether;
@@ -29,29 +30,28 @@ library ShowcaseRefillerConfig {
             0xf85ed50DfB220b975732dAD4038660460dad5507  // rogue3
         ];
         address[13] memory vaults = [
-            0xe5546Be7747b0910ba50593F91f9E00B4ACeF0e9, // dca
-            0xD1d25BD880282CD8e87dedf3E3A9a931f21346fa, // staker
-            0xBB3b9a771Ff1ee29B47424dD9eEdF93ffad08240, // payroll
-            0x7dC5A827bF7474378F8Fb76C6a6A4B59BAd68856, // rogue (0.5)
-            0x4443b84eF9FeeD617Af02dDE996b23748374DA81, // dca1
-            0x2C9EC710CA04771B885F3417FE2F9eA0E638Dcf6, // mm
-            0x221313ad5dC798189875053deb61A8a2a5a692aE, // rebalancer
-            0xD8aFa3A2f9b71AE287a08CF7547526081EB543Ee, // tipper
-            0xC17350f1d9853D0b51135FD60F176A758705C5d6, // tester
-            0x039De4FcBbC519AbCB52c37e5DB789a94D93A05f, // dca3
-            0x52498945c1910E9CCAB4a9790B3649AF20A3D367, // staker3
-            0xFCAA9172735049D24f93db8728404b479576ddd2, // payroll3
-            0xAE71468367813FF18504643d5C56C2a024C1e51c  // rogue3 (0.5)
+            0x9F776CE2aCcD8e466ebbB8710a088C2004061e9f, // dca
+            0xF75a44463d66d75C70aEEd23677FF2FA2937673F, // staker
+            0xD8Bf001147e81220bB893aA3A5e01704D7F1a9E3, // payroll
+            0x8a4bbdf4d605f3e28eAAD00B54D0c51758454C3e, // rogue
+            0xAd6a379B6A0635aBcb8985eca6F68C6410220903, // dca1
+            0x83F9B56947A3515BeCDE5eEb630d120529A58F40, // mm
+            0x485f6645FE15835Cb485a562c3DaeAB25E0EE856, // rebalancer
+            0xb4eC8cE35AEbcED38E3189045f8F0f4912B7B1CC, // tipper
+            0xaacBbbAd578519D04CE65E90ca129209AD7bB597, // tester
+            0xaE348C07c0AA69d78E0f43eBdbB840b56E79daf7, // dca3
+            0x5C2DA52e249d15dd59927e209379214334F428C9, // staker3
+            0xDF0AbdB53b24Ad37811f2Cc87043fabE42d777AD, // payroll3
+            0x40260dB17D4c9476314f5105EF6bbC3a1Ad46f75  // rogue3
         ];
         s = new ShowcaseRefiller.Slot[](26);
         callers = new address[](13);
         for (uint256 i; i < 13; ++i) {
             // Sustainable mode (v2): agents 20 MON (~1.7 days of measured gas, refilled below 6), idle "3" agents 0.5,
-            // vaults 1 MON (refilled below 0.5), rogue vaults 0.5. The refiller never tops anything above its target.
+            // v3: the 13 ShowcaseAgentVaults (ShowcaseVaultFactory), every vault exactly 1 MON (refilled below 0.5). The refiller never tops anything above its target.
             bool idle = i >= 9; // the "3" agents are not run by showcase-agents.yml: gas dust only
             s[i] = ShowcaseRefiller.Slot(payable(agents[i]), idle ? 0.2 ether : 6 ether, idle ? 0.5 ether : 20 ether);
-            bool rogue = i == 3 || i == 12;
-            s[13 + i] = ShowcaseRefiller.Slot(payable(vaults[i]), rogue ? 0.2 ether : 0.5 ether, rogue ? 0.5 ether : 1 ether);
+            s[13 + i] = ShowcaseRefiller.Slot(payable(vaults[i]), 0.5 ether, 1 ether);
             callers[i] = agents[i];
         }
     }
