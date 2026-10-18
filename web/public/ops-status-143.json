@@ -1,5 +1,298 @@
 {
   "label": "PolicyPilot showcase agents (operated by the team)",
   "note": "ALPHA / UNAUDITED. Heartbeat of the box-free ops jobs (agent-refill every 30 min, daily-sweep once a day, ops-watchdog hourly).",
-  "updatedAt": "2026-10-18T18:19:08Z"
+  "updatedAt": "2026-10-18T18:21:11Z",
+  "deployer": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
+  "sweep": {
+    "at": "2026-10-18T18:21:11.571Z",
+    "run": "https://github.com/Blockchains/policypilot-monad/actions/runs/39153694019",
+    "event": "workflow_dispatch",
+    "txs": [
+      {
+        "id": "dca",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0xe25a602afa5de7bd63ac5df19b7dba9b4d7af6a327e7174a363e8229a7672404",
+        "status": "success"
+      },
+      {
+        "id": "staker",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0x1d81075b652156aa6cd3a2b6134d2ea54a6ad720ed53a1518071c2c16b615a3c",
+        "status": "success"
+      },
+      {
+        "id": "payroll",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0xa6499694a389637d4f24286319136b5d3ce2508f5dc0664c99beef846544ddf3",
+        "status": "success"
+      },
+      {
+        "id": "rogue",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0x4fd068a61f580bb1acb0380087cc8ed50e0f4c39803cf53d7e9d17bcfae99651",
+        "status": "success"
+      },
+      {
+        "id": "dca1",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0xea2c18dfac1ed71983b5ff5c54ebfa44fa8a4e8adb7f16c74dc402f54c8e32f3",
+        "status": "success"
+      },
+      {
+        "id": "mm",
+        "kind": "pool-exit",
+        "amountMon": "8.979179433209427084",
+        "hash": "0x54044b41e586d67f8e6225bbf579b9bc05e7b3a146ab3aaf007ae29c854dd0ca",
+        "status": "success"
+      },
+      {
+        "id": "mm",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0xab72a53821a40aa135f224ace6064d8145ec1cbae2952a8b13010f94f06b71ce",
+        "status": "success"
+      },
+      {
+        "id": "rebalancer",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0xe2a22ba1949360a89b1d8574f7f0ab829be31f86926711023ab105e1a39d6f8b",
+        "status": "success"
+      },
+      {
+        "id": "tipper",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0x550b8b0f296114a3a8dbe63dcf974f162381e4c40cd61d40185d8d7cb14e71cb",
+        "status": "success"
+      },
+      {
+        "id": "tester",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0x82903ba8ecd9a98140416d6568edd790cb316b08c459ca225fd63f4a36a5a1be",
+        "status": "success"
+      },
+      {
+        "id": "dca3",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0xa649fa540ac41594191fe73c170aa3b7963fb9672ba21aed54dd4f1c23fd9f4b",
+        "status": "success"
+      },
+      {
+        "id": "staker3",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0xfc83daeb98cea8e83c2bd3670755d60131ca0713dbcdc841fa650ca036662575",
+        "status": "success"
+      },
+      {
+        "id": "payroll3",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0xc20b6e268059e4ce39899fbdc6b5ab36de27cff9f4e7fa5e87976502bf6580b2",
+        "status": "success"
+      },
+      {
+        "id": "rogue3",
+        "kind": "vault-sweep",
+        "amountMon": "1",
+        "hash": "0x2f227b72dabd584984fffe670de28a554a3dfb4d241039357700ffab131b5d31",
+        "status": "success"
+      },
+      {
+        "id": "rebalancer",
+        "kind": "refiller.refill(true)",
+        "amountMon": "",
+        "hash": "0xd5aa8a960c1f08fab31bef53bf4703de0751dafb2055d934954f4d1eb2f2ca91",
+        "status": "success"
+      }
+    ],
+    "vaultsSweptMon": "13",
+    "deployerBefore": "482.094184461544209614",
+    "deployerAfter": "495.094184461544209614",
+    "floatBefore": "750",
+    "floatAfter": "746.09036583296071742",
+    "refill": "refill(true) by rebalancer: success",
+    "problems": [],
+    "vaults": [
+      {
+        "id": "dca",
+        "vault": "0x9F776CE2aCcD8e466ebbB8710a088C2004061e9f",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "staker",
+        "vault": "0xF75a44463d66d75C70aEEd23677FF2FA2937673F",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "payroll",
+        "vault": "0xD8Bf001147e81220bB893aA3A5e01704D7F1a9E3",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "rogue",
+        "vault": "0x8a4bbdf4d605f3e28eAAD00B54D0c51758454C3e",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "dca1",
+        "vault": "0xAd6a379B6A0635aBcb8985eca6F68C6410220903",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "mm",
+        "vault": "0x83F9B56947A3515BeCDE5eEb630d120529A58F40",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "rebalancer",
+        "vault": "0x485f6645FE15835Cb485a562c3DaeAB25E0EE856",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "tipper",
+        "vault": "0xb4eC8cE35AEbcED38E3189045f8F0f4912B7B1CC",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "tester",
+        "vault": "0xaacBbbAd578519D04CE65E90ca129209AD7bB597",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "dca3",
+        "vault": "0xaE348C07c0AA69d78E0f43eBdbB840b56E79daf7",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "staker3",
+        "vault": "0x5C2DA52e249d15dd59927e209379214334F428C9",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "payroll3",
+        "vault": "0xDF0AbdB53b24Ad37811f2Cc87043fabE42d777AD",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      },
+      {
+        "id": "rogue3",
+        "vault": "0x40260dB17D4c9476314f5105EF6bbC3a1Ad46f75",
+        "mon": "1",
+        "swept": "1",
+        "paused": false
+      }
+    ],
+    "agents": [
+      {
+        "id": "dca",
+        "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400",
+        "mon": "20",
+        "sent": "0"
+      },
+      {
+        "id": "staker",
+        "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
+        "mon": "20",
+        "sent": "0"
+      },
+      {
+        "id": "payroll",
+        "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7",
+        "mon": "20",
+        "sent": "0"
+      },
+      {
+        "id": "rogue",
+        "agent": "0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E",
+        "mon": "19.964674362",
+        "sent": "0"
+      },
+      {
+        "id": "dca1",
+        "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785",
+        "mon": "20",
+        "sent": "0"
+      },
+      {
+        "id": "mm",
+        "agent": "0x8fdaB828628F211BC10E074Fa550430cf5048462",
+        "mon": "20",
+        "sent": "0"
+      },
+      {
+        "id": "rebalancer",
+        "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
+        "mon": "20",
+        "sent": "0"
+      },
+      {
+        "id": "tipper",
+        "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007",
+        "mon": "20",
+        "sent": "0"
+      },
+      {
+        "id": "tester",
+        "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
+        "mon": "20",
+        "sent": "0"
+      },
+      {
+        "id": "dca3",
+        "agent": "0x9C7B91b83Ba6326f7eD0709cb0a054D5Ae72e7e3",
+        "mon": "0.487843962",
+        "sent": "0"
+      },
+      {
+        "id": "staker3",
+        "agent": "0xFC0Db107C2a9CA6bFDfaDba807cC46B84164F26e",
+        "mon": "0.487843962",
+        "sent": "0"
+      },
+      {
+        "id": "payroll3",
+        "agent": "0x3f32493215bafA3727Da5E8ae20983f8D25107a0",
+        "mon": "0.487843962",
+        "sent": "0"
+      },
+      {
+        "id": "rogue3",
+        "agent": "0xf85ed50DfB220b975732dAD4038660460dad5507",
+        "mon": "0.487843962",
+        "sent": "0"
+      }
+    ]
+  }
 }
