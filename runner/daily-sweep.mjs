@@ -24,6 +24,7 @@ const DRY = E.DRY_RUN === '1';
 const OUT = E.OUT || 'daily-sweep.json';
 const EXP = 'https://monadvision.com';
 const MIN_SEND = parseEther('0.1');
+const POOL_EXIT_MIN = parseEther('0.03');
 const REFILLER = getAddress(CFG.refiller); const VAULT_ALERT = parseEther(CFG.alertVaultAboveMon);
 const MAXA = E.MAX_PER_AGENT_MON && E.MAX_PER_AGENT_MON.trim() ? parseEther(E.MAX_PER_AGENT_MON.trim()) : null;
 if (getAddress(CFG.owner) !== getAddress(DEPLOYER)) throw new Error('config owner is not the hard-coded deployer: refusing');
@@ -71,6 +72,9 @@ for (const a of CFG.agents) {
     try {
       const sh = await pc.readContract({ address: pool, abi: poolAbi, functionName: 'balanceOf', args: [agent] });
       if (sh === 0n) continue;
+      // skip dust shares: an exit costs ~0.009 MON of gas, so only exit when it returns more than POOL_EXIT_MIN
+      const preview = await pc.simulateContract({ address: pool, abi: poolAbi, functionName: 'withdraw', args: [sh], account: agent }).then(x => x.result).catch(() => null);
+      if (preview != null && preview < POOL_EXIT_MIN) { log(a.id, 'pool', short(pool), 'shares worth', fmt(preview), 'MON: not worth the gas, kept'); continue; }
       if (DRY) { res.pools.push({ id: a.id, pool, dry: true }); continue; }
       const pb = await bal(pool);
       const { hash, receipt: r } = await sendData(wc, pool, encodeFunctionData({ abi: poolAbi, functionName: 'withdraw', args: [sh] }), a.id);
