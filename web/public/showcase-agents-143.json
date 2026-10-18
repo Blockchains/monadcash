@@ -10,10 +10,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-18T21:03:30.072Z",
+ "updatedAt": "2026-10-18T21:13:32.351Z",
  "totals": {
   "allowed": 2011,
-  "blocked": 873,
+  "blocked": 874,
   "ownerTxs": 31,
   "skipped": 39
  },
@@ -64,7 +64,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 563
+   "blocked": 564
   },
   {
    "id": "dca1",
@@ -128,6 +128,15 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-18T21:13:32.345Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to withdraw the vault to itself (owner-only: still reverts)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0x9fe166350e18e844ab7b3352e9694aff9c7a2a4fb25fa3fae16ee22347dd9813"
+  },
   {
    "ts": "2026-10-18T21:03:30.066Z",
    "persona": "payroll",
@@ -607,14 +616,6 @@
    "label": "Staker swaps 0.01 MON → USDC on Kuru (order book)",
    "status": "allowed",
    "tx": "0x4872169585e7176d299ba5c55a3b25b08c0b882d2df5a57d4422bb2f45106fa4"
-  },
-  {
-   "ts": "2026-10-18T18:31:42.722Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.01 MON on PancakeSwap v3",
-   "status": "allowed",
-   "tx": "0x7e3a03432bdec816b3035665611763c83218c3399c8ae23cc5322f735045a10b"
   }
  ],
  "status": "running (GitHub Actions)"
