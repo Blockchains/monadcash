@@ -10,10 +10,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-18T03:52:00.907Z",
+ "updatedAt": "2026-10-18T04:02:35.033Z",
  "totals": {
-  "allowed": 1900,
-  "blocked": 739,
+  "allowed": 1901,
+  "blocked": 740,
   "ownerTxs": 31,
   "skipped": 37
  },
@@ -76,7 +76,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 474
+   "blocked": 475
   },
   {
    "id": "dca1",
@@ -151,11 +151,196 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 136,
+   "allowed": 137,
    "blocked": 265
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-18T04:02:35.026Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester replays the requestId of its last allowed call: expects RequestAlreadyExecuted",
+   "status": "allowed",
+   "tx": "0x79088244f1ee5525ee065a4c5a3adaf91261e36d8e70c98090eb98bd76b8710b"
+  },
+  {
+   "ts": "2026-10-18T04:02:33.211Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to stake via Kintsu (not on its allowlist)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0xA3227C5969757783154C60bF0bC1944180ed81B9, 0x1c3477dd)",
+   "tx": "0x033612dc35860a3ce329676cb7775b12ef73b273bf3b6c8ccda99002f5bc3431"
+  },
+  {
+   "ts": "2026-10-18T04:02:25.750Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.523308697324393179 → 9.498464794578630833. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0xd194104166b464f96c9570929489a012c26ece1a83206dc2468b873d39a21a52"
+  },
+  {
+   "ts": "2026-10-18T04:02:24.950Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.54815165037748915 → 9.523308697324393179. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0xcf15400b949c5ee65eb7172591c9313802438f72417fe8a605a6a6c14e6576ca"
+  },
+  {
+   "ts": "2026-10-18T04:02:24.170Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.57299365373774911 → 9.54815165037748915. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x1f25c93f216b88472a1368b677b1386b76da01bd4fbc7a21e6818bf89fb69270"
+  },
+  {
+   "ts": "2026-10-18T04:02:23.389Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.597788699966538358 → 9.57299365373774911. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x4bb0cd17a0c556fd322d3e154cfce1b3bc0ed33b842eca9ac33822fe1fbdb550"
+  },
+  {
+   "ts": "2026-10-18T04:02:23.020Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.622582796491195029 → 9.597788699966538358. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x81d2ae15f480e0aa16fdaff7198eb3178ebee4fea5d4868b7a47ef72fc0f3dfd"
+  },
+  {
+   "ts": "2026-10-18T04:02:22.644Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.647375943311549484 → 9.622582796491195029. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x0d94340721c93cfca165110b499eb9c04af62df727e4b5304a077e7b0f33db45"
+  },
+  {
+   "ts": "2026-10-18T04:02:22.260Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.672168140427432084 → 9.647375943311549484. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x9477c16d6f847f024fdeeec1b3b59727d3d5f4e6fc03015d5dbb35269bd7eb85"
+  },
+  {
+   "ts": "2026-10-18T04:02:21.466Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.696959387838673189 → 9.672168140427432084. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x6b00cc24c4dab3d9d1e361fb7c1ab08ce03a047aa975ab1639c5ea80b9259e03"
+  },
+  {
+   "ts": "2026-10-18T04:02:21.096Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.721749685545103161 → 9.696959387838673189. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x5165c323948dc53a25ff9942050b1176c522428e753c7529de13cf798619455e"
+  },
+  {
+   "ts": "2026-10-18T04:02:20.312Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.74653903354655236 → 9.721749685545103161. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x9f06fca8da9b53c768bf34960753a107f479221fc2bb8a4d6cb2feb04a958348"
+  },
+  {
+   "ts": "2026-10-18T04:02:19.942Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.771281424366035393 → 9.74653903354655236. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0xfe352e3e624d8c0ac517f78c50c334506b5ea097a7cb6ba02129117a089aa2bc"
+  },
+  {
+   "ts": "2026-10-18T04:02:19.159Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.796022865469241004 → 9.771281424366035393. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x32a9b9631031e0c6046e862c4c2d36e003144a6a7f0393fefc4ab7b5cad2487a"
+  },
+  {
+   "ts": "2026-10-18T04:02:18.761Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.820763356855999551 → 9.796022865469241004. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x5804610bc3549360e9c05adb4b6db3d66a25869b8eed1b0299a60861195f2a90"
+  },
+  {
+   "ts": "2026-10-18T04:02:18.401Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.845502898526141391 → 9.820763356855999551. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0xacd33e5fff1e55c933889b79bdb3fc08a941c67c2717460468de9c4550a41332"
+  },
+  {
+   "ts": "2026-10-18T04:02:17.626Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.870241490479496882 → 9.845502898526141391. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x795c4cb9f7e1983c0ea2d9c16c5cba0173dfcc07beea916eede83d40c94c1d0a"
+  },
+  {
+   "ts": "2026-10-18T04:02:17.252Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.894979132715896381 → 9.870241490479496882. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0xea1291e148f010f772eb7ba7d7de73cabafc30d2bb068886de950030dea9b3b6"
+  },
+  {
+   "ts": "2026-10-18T04:02:16.884Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.919715825235170246 → 9.894979132715896381. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0xc8690a1fe795579a45bf054da772d7c0d29d197833995a1bfb06be820a4db378"
+  },
+  {
+   "ts": "2026-10-18T04:02:16.096Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.944405560521982123 → 9.919715825235170246. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x10dd6f5dd7b0f908acd1909686e4b746c910a63bfa4257b97df5f5144b7da5a0"
+  },
+  {
+   "ts": "2026-10-18T04:02:15.307Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.969094346080371633 → 9.944405560521982123. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x2821f0e35a7660c4be6d60200bcd3ed5775a51418c025a0f3e6f517c83543053"
+  },
+  {
+   "ts": "2026-10-18T04:02:08.764Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 10 MON across venues 1 → 0. Pool MON 10 → 9.969094346080371633. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0xd9f94cf8d4c35c4ed9e1615b229676aae2876ff37803548c991819a26a900cfb"
+  },
+  {
+   "ts": "2026-10-18T04:02:08.393Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Added 0.164756865719492842 MON so the clip pool can run the larger size",
+   "status": "topped",
+   "tx": "0x9a87dd6f527e16f071eebb5532aa96ef21394d37323bb8153604311bfaf7d96a"
+  },
   {
    "ts": "2026-10-18T03:52:00.900Z",
    "persona": "tester",
@@ -454,191 +639,6 @@
    "label": "Clipped 8 MON across venues 0 → 1. Pool MON 9.80478617520597899 → 9.777570560664182115. Gas is paid separately and can be larger than the gain.",
    "status": "captured",
    "tx": "0xb697041c79523f438b0bc90de76046ff60735b7aa0c9adb89ab47c82ee1a40af"
-  },
-  {
-   "ts": "2026-10-18T03:41:11.032Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 0 → 1. Pool MON 9.831995848970440012 → 9.80478617520597899. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x673416480c2a938c19a6c8e06fe96dec507e7f4020f7e8b123cc36146029362f"
-  },
-  {
-   "ts": "2026-10-18T03:41:10.667Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 0 → 1. Pool MON 9.859199581950925183 → 9.831995848970440012. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x98036755679919342f8d7f7d1b3b5caa4b4cdf9ff9c6f986adad46e7ecea20b9"
-  },
-  {
-   "ts": "2026-10-18T03:41:09.884Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 0 → 1. Pool MON 9.886397374140794495 → 9.859199581950925183. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x97d748e76916ee545775e98c8341aff9f0ee4d6e5747b5be7fe8989d792a2abb"
-  },
-  {
-   "ts": "2026-10-18T03:41:09.528Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 0 → 1. Pool MON 9.91358922553340793 → 9.886397374140794495. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0xa352c770e55c9e6178622d30dba83b74bf389b93dee703537c5336d1136186d4"
-  },
-  {
-   "ts": "2026-10-18T03:41:08.755Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 0 → 1. Pool MON 9.940775136122125461 → 9.91358922553340793. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x27e11990ae7a33867efddafee56650a564f4c65ceb1afb684786afa7d33f6e29"
-  },
-  {
-   "ts": "2026-10-18T03:41:08.398Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 0 → 1. Pool MON 9.96795510590030705 → 9.940775136122125461. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x7d7281fc15cb6736aef9c7e77978871a87a1724a4b6b9951b0397bb45bf33d43"
-  },
-  {
-   "ts": "2026-10-18T03:41:02.147Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 10 MON across venues 0 → 1. Pool MON 10 → 9.96795510590030705. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0xde6b9eef15744afc7ed0a9eb07da0ad79f12bbc281f0c911265532bed5ec2b38"
-  },
-  {
-   "ts": "2026-10-18T03:41:01.787Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Added 0.349963956384794789 MON so the clip pool can run the larger size",
-   "status": "topped",
-   "tx": "0x4691660edd7414da0a49e90cda8b7954a84b4df3bc7e845802a3e42661c4ff0f"
-  },
-  {
-   "ts": "2026-10-18T03:30:54.412Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester unwraps 0.001 WMON → MON (allowed)",
-   "status": "allowed",
-   "tx": "0x578a8140c7bdeb5c7827fe3a72c11b5fdb30a7519cd20ae5c679e30124da7472"
-  },
-  {
-   "ts": "2026-10-18T03:30:52.358Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
-   "status": "blocked",
-   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
-   "tx": "0xb236fe323e74979185fd08c19c7bbfe2fdd8a65f87605f5dbafeac51e5513b4f"
-  },
-  {
-   "ts": "2026-10-18T03:30:44.471Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.667369588790195289 → 9.650036043615205211. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x6e0e96d738a37cd98a18d0246b055a588c56b69b7b56a4310fe6618a5139f0a4"
-  },
-  {
-   "ts": "2026-10-18T03:30:44.094Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.684702184472708931 → 9.667369588790195289. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0xe00716694880141c3e0ed05bc63766e4837f0113853740908b3573803a247471"
-  },
-  {
-   "ts": "2026-10-18T03:30:43.305Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.702033830662576732 → 9.684702184472708931. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x0b9ccd0a15261c522bd5bd6db66edc8694dd89a215414f8eb15eaa617c1cfabe"
-  },
-  {
-   "ts": "2026-10-18T03:30:42.919Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.719364527359629288 → 9.702033830662576732. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0xaade5cb79e4d65c4a983b048214a0a331cb002552846377c27f0619c2883c5f0"
-  },
-  {
-   "ts": "2026-10-18T03:30:42.132Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.736694274563697193 → 9.719364527359629288. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0xd0ec124cedc43057998c04c1c1a4943df77e2ad84131bb341cdcf293277fff90"
-  },
-  {
-   "ts": "2026-10-18T03:30:41.353Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.754023072274611041 → 9.736694274563697193. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0xd73e1c12dadc2744a8e9cff25aab64f8a9a7c4833e93ab6e5ed24670374264b5"
-  },
-  {
-   "ts": "2026-10-18T03:30:40.567Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.771350920492201428 → 9.754023072274611041. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x4ae9e8dfb5df504304fe3c5703cd879e96a2425c663ae6c39d3a75b784abdfc2"
-  },
-  {
-   "ts": "2026-10-18T03:30:39.734Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.78863158840852726 → 9.771350920492201428. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x0c88103662c57eb2d43a40db078d34561dd8f88050cbb2b0ce4b50fa94e54411"
-  },
-  {
-   "ts": "2026-10-18T03:30:39.372Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.805911306820193003 → 9.78863158840852726. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0xc0b66910b2e08fb16ec857e1706339239e26cba12eebcf1c73a05761086cdb12"
-  },
-  {
-   "ts": "2026-10-18T03:30:38.999Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.823190075727029249 → 9.805911306820193003. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x2e2184e496bcf9ff415a90144f0cfce4e9969de25abd06f53a378611d01457d6"
-  },
-  {
-   "ts": "2026-10-18T03:30:38.170Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.84046789512886659 → 9.823190075727029249. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0xa5de810ef37fd0eb7b5f3c54116838088015a75dde0d9904da2432358fb87e5b"
-  },
-  {
-   "ts": "2026-10-18T03:30:37.797Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.857744765025535618 → 9.84046789512886659. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0xeadda28d5bc82df6273e2b8d1a24c035ac4deca4cc2ffecff4ac506e06106f9b"
-  },
-  {
-   "ts": "2026-10-18T03:30:37.426Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 8 MON across venues 1 → 0. Pool MON 9.875020685416866924 → 9.857744765025535618. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x5dfb2b897b3343ea56f57a131b1223c9728a87b31869ad35fac4a9a6f5fdeddf"
   }
  ],
  "status": "running (GitHub Actions)"
