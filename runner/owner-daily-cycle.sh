@@ -2,7 +2,7 @@
 # OWNER-SIDE half of the daily cycle. Runs ONLY where the deployer key lives (the box), never in GitHub.
 # AgentVault.withdraw()/deposit() are onlyOwner, so agents cannot do this part.
 #   runner/owner-daily-cycle.sh sweep    # every team vault: withdraw(owner, MON balance) -> deployer (never emergencyWithdrawAll, never pauses)
-#   runner/owner-daily-cycle.sh refund   # deployer: deposit() each team vault up to its target, then top agents up to AGENT_TARGET
+#   runner/owner-daily-cycle.sh refund   # deployer: plain-transfer each team vault up to its target, then top agents up to AGENT_TARGET
 #   runner/owner-daily-cycle.sh all      # sweep then refund (run ~10 min after the 04:07 UTC GitHub daily-sweep)
 # DRY_RUN=1 (default) simulates every call with eth_call --from <owner> and does NOT load the key.
 # DRY_RUN=0 loads MONAD_MAINNET_PRIVATE_KEY from OWNER_ENV (default ~/.policypilot/mainnet-wallet.env); never printed.
@@ -39,8 +39,9 @@ sweep() {
 fund() { # kind id addr target
   cur=$(eth $3); amt=$(python3 -c "print(max(0, round($4-$cur, 4)))"); ge 0.1 "$amt" && { echo "fund $1 $2: at target ($cur)"; return; }
   ob=$(eth $OWNER); ge "$(python3 -c "print($ob-$amt)")" "$RESERVE" || { echo "fund $1 $2: STOP, deployer would drop below $RESERVE MON reserve"; return; }
-  if [ "$1" = vault ]; then echo "fund vault $2 +$amt: $(tx $3 'deposit()' --value ${amt}ether)"
-  else if [ "$DRY" = 0 ]; then echo "fund agent $2 +$amt: $(cast send $3 --value ${amt}ether --private-key "$K" --rpc-url $R --json | jq -r '"\(.transactionHash) \(.status)"')"; else echo "fund agent $2 +$amt: dry-run"; fi; fi; }
+  # plain MON transfer (vault receive()), as topup.sh did: deposit() is capped at vaultCap (1 MON on v1/v2-factory vaults)
+  if [ "$DRY" = 0 ]; then echo "fund $1 $2 +$amt: $(cast send $3 --value ${amt}ether --private-key "$K" --rpc-url $R --json | jq -r '"\(.transactionHash) \(.status)"')"
+  else cast call $3 --value ${amt}ether --from $OWNER --rpc-url $R >/dev/null 2>&1 && echo "fund $1 $2 +$amt: dry-run ok" || echo "fund $1 $2 +$amt: dry-run REVERTS"; fi; }
 refund() {
   pairs | while read id v a t; do fund vault $id $v $t; done
   jq -r '.agents[]|"\(.id) \(.agent)"' $CFG | while read id a; do case "$IDLE_IDS" in *" $id "*) fund agent $id $a $IDLE_AGENT_TARGET;; *) fund agent $id $a $AGENT_TARGET;; esac; done; }
