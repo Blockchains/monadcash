@@ -1,0 +1,24 @@
+{
+  "note": "Public config for .github/workflows/agent-refill.yml (no keys). Each agent refills ONLY its own team vault from its own spare gas. Funds can only go to the vault addresses listed here; the runner also checks on-chain that the vault owner is `owner` and its executor is `agent`, and that the key in AGENT_KEY_<ID> derives to `agent`. Changing this file is the only way to change where funds go.",
+  "chainId": 143,
+  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
+  "agentFloorMon": "8",
+  "maxPerAgentPerRunMon": "10",
+  "minSendMon": "0.5",
+  "alertSpareBelowMon": "30",
+  "agents": [
+    { "id": "dca",        "secret": "AGENT_KEY_DCA",        "agent": "0xb0a6cF247de8277C087E3794f68b3Eb2901B8400", "vaults": [{ "vault": "0xe5546Be7747b0910ba50593F91f9E00B4ACeF0e9", "targetMon": "20" }] },
+    { "id": "staker",     "secret": "AGENT_KEY_STAKER",     "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d", "vaults": [{ "vault": "0xD1d25BD880282CD8e87dedf3E3A9a931f21346fa", "targetMon": "20" }] },
+    { "id": "payroll",    "secret": "AGENT_KEY_PAYROLL",    "agent": "0x313f0C1D933a8a7a136f98731fa2b35d8DfB0Bb7", "vaults": [{ "vault": "0xBB3b9a771Ff1ee29B47424dD9eEdF93ffad08240", "targetMon": "20" }] },
+    { "id": "rogue",      "secret": "AGENT_KEY_ROGUE",      "agent": "0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E", "vaults": [{ "vault": "0x7dC5A827bF7474378F8Fb76C6a6A4B59BAd68856", "targetMon": "0.5" }] },
+    { "id": "dca1",       "secret": "AGENT_KEY_DCA1",       "agent": "0xeD6148dF8A308496F90F398C06DAB0e2af80A785", "vaults": [{ "vault": "0x4443b84eF9FeeD617Af02dDE996b23748374DA81", "targetMon": "20" }] },
+    { "id": "mm",         "secret": "AGENT_KEY_MM",         "agent": "0x8fdaB828628F211BC10E074Fa550430cf5048462", "vaults": [{ "vault": "0x2C9EC710CA04771B885F3417FE2F9eA0E638Dcf6", "targetMon": "20" }] },
+    { "id": "rebalancer", "secret": "AGENT_KEY_REBALANCER", "agent": "0xC2cF684A3931143FD877F02222085713842a090E", "vaults": [{ "vault": "0x221313ad5dC798189875053deb61A8a2a5a692aE", "targetMon": "20" }] },
+    { "id": "tipper",     "secret": "AGENT_KEY_TIPPER",     "agent": "0x13EA6e579D96C7b06813f3Da6b75C82e37aFb007", "vaults": [{ "vault": "0xD8aFa3A2f9b71AE287a08CF7547526081EB543Ee", "targetMon": "20" }] },
+    { "id": "tester",     "secret": "AGENT_KEY_TESTER",     "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43", "vaults": [{ "vault": "0xC17350f1d9853D0b51135FD60F176A758705C5d6", "targetMon": "20" }] },
+    { "id": "dca3",       "secret": "AGENT_KEY_DCA3",       "agent": "0x9C7B91b83Ba6326f7eD0709cb0a054D5Ae72e7e3", "vaults": [{ "vault": "0x039De4FcBbC519AbCB52c37e5DB789a94D93A05f", "targetMon": "20" }] },
+    { "id": "staker3",    "secret": "AGENT_KEY_STAKER3",    "agent": "0xFC0Db107C2a9CA6bFDfaDba807cC46B84164F26e", "vaults": [{ "vault": "0x52498945c1910E9CCAB4a9790B3649AF20A3D367", "targetMon": "20" }] },
+    { "id": "payroll3",   "secret": "AGENT_KEY_PAYROLL3",   "agent": "0x3f32493215bafA3727Da5E8ae20983f8D25107a0", "vaults": [{ "vault": "0xFCAA9172735049D24f93db8728404b479576ddd2", "targetMon": "20" }] },
+    { "id": "rogue3",     "secret": "AGENT_KEY_ROGUE3",     "agent": "0xf85ed50DfB220b975732dAD4038660460dad5507", "vaults": [{ "vault": "0xAE71468367813FF18504643d5C56C2a024C1e51c", "targetMon": "0.5" }] }
+  ]
+}

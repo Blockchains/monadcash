@@ -1,0 +1,87 @@
+name: agent-refill
+# Agents refill their OWN team showcase vaults from their own spare gas (no deployer/owner key, no new secrets).
+# Every 30 min plus two offset backup crons (GitHub cron can lag or drop runs); the concurrency group queues runs so
+# only one ever sends at a time. Logic + safety limits: runner/agent-refill.mjs, addresses: runner/agent-refill-config-143.json
+#   - each agent tops up only its own vault(s) to the target (20 MON; rogue vaults 0.5), max 10 MON per agent per run
+#   - an agent never sends below its 8 MON gas floor (showcase clips keep 5 MON + ~1.3 MON per round of real spend)
+#   - destinations are hard-coded in the committed config and verified on-chain (owner, executor, key → agent)
+#   - never pauses, unpauses or rotates vaults. Unpause stays manual: a paused team vault, or combined agent spare gas
+#     below 30 MON, opens/updates ONE issue that mentions @Blockchains (reopened instead of duplicated)
+# Kill switch: set repo variable AGENT_REFILL_ENABLED to 'false' (unset = enabled).
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+    - cron: '11,41 * * * *'
+    - cron: '23,53 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run: { description: 'Simulate only (send nothing, no issue changes)', type: boolean, default: false }
+permissions: { contents: read, issues: write }
+concurrency: { group: agent-refill, cancel-in-progress: false }
+jobs:
+  refill:
+    if: ${{ vars.AGENT_REFILL_ENABLED != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      RPC: https://rpc.monad.xyz
+      OUT: /tmp/agent-refill.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Install runner deps
+        run: cd runner && npm ci --no-audit --no-fund
+      - name: Refill team vaults from agent spare gas
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
+          # agent executor keys only (GitHub masks secret values in logs; the script never prints them)
+          AGENT_KEY_DCA: ${{ secrets.AGENT_KEY_DCA }}
+          AGENT_KEY_STAKER: ${{ secrets.AGENT_KEY_STAKER }}
+          AGENT_KEY_PAYROLL: ${{ secrets.AGENT_KEY_PAYROLL }}
+          AGENT_KEY_ROGUE: ${{ secrets.AGENT_KEY_ROGUE }}
+          AGENT_KEY_DCA1: ${{ secrets.AGENT_KEY_DCA1 }}
+          AGENT_KEY_MM: ${{ secrets.AGENT_KEY_MM }}
+          AGENT_KEY_REBALANCER: ${{ secrets.AGENT_KEY_REBALANCER }}
+          AGENT_KEY_TIPPER: ${{ secrets.AGENT_KEY_TIPPER }}
+          AGENT_KEY_TESTER: ${{ secrets.AGENT_KEY_TESTER }}
+          AGENT_KEY_DCA3: ${{ secrets.AGENT_KEY_DCA3 }}
+          AGENT_KEY_STAKER3: ${{ secrets.AGENT_KEY_STAKER3 }}
+          AGENT_KEY_PAYROLL3: ${{ secrets.AGENT_KEY_PAYROLL3 }}
+          AGENT_KEY_ROGUE3: ${{ secrets.AGENT_KEY_ROGUE3 }}
+        run: node runner/agent-refill.mjs
+      - name: Alert issue (paused vault / low agent spare gas)
+        if: ${{ always() && !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        env: { GH_TOKEN: '${{ github.token }}', REPO: '${{ github.repository }}', RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' }
+        run: |
+          set -euo pipefail
+          TITLE='agent-refill: owner action needed (paused team vault or low agent gas)'
+          if [ -f "$OUT" ]; then
+            ACTIVE=$(jq -r '.alert.active' "$OUT"); SPARE=$(jq -r '.combinedSpareMon' "$OUT")
+            PAUSED=$(jq -r '[.paused[]|"- `\(.id)` \(.vault) is **paused** (owner: `setPaused(false)`)"]|join("\n")' "$OUT")
+            LOW=$(jq -r 'if .alert.lowSpare then "- Combined agent spare gas above the \(.floorMon) MON floor is **\(.combinedSpareMon) MON** (alert below \(.alert.thresholdMon)); agents can no longer keep the vaults topped up. The deployer must fund the agent gas wallets." else "" end' "$OUT")
+            STATE=$(jq -r '[(.paused|map(.id)|sort|join(",")), (if .alert.lowSpare then "lowspare" else "" end)]|join(";")' "$OUT")
+          else
+            ACTIVE=true; SPARE='?'; PAUSED=''; LOW='- The refill script failed before writing its result; check the run log.'; STATE=failed
+          fi
+          NUM=$(gh issue list -R "$REPO" --state all --limit 200 --json number,title,state | jq -r --arg t "$TITLE" '[.[]|select(.title==$t)]|sort_by(.number)|.[0].number // empty')
+          if [ "$ACTIVE" != "true" ]; then
+            if [ -n "$NUM" ] && [ "$(gh issue view "$NUM" -R "$REPO" --json state -q .state)" = OPEN ]; then
+              gh issue close "$NUM" -R "$REPO" --comment "Resolved: no paused team vault and combined agent spare gas is ${SPARE} MON. Run: $RUN_URL"
+            fi
+            exit 0
+          fi
+          BODY=$(printf '@Blockchains owner action needed for the PolicyPilot team showcase.\n\n%s\n%s\n\nUnpause stays manual (agent-refill never pauses, unpauses or rotates vaults).\n\nLast checked: %s\n\n<!-- agent-refill-state: %s -->\n' "$PAUSED" "$LOW" "$RUN_URL" "$STATE")
+          if [ -z "$NUM" ]; then
+            gh issue create -R "$REPO" --title "$TITLE" --body "$BODY"; exit 0
+          fi
+          OLD=$(gh issue view "$NUM" -R "$REPO" --json state,body -q '.state + "|" + .body' )
+          OLDSTATE=$(printf '%s' "$OLD" | sed -n 's/.*<!-- agent-refill-state: \(.*\) -->.*/\1/p')
+          if [ "${OLD%%|*}" != OPEN ]; then
+            gh issue reopen "$NUM" -R "$REPO"
+            gh issue edit "$NUM" -R "$REPO" --body "$BODY"
+            gh issue comment "$NUM" -R "$REPO" --body "@Blockchains reopened: owner action needed again. $RUN_URL"
+          else
+            gh issue edit "$NUM" -R "$REPO" --body "$BODY"
+            if [ "$OLDSTATE" != "$STATE" ]; then gh issue comment "$NUM" -R "$REPO" --body "@Blockchains the alert changed (${OLDSTATE:-none} → ${STATE}). $RUN_URL"; fi
+          fi
