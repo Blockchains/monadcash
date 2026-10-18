@@ -10,10 +10,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-18T19:33:01.614Z",
+ "updatedAt": "2026-10-18T19:43:03.630Z",
  "totals": {
   "allowed": 2003,
-  "blocked": 872,
+  "blocked": 873,
   "ownerTxs": 31,
   "skipped": 39
  },
@@ -64,7 +64,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 0,
-   "blocked": 562
+   "blocked": 563
   },
   {
    "id": "dca1",
@@ -128,6 +128,15 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-18T19:43:03.624Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
+   "status": "blocked",
+   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
+   "tx": "0xb537787d08a3d0183668b985f712ad799b2c66c910654738fd709ebcd7052046"
+  },
   {
    "ts": "2026-10-18T19:33:01.608Z",
    "persona": "payroll",
@@ -609,14 +618,6 @@
    "status": "blocked",
    "reason": "PerPaymentCapExceeded(500000000000000000, 100000000000000000)",
    "tx": "0x7b114795f0032af4a44b637413baedb2c08b2acb0b0c754186c9c5ac1d5329ce"
-  },
-  {
-   "ts": "2026-10-18T18:11:20.030Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker stakes 0.01 MON → sMON (Kintsu)",
-   "status": "allowed",
-   "tx": "0x76b67c37d418bf0ca0fac514559400d937ab8bf5af933316cd57ea0db6027403"
   }
  ],
  "status": "running (GitHub Actions)"
