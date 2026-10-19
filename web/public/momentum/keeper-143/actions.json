@@ -1,5 +1,136 @@
 [
  {
+  "t": 1792411555,
+  "vault": "0x6790ef0d194653c6321d42638e104ad348e997e6",
+  "owner": "0x9a4382e8c662b827cf38a1f18cb5fa07ce61ac1f",
+  "kind": "entry",
+  "slice": null,
+  "route": [
+   {
+    "route": "pcs:500",
+    "mon": 5
+   }
+  ],
+  "asset": "WETH",
+  "pos": "WETH-1",
+  "amountMon": 5,
+  "qty": "43097471936481",
+  "minOut": "42881984576798",
+  "gasMon": 0.042363558,
+  "tx": "0x0d9acda85bb00ccfe34c99eda218bc30f2f3c6a361c0a156a71aaabc641a498e",
+  "ok": true,
+  "why": "Rules v1 pass. size = min(10 MON per position, 5.0000 MON room under 50% of 10.0000 MON, 10.0000 MON free); cap 250 MON (measured depth at your 1% max cost)",
+  "gates": [
+   {
+    "id": "paused",
+    "pass": true,
+    "detail": "Not paused."
+   },
+   {
+    "id": "data",
+    "pass": true,
+    "detail": "Candles and quotes are fresh."
+   },
+   {
+    "id": "enabled",
+    "pass": true,
+    "detail": "WETH passed buy and sell testing."
+   },
+   {
+    "id": "minsize",
+    "pass": true,
+    "detail": "5 MON ≥ the 0.1 MON minimum for WETH."
+   },
+   {
+    "id": "exposure",
+    "pass": true,
+    "detail": "No open ETH position."
+   },
+   {
+    "id": "slots",
+    "pass": true,
+    "detail": "0 of 2 open."
+   },
+   {
+    "id": "cooldown",
+    "pass": true,
+    "detail": "No recent exit."
+   },
+   {
+    "id": "fresh",
+    "pass": true,
+    "detail": "Quoted 0 s ago; it expires after 30 s."
+   },
+   {
+    "id": "exit-route",
+    "pass": true,
+    "detail": "Selling it straight back would return 4.994702 MON."
+   },
+   {
+    "id": "impact",
+    "pass": true,
+    "detail": "0.053% vs the pool price (limit 0.5%)."
+   },
+   {
+    "id": "refdev",
+    "pass": true,
+    "detail": "+0.15% vs the USDC cross-rate (limit ±1.5%)."
+   },
+   {
+    "id": "roundtrip",
+    "pass": true,
+    "detail": "0.106% (your max cost 1%). Pool fees are inside this figure."
+   },
+   {
+    "id": "economical",
+    "pass": true,
+    "detail": "Swaps + gas = 1.57% of the position (target ≤ 2%)."
+   },
+   {
+    "id": "minout",
+    "pass": true,
+    "detail": "The vault reverts unless it receives at least 0.0000428820 WETH (0.5% below the quote)."
+   }
+  ]
+ },
+ {
+  "t": 1792411549,
+  "vault": "0x6790ef0d194653c6321d42638e104ad348e997e6",
+  "owner": "0x9a4382e8c662b827cf38a1f18cb5fa07ce61ac1f",
+  "kind": "opt-in",
+  "tx": "0x2cbd2e05f743335c6ec30ef990265d8e1e0f8b6f920cfab00a29c86927a24347",
+  "ok": true,
+  "why": "Owner authorised the keeper for this vault.",
+  "settings": {
+   "v": 1,
+   "a": [
+    "WETH",
+    "WBTC",
+    "cbBTC"
+   ],
+   "pos": 10,
+   "max": 2,
+   "share": 50,
+   "loss": 5,
+   "tp": 8,
+   "mode": "partial",
+   "trail": 4,
+   "hold": 168,
+   "slip": 1,
+   "entries": true,
+   "exits": true,
+   "sweep": false,
+   "keep": 0,
+   "ackCost": false,
+   "cost": 1,
+   "eng": "v2",
+   "twap": 1,
+   "split": true,
+   "atr": true,
+   "dloss": 3
+  }
+ },
+ {
   "t": 1792403894,
   "vault": "0xef3ee8739399493ae0487a9ae097d80a27f47905",
   "owner": "0xc0c4e411e41becad6da860f67063c2d6363a6113",
