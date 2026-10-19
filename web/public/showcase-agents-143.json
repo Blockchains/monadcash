@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-19T04:12:11.957Z",
+ "updatedAt": "2026-10-19T04:22:13.794Z",
  "totals": {
-  "allowed": 2051,
+  "allowed": 2052,
   "blocked": 876,
   "ownerTxs": 31,
   "skipped": 39
@@ -123,11 +123,19 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 169,
+   "allowed": 170,
    "blocked": 311
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-19T04:22:13.787Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester unwraps 0.021 WMON → MON (allowed)",
+   "status": "allowed",
+   "tx": "0xea575fa712d6a08814c5d068ff2d79a7f86dd36ddc2074f11b47ffb628459d29"
+  },
   {
    "ts": "2026-10-19T04:12:11.950Z",
    "persona": "dca",
@@ -602,15 +610,6 @@
    "label": "DCA bot buys USDC with 0.01 MON on Uniswap v3",
    "status": "allowed",
    "tx": "0x77d23f62da955709c96d126e6887b53f504dd840950f2e6e210d08fd1b9c2f82"
-  },
-  {
-   "ts": "2026-10-18T19:43:03.624Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries USDC.transfer() to itself (draining tokens)",
-   "status": "blocked",
-   "reason": "CallNotAllowed(0x754704Bc059F8C67012fEd69BC8A327a5aafb603, 0xa9059cbb)",
-   "tx": "0xb537787d08a3d0183668b985f712ad799b2c66c910654738fd709ebcd7052046"
   }
  ],
  "status": "running (GitHub Actions)"
