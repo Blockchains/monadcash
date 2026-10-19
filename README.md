@@ -1,3 +1,13 @@
+# MonadCash
+
+**Programmable USDC for You & Your Agents.**
+
+Sister project of [PolicyPilot / MonaDefi](https://github.com/Blockchains/policypilot-monad), forked with full history on 2026-10-19. The rebrand to a USDC-first product is in progress. GitHub Actions are disabled in this repo until its own keys and config exist, so it never runs the PolicyPilot on-chain jobs twice.
+
+> Alpha · unaudited contract · only deposit what you're happy to lose
+
+---
+
 # PolicyPilot (Monad) – bounded transaction execution reference implementation
 
 **Desk tape (16 Oct 2026):** [The gas limit is the trade](https://blockchains.github.io/policypilot-monad/research/) — the full Monad mainnet blotter, keywords and contracts linked, including the NADXBT fill of +0.02078 MON, the UNCLE fill of +0.01414 MON, a direct AFF hop of +0.000367 MON, and a Pancake v3 AUSD round trip of +0.001729 MON, all after gas. A wider pass found no new quote above the gas limit. The closest gross was +0.021119 MON. A follow-up requoted that cross at +0.017491 MON and sent nothing. The next set of quoters peaked at +0.019962 MON and sent nothing. Training corpus: [json](https://blockchains.github.io/policypilot-monad/research/corpus.json), [jsonl](https://blockchains.github.io/policypilot-monad/research/corpus.jsonl). Hourly public read of block, base fee, and the shMON unstake fee: [live.json](https://blockchains.github.io/policypilot-monad/research/live.json).
