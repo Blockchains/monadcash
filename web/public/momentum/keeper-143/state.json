@@ -1,5 +1,5 @@
 {
- "lastBlock": 114714122,
+ "lastBlock": 114716937,
  "vaults": {
   "0x20102e2d9d06b6682f8cee92b7e25eda015d0507": {
    "owner": "0xc0c4e411e41becad6da860f67063c2d6363a6113",
@@ -86,15 +86,26 @@
     "sweep": false,
     "keep": 0,
     "ackCost": false,
-    "cost": 1
+    "cost": 1,
+    "eng": "v1",
+    "twap": 1,
+    "split": true,
+    "atr": false,
+    "dloss": 3
    },
    "peaks": {},
    "lastExitAt": null,
-   "evBlock": 114714122,
+   "evBlock": 114716937,
    "events": [],
    "active": true,
    "failures": [],
-   "lastNote": "entry WETH: Rules v1 not met: Breaking out"
+   "lastNote": "entry WETH: Rules v1 not met: Breaking out",
+   "breaker": {
+    "pnlMon": 0,
+    "limitMon": -8.1,
+    "tripped": false
+   },
+   "twap": {}
   },
   "0x6424c728664ff749d0ea9c56ad91155d65ae9acd": {
    "owner": "0x9a4382e8c662b827cf38a1f18cb5fa07ce61ac1f",
@@ -121,15 +132,26 @@
     "sweep": true,
     "keep": 50,
     "ackCost": false,
-    "cost": 1
+    "cost": 1,
+    "eng": "v1",
+    "twap": 1,
+    "split": true,
+    "atr": false,
+    "dloss": 3
    },
    "peaks": {},
    "lastExitAt": null,
-   "evBlock": 114714122,
+   "evBlock": 114716937,
    "events": [],
    "active": true,
    "failures": [],
-   "lastNote": "entry WETH: Rules v1 not met: Breaking out | entry WBTC: Rules v1 not met: Breaking out | entry cbBTC: Rules v1 not met: Breaking out"
+   "lastNote": "entry WETH: Rules v1 not met: Breaking out | entry WBTC: Rules v1 not met: Breaking out | entry cbBTC: Rules v1 not met: Breaking out",
+   "breaker": {
+    "pnlMon": 0,
+    "limitMon": -1.5,
+    "tripped": false
+   },
+   "twap": {}
   }
  }
 }

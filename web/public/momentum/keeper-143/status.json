@@ -1,8 +1,8 @@
 {
  "product": "MonaDefi Momentum keeper",
  "keeper": "0xDC079c2c18e5AA4844fB4a62b522962205ac7ad7",
- "updated": 1792400491,
- "block": 114714122,
+ "updated": 1792401341,
+ "block": 114716937,
  "runSeconds": 3,
  "enabled": true,
  "pauses": {
@@ -14,13 +14,18 @@
  "runwayRoundTrips": 48,
  "lowGas": false,
  "caps": {
-  "maxPositionMon": 10,
+  "maxPositionMon": 250,
+  "fallbackPositionMon": 10,
   "maxOpen": 3,
   "minEntryMon": 0.1,
   "minSweepMon": 0.05,
   "entryGasFloorMon": 1,
   "exitGasFloorMon": 0.1,
-  "minHoldHours": 0.25
+  "minHoldHours": 0.25,
+  "maxSlices": 6,
+  "splitMinMon": 20,
+  "corrLimit": 0.7,
+  "corrSizeFactor": 0.5
  },
  "release": "R3 automated exits + R4 automatic entries (enabled ahead of the research gate: backtest < 60 days, anecdotal)",
  "vaults": {
@@ -51,7 +56,9 @@
    },
    "lastNote": "entry WETH: Rules v1 not met: Breaking out",
    "failures": [],
-   "lastExitAt": 1792394875
+   "lastExitAt": 1792394875,
+   "twap": {},
+   "breaker": null
   },
   "0x876c3bc9fe42ca551ed4daabe4e909c5090a0bf8": {
    "owner": "0x9a4382e8c662b827cf38a1f18cb5fa07ce61ac1f",
@@ -76,11 +83,22 @@
     "sweep": false,
     "keep": 0,
     "ackCost": false,
-    "cost": 1
+    "cost": 1,
+    "eng": "v1",
+    "twap": 1,
+    "split": true,
+    "atr": false,
+    "dloss": 3
    },
    "lastNote": "entry WETH: Rules v1 not met: Breaking out",
    "failures": [],
-   "lastExitAt": null
+   "lastExitAt": null,
+   "twap": {},
+   "breaker": {
+    "pnlMon": 0,
+    "limitMon": -8.1,
+    "tripped": false
+   }
   },
   "0x6424c728664ff749d0ea9c56ad91155d65ae9acd": {
    "owner": "0x9a4382e8c662b827cf38a1f18cb5fa07ce61ac1f",
@@ -107,11 +125,28 @@
     "sweep": true,
     "keep": 50,
     "ackCost": false,
-    "cost": 1
+    "cost": 1,
+    "eng": "v1",
+    "twap": 1,
+    "split": true,
+    "atr": false,
+    "dloss": 3
    },
    "lastNote": "entry WETH: Rules v1 not met: Breaking out | entry WBTC: Rules v1 not met: Breaking out | entry cbBTC: Rules v1 not met: Breaking out",
    "failures": [],
-   "lastExitAt": null
+   "lastExitAt": null,
+   "twap": {},
+   "breaker": {
+    "pnlMon": 0,
+    "limitMon": -1.5,
+    "tripped": false
+   }
   }
+ },
+ "heartbeat": {
+  "at": 1792401341,
+  "run": "39228664364",
+  "expectNextBy": 1792403141,
+  "note": "Runs self-chain every ~15 min; if this is older than 30 min the keeper is late (exits wait until it runs again)."
  }
 }
