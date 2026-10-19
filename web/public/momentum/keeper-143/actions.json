@@ -1,0 +1,113 @@
+[
+ {
+  "t": 1792393935,
+  "vault": "0x20102e2d9d06b6682f8cee92b7e25eda015d0507",
+  "owner": "0xc0c4e411e41becad6da860f67063c2d6363a6113",
+  "kind": "entry",
+  "asset": "WETH",
+  "pos": "WETH-1",
+  "amountMon": 0.5,
+  "qty": "4407550544593",
+  "minOut": "4385512791870",
+  "gasMon": 0.042367638,
+  "tx": "0x752cc3cc4b4c5bf388e0a0371075856fc35cd1d0a68964d034250141fd1c62ea",
+  "ok": true,
+  "why": "TEST entry on a deployer-owned test vault (rule check skipped; every cost, impact and simulation check still applies). size = min(0.5 MON per position, 1.0000 MON room under 100% of 1.0000 MON, 1.0000 MON free)",
+  "gates": [
+   {
+    "id": "paused",
+    "pass": true,
+    "detail": "Not paused."
+   },
+   {
+    "id": "data",
+    "pass": true,
+    "detail": "Candles and quotes are fresh."
+   },
+   {
+    "id": "enabled",
+    "pass": true,
+    "detail": "WETH passed buy and sell testing."
+   },
+   {
+    "id": "exposure",
+    "pass": true,
+    "detail": "No open ETH position."
+   },
+   {
+    "id": "slots",
+    "pass": true,
+    "detail": "0 of 2 open."
+   },
+   {
+    "id": "cooldown",
+    "pass": true,
+    "detail": "No recent exit."
+   },
+   {
+    "id": "fresh",
+    "pass": true,
+    "detail": "Quoted 0 s ago; it expires after 30 s."
+   },
+   {
+    "id": "exit-route",
+    "pass": true,
+    "detail": "Selling it straight back would return 0.499497 MON."
+   },
+   {
+    "id": "impact",
+    "pass": true,
+    "detail": "0.050% vs the pool price (limit 0.5%)."
+   },
+   {
+    "id": "refdev",
+    "pass": true,
+    "detail": "+0.26% vs the USDC cross-rate (limit ±1.5%)."
+   },
+   {
+    "id": "roundtrip",
+    "pass": true,
+    "detail": "0.101% (limit 1%). Pool fees are inside this figure."
+   },
+   {
+    "id": "economical",
+    "pass": false,
+    "detail": "Swaps + gas = 14.79% of the position (target ≤ 2%). Gas is a large share at this size; you can still go ahead if you tick the box."
+   },
+   {
+    "id": "minout",
+    "pass": true,
+    "detail": "The vault reverts unless it receives at least 0.00000438551 WETH (0.5% below the quote)."
+   }
+  ]
+ },
+ {
+  "t": 1792393932,
+  "vault": "0x20102e2d9d06b6682f8cee92b7e25eda015d0507",
+  "owner": "0xc0c4e411e41becad6da860f67063c2d6363a6113",
+  "kind": "opt-in",
+  "tx": "0x61a07efe03bf34c34bcd1277976d79fc2d7dd95587d5a228b4560ccb0ac06ddf",
+  "ok": true,
+  "why": "Owner authorised the keeper for this vault.",
+  "settings": {
+   "v": 1,
+   "a": [
+    "WETH"
+   ],
+   "pos": 0.5,
+   "max": 2,
+   "share": 100,
+   "loss": 5,
+   "tp": 8,
+   "mode": "partial",
+   "trail": 4,
+   "hold": 0.25,
+   "slip": 1,
+   "entries": true,
+   "exits": true,
+   "sweep": false,
+   "keep": 0,
+   "ackCost": true
+  }
+ }
+]

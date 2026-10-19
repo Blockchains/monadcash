@@ -1,0 +1,56 @@
+{
+ "product": "MonaDefi Momentum keeper",
+ "keeper": "0xDC079c2c18e5AA4844fB4a62b522962205ac7ad7",
+ "updated": 1792393935,
+ "block": 114692505,
+ "runSeconds": 3,
+ "enabled": true,
+ "pauses": {
+  "entries": false,
+  "exits": false
+ },
+ "dryRun": false,
+ "keeperMon": 3.957632,
+ "runwayRoundTrips": 49,
+ "lowGas": false,
+ "caps": {
+  "maxPositionMon": 10,
+  "maxOpen": 3,
+  "minEntryMon": 0.1,
+  "minSweepMon": 0.05,
+  "entryGasFloorMon": 1,
+  "exitGasFloorMon": 0.1,
+  "minHoldHours": 0.25
+ },
+ "release": "R3 automated exits + R4 automatic entries (enabled ahead of the research gate: backtest < 60 days, anecdotal)",
+ "vaults": {
+  "0x20102e2d9d06b6682f8cee92b7e25eda015d0507": {
+   "owner": "0xc0c4e411e41becad6da860f67063c2d6363a6113",
+   "active": true,
+   "optInTx": "0x61a07efe03bf34c34bcd1277976d79fc2d7dd95587d5a228b4560ccb0ac06ddf",
+   "settings": {
+    "v": 1,
+    "a": [
+     "WETH"
+    ],
+    "pos": 0.5,
+    "max": 2,
+    "share": 100,
+    "loss": 5,
+    "tp": 8,
+    "mode": "partial",
+    "trail": 4,
+    "hold": 0.25,
+    "slip": 1,
+    "entries": true,
+    "exits": true,
+    "sweep": false,
+    "keep": 0,
+    "ackCost": true
+   },
+   "lastNote": "",
+   "failures": [],
+   "lastExitAt": null
+  }
+ }
+}
