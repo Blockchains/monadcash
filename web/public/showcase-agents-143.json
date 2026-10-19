@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-19T07:52:01.787Z",
+ "updatedAt": "2026-10-19T08:02:04.241Z",
  "totals": {
-  "allowed": 2072,
+  "allowed": 2073,
   "blocked": 877,
   "ownerTxs": 31,
   "skipped": 39
@@ -63,7 +63,7 @@
    "agent": "0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 4,
+   "allowed": 5,
    "blocked": 566
   },
   {
@@ -128,6 +128,14 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-19T08:02:04.234Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue pays 0.01 MON to the Payroll agent (team address only; harmless now that caps are lifted)",
+   "status": "allowed",
+   "tx": "0x3337f69b675bb89c8bee95170cad0c0c73c2520ac441a754bd6de83b1e11b9c3"
+  },
   {
    "ts": "2026-10-19T07:52:01.780Z",
    "persona": "payroll",
@@ -602,14 +610,6 @@
    "label": "Tipper tips 0.01 MON to the team treasury",
    "status": "allowed",
    "tx": "0xde283741a62a78e2286b67908e56b249180099f91aee3cee288a3a325439b8aa"
-  },
-  {
-   "ts": "2026-10-18T23:24:18.845Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Clipped 0.01 MON across venues 1 → 2. Pool MON 0.010406378899026476 → 0.010556820650844641. Gas is paid separately and can be larger than the gain.",
-   "status": "captured",
-   "tx": "0x3e23a2cfa1f01430a8edbefeac87a8c2a0f42dd6f8f3e24bba0e1f4779d748da"
   }
  ],
  "status": "running (GitHub Actions)"
