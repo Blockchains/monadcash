@@ -10,10 +10,10 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-19T10:52:55.588Z",
+ "updatedAt": "2026-10-19T11:03:01.611Z",
  "totals": {
   "allowed": 2089,
-  "blocked": 878,
+  "blocked": 879,
   "ownerTxs": 31,
   "skipped": 39
  },
@@ -64,7 +64,7 @@
    "perActionCapMON": "0.01",
    "pending": false,
    "allowed": 6,
-   "blocked": 566
+   "blocked": 567
   },
   {
    "id": "dca1",
@@ -128,6 +128,23 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-19T11:03:01.604Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue tries to withdraw the vault to itself (owner-only: still reverts)",
+   "status": "blocked",
+   "reason": "NotOwner",
+   "tx": "0xe226b0673d413868eb982cf278faf6712cbbb00cd2da35da6b0ce2eb7251b67e"
+  },
+  {
+   "ts": "2026-10-19T11:02:58.620Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 0.01 MON across venues 2 → 1. Pool MON 0.010756206106641113 → 0.010786241142156593. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0xb2ba2cec1ef0d5d423a8d8029715c88b078adca50368fe71b95b1ab6f87e9774"
+  },
   {
    "ts": "2026-10-19T10:52:55.579Z",
    "persona": "payroll",
@@ -593,22 +610,6 @@
    "label": "DCA bot unwraps 0.077066334260442472 WMON → MON",
    "status": "allowed",
    "tx": "0x48b312a6ca7e4e8ae2d7b8c379ee1a9a89dbfe9c71f9b651c296c8042e97138e"
-  },
-  {
-   "ts": "2026-10-19T02:31:48.655Z",
-   "persona": "tipper",
-   "actor": "agent",
-   "label": "Tipper tips 0.01 MON to the Staker agent",
-   "status": "allowed",
-   "tx": "0x274775343cb65d3a6a245db970d309349eaebf6a088f3d0e14ec1b69df62db21"
-  },
-  {
-   "ts": "2026-10-19T02:21:46.932Z",
-   "persona": "rebalancer",
-   "actor": "agent",
-   "label": "Rebalancer wraps 0.01 MON → WMON (WMON 0.08 < target 0.5)",
-   "status": "allowed",
-   "tx": "0xb8ec0e0cf06f42e16f9f2759f81687dcdf0e5b2e647decbdbadebee9ab9feaba"
   }
  ],
  "status": "running (GitHub Actions)"
