@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-19T02:11:45.401Z",
+ "updatedAt": "2026-10-19T02:21:46.939Z",
  "totals": {
-  "allowed": 2039,
+  "allowed": 2040,
   "blocked": 876,
   "ownerTxs": 31,
   "skipped": 39
@@ -99,7 +99,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 111,
+   "allowed": 112,
    "blocked": 0
   },
   {
@@ -128,6 +128,14 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-19T02:21:46.932Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.01 MON → WMON (WMON 0.08 < target 0.5)",
+   "status": "allowed",
+   "tx": "0xb8ec0e0cf06f42e16f9f2759f81687dcdf0e5b2e647decbdbadebee9ab9feaba"
+  },
   {
    "ts": "2026-10-19T02:11:45.394Z",
    "persona": "mm",
@@ -605,14 +613,6 @@
    "label": "Clipped 0.05 MON across venues 2 → 1. Pool MON 0.05 → 0.049953159223892633. Gas is paid separately and can be larger than the gain.",
    "status": "captured",
    "tx": "0xde1325f68a214b1f3706a31ec904cf49392256f89b1fe5645b4bc154e6433a0d"
-  },
-  {
-   "ts": "2026-10-18T19:02:39.780Z",
-   "persona": "clip",
-   "actor": "runner",
-   "label": "Added 0.049943561748386442 MON so the clip pool can run the larger size",
-   "status": "topped",
-   "tx": "0x654612bb1b8b0e8f55e5eb64dcb864ca8d3f378889d2ad5f562faec986d2399c"
   }
  ],
  "status": "running (GitHub Actions)"
