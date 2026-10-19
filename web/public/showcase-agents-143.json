@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-19T02:01:44.204Z",
+ "updatedAt": "2026-10-19T02:11:45.401Z",
  "totals": {
-  "allowed": 2038,
+  "allowed": 2039,
   "blocked": 876,
   "ownerTxs": 31,
   "skipped": 39
@@ -87,7 +87,7 @@
    "agent": "0x8fdaB828628F211BC10E074Fa550430cf5048462",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 242,
+   "allowed": 243,
    "blocked": 0
   },
   {
@@ -128,6 +128,14 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-19T02:11:45.394Z",
+   "persona": "mm",
+   "actor": "agent",
+   "label": "Market maker sells 0.01 MON → USDC on Kuru (order book)",
+   "status": "allowed",
+   "tx": "0x57e4f1307b37bde564f5bec53767b537f7ba652aecb1b78feb893d12771891fc"
+  },
   {
    "ts": "2026-10-19T02:01:44.197Z",
    "persona": "dca1",
@@ -605,15 +613,6 @@
    "label": "Added 0.049943561748386442 MON so the clip pool can run the larger size",
    "status": "topped",
    "tx": "0x654612bb1b8b0e8f55e5eb64dcb864ca8d3f378889d2ad5f562faec986d2399c"
-  },
-  {
-   "ts": "2026-10-18T18:52:35.664Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester swaps on Uniswap with the output sent to itself: expects RecipientMustBeVault",
-   "status": "blocked",
-   "reason": "RecipientMustBeVault(0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43)",
-   "tx": "0x5ec49ffcba85d090cfcf935280ea527bd9150c08ed01aa513ff4467be4fd1a84"
   }
  ],
  "status": "running (GitHub Actions)"
