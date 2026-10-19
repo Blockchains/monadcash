@@ -1,9 +1,9 @@
 {
  "product": "MonaDefi Momentum keeper",
  "keeper": "0xDC079c2c18e5AA4844fB4a62b522962205ac7ad7",
- "updated": 1792411555,
- "block": 114750732,
- "runSeconds": 6,
+ "updated": 1792412410,
+ "block": 114753571,
+ "runSeconds": 4,
  "enabled": true,
  "pauses": {
   "entries": false,
@@ -13,6 +13,14 @@
  "keeperMon": 3.64763,
  "runwayRoundTrips": 45,
  "lowGas": false,
+ "gasRefill": {
+  "refiller": "0xf7d3841d68988a074e309e033484ce532018A94C",
+  "keeperMon": 3.647629576,
+  "floatMon": 15,
+  "windowLeftMon": 6,
+  "readyAt": 0,
+  "did": false
+ },
  "caps": {
   "maxPositionMon": 250,
   "fallbackPositionMon": 10,
@@ -214,21 +222,21 @@
     "atr": true,
     "dloss": 3
    },
-   "lastNote": "",
+   "lastNote": "exit WETH-1: Holding: no exit rule reached. | entry WETH: Already holding ETH exposure (one position per underlying). | entry WBTC: WBTC needs at least 10 MON per entry; size = min(10 MON per position, 50.0000 MON room under 50% of 110.0000 MON, 105.0000 MON free); cap 250 MON (measured depth at your 1% max cost); halved: returns move with WETH (corr 0.94) already held. | entry cbBTC: cbBTC needs at least 10 MON per entry; size = min(10 MON per position, 50.0000 MON room under 50% of 110.0000 MON, 105.0000 MON free); cap 250 MON (measured depth at your 1% max cost); halved: returns move with W",
    "failures": [],
    "lastExitAt": null,
    "twap": {},
    "breaker": {
-    "pnlMon": 0,
-    "limitMon": -0.3,
+    "pnlMon": -0.009226,
+    "limitMon": -3.3,
     "tripped": false
    }
   }
  },
  "heartbeat": {
-  "at": 1792411555,
-  "run": "39249367707",
-  "expectNextBy": 1792413355,
+  "at": 1792412410,
+  "run": "39251188782",
+  "expectNextBy": 1792414210,
   "note": "Runs self-chain every ~15 min; if this is older than 30 min the keeper is late (exits wait until it runs again)."
  }
 }

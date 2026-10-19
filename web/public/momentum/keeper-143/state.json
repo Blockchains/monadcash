@@ -1,5 +1,5 @@
 {
- "lastBlock": 114750732,
+ "lastBlock": 114753571,
  "vaults": {
   "0x20102e2d9d06b6682f8cee92b7e25eda015d0507": {
    "owner": "0xc0c4e411e41becad6da860f67063c2d6363a6113",
@@ -95,7 +95,7 @@
    },
    "peaks": {},
    "lastExitAt": null,
-   "evBlock": 114750732,
+   "evBlock": 114753571,
    "events": [],
    "active": true,
    "failures": [],
@@ -141,7 +141,7 @@
    },
    "peaks": {},
    "lastExitAt": null,
-   "evBlock": 114750732,
+   "evBlock": 114753571,
    "events": [],
    "active": true,
    "failures": [],
@@ -271,19 +271,35 @@
     "atr": true,
     "dloss": 3
    },
-   "peaks": {},
+   "peaks": {
+    "WETH-1": 1
+   },
    "lastExitAt": null,
-   "evBlock": 114750732,
-   "events": [],
+   "evBlock": 114753571,
+   "events": [
+    {
+     "kind": "call",
+     "block": 114750752,
+     "t": 1792411555,
+     "tx": "0x0d9acda85bb00ccfe34c99eda218bc30f2f3c6a361c0a156a71aaabc641a498e",
+     "li": "0x54",
+     "gasMon": 0.042363558,
+     "from": "0xdc079c2c18e5aa4844fb4a62b522962205ac7ad7",
+     "rid": "0x4d4f4d3101000001000000000000000000000000000000004563918244f40000",
+     "valueWei": "5000000000000000000",
+     "outAsset": "0xEE8c0E9f1BFFb4Eb878d8f15f368A02a35481242",
+     "received": "43097471936481"
+    }
+   ],
    "active": true,
    "failures": [],
    "twap": {},
    "breaker": {
-    "pnlMon": 0,
-    "limitMon": -0.3,
+    "pnlMon": -0.009226,
+    "limitMon": -3.3,
     "tripped": false
    },
-   "lastNote": ""
+   "lastNote": "exit WETH-1: Holding: no exit rule reached. | entry WETH: Already holding ETH exposure (one position per underlying). | entry WBTC: WBTC needs at least 10 MON per entry; size = min(10 MON per position, 50.0000 MON room under 50% of 110.0000 MON, 105.0000 MON free); cap 250 MON (measured depth at your 1% max cost); halved: returns move with WETH (corr 0.94) already held. | entry cbBTC: cbBTC needs at least 10 MON per entry; size = min(10 MON per position, 50.0000 MON room under 50% of 110.0000 MON, 105.0000 MON free); cap 250 MON (measured depth at your 1% max cost); halved: returns move with W"
   }
  }
 }
