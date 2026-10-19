@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-19T01:21:31.516Z",
+ "updatedAt": "2026-10-19T01:31:35.394Z",
  "totals": {
-  "allowed": 2035,
+  "allowed": 2036,
   "blocked": 875,
   "ownerTxs": 31,
   "skipped": 39
@@ -39,7 +39,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 323,
+   "allowed": 324,
    "blocked": 0
   },
   {
@@ -128,6 +128,14 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-19T01:31:35.387Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.01 MON → aprMON (aPriori)",
+   "status": "allowed",
+   "tx": "0x959c006957630fa056b95dc35dcc80e05b2bbac7584195beb26be4c968d11e5c"
+  },
   {
    "ts": "2026-10-19T01:21:31.508Z",
    "persona": "tester",
@@ -605,15 +613,6 @@
    "label": "DCA bot buys USDC with 0.01 MON on Uniswap v3",
    "status": "allowed",
    "tx": "0xd48c6e55c6d8a35b535b8197a01970e8fc2f605bc9e936e4eaa1e6fdf9331219"
-  },
-  {
-   "ts": "2026-10-18T18:52:29.829Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay 0.5 MON (50× its 0.01 per-action cap)",
-   "status": "blocked",
-   "reason": "PerPaymentCapExceeded(500000000000000000, 100000000000000000)",
-   "tx": "0xc00ef9103e458e01ca36dc6405ca644889bb6f78469fdf0bc3ffbdf8610610f6"
   }
  ],
  "status": "running (GitHub Actions)"
