@@ -1,17 +1,17 @@
 {
  "product": "MonaDefi Momentum keeper",
  "keeper": "0xDC079c2c18e5AA4844fB4a62b522962205ac7ad7",
- "updated": 1792401341,
- "block": 114716937,
- "runSeconds": 3,
+ "updated": 1792402198,
+ "block": 114719765,
+ "runSeconds": 4,
  "enabled": true,
  "pauses": {
   "entries": false,
   "exits": false
  },
  "dryRun": false,
- "keeperMon": 3.888543,
- "runwayRoundTrips": 48,
+ "keeperMon": 3.73354,
+ "runwayRoundTrips": 46,
  "lowGas": false,
  "caps": {
   "maxPositionMon": 250,
@@ -141,12 +141,52 @@
     "limitMon": -1.5,
     "tripped": false
    }
+  },
+  "0xef3ee8739399493ae0487a9ae097d80a27f47905": {
+   "owner": "0xc0c4e411e41becad6da860f67063c2d6363a6113",
+   "active": true,
+   "optInTx": "0x3a35e91f50029d0a6d9337de6de560d5ffd56113b1bb74f258d0c28fbd523f3c",
+   "settings": {
+    "v": 1,
+    "a": [
+     "WETH"
+    ],
+    "pos": 15,
+    "max": 2,
+    "share": 100,
+    "loss": 5,
+    "tp": 8,
+    "mode": "partial",
+    "trail": 4,
+    "hold": 0.25,
+    "slip": 1,
+    "entries": true,
+    "exits": true,
+    "sweep": false,
+    "keep": 0,
+    "ackCost": true,
+    "cost": 1,
+    "eng": "v1",
+    "twap": 3,
+    "split": true,
+    "atr": false,
+    "dloss": 3
+   },
+   "lastNote": "exit WETH-1: Holding: no exit rule reached. | entry WETH: Rules v1 not met: Breaking out",
+   "failures": [],
+   "lastExitAt": null,
+   "twap": {},
+   "breaker": {
+    "pnlMon": -0.012584,
+    "limitMon": -0.459,
+    "tripped": false
+   }
   }
  },
  "heartbeat": {
-  "at": 1792401341,
-  "run": "39228664364",
-  "expectNextBy": 1792403141,
+  "at": 1792402198,
+  "run": "39230450075",
+  "expectNextBy": 1792403998,
   "note": "Runs self-chain every ~15 min; if this is older than 30 min the keeper is late (exits wait until it runs again)."
  }
 }

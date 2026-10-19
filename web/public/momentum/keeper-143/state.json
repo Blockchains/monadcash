@@ -1,5 +1,5 @@
 {
- "lastBlock": 114716937,
+ "lastBlock": 114719765,
  "vaults": {
   "0x20102e2d9d06b6682f8cee92b7e25eda015d0507": {
    "owner": "0xc0c4e411e41becad6da860f67063c2d6363a6113",
@@ -95,7 +95,7 @@
    },
    "peaks": {},
    "lastExitAt": null,
-   "evBlock": 114716937,
+   "evBlock": 114719765,
    "events": [],
    "active": true,
    "failures": [],
@@ -141,7 +141,7 @@
    },
    "peaks": {},
    "lastExitAt": null,
-   "evBlock": 114716937,
+   "evBlock": 114719765,
    "events": [],
    "active": true,
    "failures": [],
@@ -152,6 +152,92 @@
     "tripped": false
    },
    "twap": {}
+  },
+  "0xef3ee8739399493ae0487a9ae097d80a27f47905": {
+   "owner": "0xc0c4e411e41becad6da860f67063c2d6363a6113",
+   "optInTx": "0x3a35e91f50029d0a6d9337de6de560d5ffd56113b1bb74f258d0c28fbd523f3c",
+   "optInBlock": 114717518,
+   "settings": {
+    "v": 1,
+    "a": [
+     "WETH"
+    ],
+    "pos": 15,
+    "max": 2,
+    "share": 100,
+    "loss": 5,
+    "tp": 8,
+    "mode": "partial",
+    "trail": 4,
+    "hold": 0.25,
+    "slip": 1,
+    "entries": true,
+    "exits": true,
+    "sweep": false,
+    "keep": 0,
+    "ackCost": true,
+    "cost": 1,
+    "eng": "v1",
+    "twap": 3,
+    "split": true,
+    "atr": false,
+    "dloss": 3
+   },
+   "peaks": {
+    "WETH-1": 1
+   },
+   "lastExitAt": null,
+   "evBlock": 114719765,
+   "events": [
+    {
+     "kind": "call",
+     "block": 114717813,
+     "t": 1792401603,
+     "tx": "0xc7c83b9c4f24df973ca4e88c920ec0440c67337b32e33bb300651cc396590ba8",
+     "li": "0x6a",
+     "gasMon": 0.078779292,
+     "from": "0xdc079c2c18e5aa4844fb4a62b522962205ac7ad7",
+     "rid": "0x4d4f4d3101000001000000000000000000000000000000004563918244f40000",
+     "valueWei": "5000000000000000000",
+     "outAsset": "0xEE8c0E9f1BFFb4Eb878d8f15f368A02a35481242",
+     "received": "43957258232689"
+    },
+    {
+     "kind": "call",
+     "block": 114717844,
+     "t": 1792401613,
+     "tx": "0xb60d6e0328de992c45ea5433e2c197ee5522435f5e357867a5df67757500040c",
+     "li": "0x50",
+     "gasMon": 0.038051304,
+     "from": "0xdc079c2c18e5aa4844fb4a62b522962205ac7ad7",
+     "rid": "0x4d4f4d3101000001000100000000000000000000000000004563918244f40000",
+     "valueWei": "5000000000000000000",
+     "outAsset": "0xEE8c0E9f1BFFb4Eb878d8f15f368A02a35481242",
+     "received": "43920911431209"
+    },
+    {
+     "kind": "call",
+     "block": 114717854,
+     "t": 1792401616,
+     "tx": "0xe3a6ae202b5eac69760bc59f320356160f6e43fbf40a04f0b1a079c298b752f2",
+     "li": "0x43",
+     "gasMon": 0.038172378,
+     "from": "0xdc079c2c18e5aa4844fb4a62b522962205ac7ad7",
+     "rid": "0x4d4f4d3101000001000200000000000000000000000000004563918244f40000",
+     "valueWei": "5000000000000000000",
+     "outAsset": "0xEE8c0E9f1BFFb4Eb878d8f15f368A02a35481242",
+     "received": "43952041699480"
+    }
+   ],
+   "active": true,
+   "failures": [],
+   "twap": {},
+   "breaker": {
+    "pnlMon": -0.012584,
+    "limitMon": -0.459,
+    "tripped": false
+   },
+   "lastNote": "exit WETH-1: Holding: no exit rule reached. | entry WETH: Rules v1 not met: Breaking out"
   }
  }
 }
