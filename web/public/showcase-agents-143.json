@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-19T03:11:58.259Z",
+ "updatedAt": "2026-10-19T03:21:59.959Z",
  "totals": {
-  "allowed": 2045,
+  "allowed": 2046,
   "blocked": 876,
   "ownerTxs": 31,
   "skipped": 39
@@ -63,7 +63,7 @@
    "agent": "0xC156C3f7384846CF9B1B05f7E9400a46Ba571c3E",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 2,
+   "allowed": 3,
    "blocked": 565
   },
   {
@@ -128,6 +128,14 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-19T03:21:59.952Z",
+   "persona": "rogue",
+   "actor": "agent",
+   "label": "Rogue pays 0.01 MON to the team treasury (team address only; harmless now that caps are lifted)",
+   "status": "allowed",
+   "tx": "0xeb3d3b510fdfeb64bc2f7141dcac9d25d17484823250e9affc9fbdaf9323192b"
+  },
   {
    "ts": "2026-10-19T03:11:58.252Z",
    "persona": "payroll",
@@ -604,14 +612,6 @@
    "label": "Rebalancer wraps 0.01 MON → WMON (WMON 0.03 < target 0.5)",
    "status": "allowed",
    "tx": "0x67ba0655ff84bf333d1d2211b6e718a1e27d4773e5079aa2ab5743d01221f642"
-  },
-  {
-   "ts": "2026-10-18T19:02:50.809Z",
-   "persona": "mm",
-   "actor": "agent",
-   "label": "Market maker buys 0.0099538722 MON with 0.000205 USDC on Kuru (order book)",
-   "status": "allowed",
-   "tx": "0x40c181cb5faf857a88f367cc64ceb14673327be64bd4cb96767bef54b016bf05"
   }
  ],
  "status": "running (GitHub Actions)"
