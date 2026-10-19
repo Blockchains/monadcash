@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-19T02:51:55.106Z",
+ "updatedAt": "2026-10-19T03:01:56.928Z",
  "totals": {
-  "allowed": 2043,
+  "allowed": 2044,
   "blocked": 876,
   "ownerTxs": 31,
   "skipped": 39
@@ -39,7 +39,7 @@
    "agent": "0xaC5FDf2c32A8F7B8060d16AfB20aD3afbBAD7c0d",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 324,
+   "allowed": 325,
    "blocked": 0
   },
   {
@@ -128,6 +128,14 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-19T03:01:56.921Z",
+   "persona": "staker",
+   "actor": "agent",
+   "label": "Staker stakes 0.01 MON → gMON (Magma)",
+   "status": "allowed",
+   "tx": "0xad519639600f37a0daf0f1db9e9a4fc59f2b909c0c3dae8f7f2c7938928fff42"
+  },
   {
    "ts": "2026-10-19T02:51:55.099Z",
    "persona": "tester",
@@ -604,15 +612,6 @@
    "label": "DCA bot buys USDC with 0.01 MON on PancakeSwap v3",
    "status": "allowed",
    "tx": "0xe65389657c26b9dee8619f408b71488f027923932d3bedc8f505f165c6750115"
-  },
-  {
-   "ts": "2026-10-18T19:02:48.229Z",
-   "persona": "rogue",
-   "actor": "agent",
-   "label": "Rogue tries to pay a stranger (0x…dEaD)",
-   "status": "blocked",
-   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
-   "tx": "0x6a1a00557a17700d5aff569632697d14fd32d5ebdb528c64b9d3a5951724ce1c"
   }
  ],
  "status": "running (GitHub Actions)"
