@@ -1,8 +1,8 @@
 {
  "product": "MonaDefi Momentum keeper",
  "keeper": "0xDC079c2c18e5AA4844fB4a62b522962205ac7ad7",
- "updated": 1792402198,
- "block": 114719765,
+ "updated": 1792403048,
+ "block": 114722576,
  "runSeconds": 4,
  "enabled": true,
  "pauses": {
@@ -10,7 +10,7 @@
   "exits": false
  },
  "dryRun": false,
- "keeperMon": 3.73354,
+ "keeperMon": 3.689993,
  "runwayRoundTrips": 46,
  "lowGas": false,
  "caps": {
@@ -172,21 +172,21 @@
     "atr": false,
     "dloss": 3
    },
-   "lastNote": "exit WETH-1: Holding: no exit rule reached. | entry WETH: Rules v1 not met: Breaking out",
+   "lastNote": "entry: An exit runs this time; entries wait for the next run.",
    "failures": [],
-   "lastExitAt": null,
+   "lastExitAt": 1792403048,
    "twap": {},
    "breaker": {
-    "pnlMon": -0.012584,
-    "limitMon": -0.459,
+    "pnlMon": 0.018448,
+    "limitMon": -0.459553,
     "tripped": false
    }
   }
  },
  "heartbeat": {
-  "at": 1792402198,
-  "run": "39230450075",
-  "expectNextBy": 1792403998,
+  "at": 1792403048,
+  "run": "39232220839",
+  "expectNextBy": 1792404848,
   "note": "Runs self-chain every ~15 min; if this is older than 30 min the keeper is late (exits wait until it runs again)."
  }
 }
