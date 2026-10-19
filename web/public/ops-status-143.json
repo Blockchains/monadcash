@@ -1,7 +1,7 @@
 {
   "label": "PolicyPilot showcase agents (operated by the team)",
   "note": "ALPHA / UNAUDITED. Heartbeat of the box-free ops jobs (agent-refill every 30 min, daily-sweep once a day, ops-watchdog hourly).",
-  "updatedAt": "2026-10-19T01:43:24Z",
+  "updatedAt": "2026-10-19T04:37:36Z",
   "deployer": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
   "sweep": {
     "at": "2026-10-18T19:02:56.975Z",
@@ -460,10 +460,14 @@
     "lastSweepOk": "2026-10-18T19:02:12Z",
     "refillConsecutiveFailures": 0,
     "sweepConsecutiveFailures": 0,
-    "actions": [],
-    "problems": [],
-    "at": "2026-10-19T01:43:24Z",
-    "run": "https://github.com/Blockchains/policypilot-monad/actions/runs/39186630694",
+    "actions": [
+      "re-dispatched agent-refill (last success 2026-10-19T01:25:25Z)"
+    ],
+    "problems": [
+      "agent-refill: no successful run for 192 min (last 2026-10-19T01:25:25Z)"
+    ],
+    "at": "2026-10-19T04:37:36Z",
+    "run": "https://github.com/Blockchains/policypilot-monad/actions/runs/39200392860",
     "event": "schedule"
   }
 }
