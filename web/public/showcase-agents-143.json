@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-19T02:41:50.275Z",
+ "updatedAt": "2026-10-19T02:51:55.106Z",
  "totals": {
-  "allowed": 2042,
+  "allowed": 2043,
   "blocked": 876,
   "ownerTxs": 31,
   "skipped": 39
@@ -123,11 +123,27 @@
    "agent": "0xA7977707cb89B1c8b56b686fC9e57184B4BB9d43",
    "perActionCapMON": "0.01",
    "pending": false,
-   "allowed": 168,
+   "allowed": 169,
    "blocked": 311
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-19T02:51:55.099Z",
+   "persona": "tester",
+   "actor": "agent",
+   "label": "Policy tester replays the requestId of an earlier call: expects RequestAlreadyExecuted",
+   "status": "allowed",
+   "tx": "0x26067742055b54c23ff17a7195508a0f4002af7ee56cfe725eb387e16b5c082e"
+  },
+  {
+   "ts": "2026-10-19T02:51:52.828Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 0.01 MON across venues 0 → 2. Pool MON 0.01055102908953842 → 0.010608198441909847. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0xa451e34a693d6de2e549e6f635e2a49f9f6d30126c24df2a091a35bf2478283f"
+  },
   {
    "ts": "2026-10-19T02:41:50.267Z",
    "persona": "dca",
@@ -597,22 +613,6 @@
    "status": "blocked",
    "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
    "tx": "0x6a1a00557a17700d5aff569632697d14fd32d5ebdb528c64b9d3a5951724ce1c"
-  },
-  {
-   "ts": "2026-10-18T19:02:47.029Z",
-   "persona": "payroll",
-   "actor": "agent",
-   "label": "Payroll pays 0.01 MON to the DCA bot (v1 vault) agent",
-   "status": "allowed",
-   "tx": "0xfdf6073a6fca8f633b2cdd751120c8ca4e88ce459c72a3171f0c939d57098631"
-  },
-  {
-   "ts": "2026-10-18T19:02:45.454Z",
-   "persona": "staker",
-   "actor": "agent",
-   "label": "Staker stakes 0.01 MON → gMON (Magma)",
-   "status": "allowed",
-   "tx": "0xa50840ce3941656db34292b19b2f8fc07e6dbe2a0036c177aa8d6bb15f0a99eb"
   }
  ],
  "status": "running (GitHub Actions)"
