@@ -10,9 +10,9 @@
  ],
  "owner": "0xc0c4E411e41bECAD6DA860F67063C2D6363a6113",
  "startedAt": "2026-10-13T11:13:51.867Z",
- "updatedAt": "2026-10-19T03:42:02.413Z",
+ "updatedAt": "2026-10-19T03:52:07.391Z",
  "totals": {
-  "allowed": 2048,
+  "allowed": 2049,
   "blocked": 876,
   "ownerTxs": 31,
   "skipped": 39
@@ -99,7 +99,7 @@
    "agent": "0xC2cF684A3931143FD877F02222085713842a090E",
    "perActionCapMON": "0.03",
    "pending": false,
-   "allowed": 112,
+   "allowed": 113,
    "blocked": 0
   },
   {
@@ -128,6 +128,22 @@
   }
  ],
  "recent": [
+  {
+   "ts": "2026-10-19T03:52:07.384Z",
+   "persona": "rebalancer",
+   "actor": "agent",
+   "label": "Rebalancer wraps 0.01 MON → WMON (WMON 0.09 < target 0.5)",
+   "status": "allowed",
+   "tx": "0x3ea53b3406793458d1d511de87a707b1a40c7337d5a9111f3bb071acb0f7e524"
+  },
+  {
+   "ts": "2026-10-19T03:52:04.971Z",
+   "persona": "clip",
+   "actor": "runner",
+   "label": "Clipped 0.01 MON across venues 0 → 2. Pool MON 0.010608198441909847 → 0.01062626850593332. Gas is paid separately and can be larger than the gain.",
+   "status": "captured",
+   "tx": "0x91285ad0dacb7183a629ec7c1f4e9ed2826c4641f99f8d5df5d1bebb2a678031"
+  },
   {
    "ts": "2026-10-19T03:42:02.406Z",
    "persona": "mm",
@@ -595,23 +611,6 @@
    "label": "Staker wraps 0.01 MON → WMON",
    "status": "allowed",
    "tx": "0xee215551c474dca36a8204ef09cf7b98ba47490668e5b494826242307ad2792c"
-  },
-  {
-   "ts": "2026-10-18T19:12:56.817Z",
-   "persona": "dca",
-   "actor": "agent",
-   "label": "DCA bot buys USDC with 0.01 MON on Uniswap v3",
-   "status": "allowed",
-   "tx": "0xe64ee79fdd8518a11b38d3b3aa417339abbfe4f6e3a56ffcfeca65431abe4077"
-  },
-  {
-   "ts": "2026-10-18T19:02:54.553Z",
-   "persona": "tester",
-   "actor": "agent",
-   "label": "Policy tester pays a stranger (0x…dEaD): expects RecipientNotAllowed",
-   "status": "blocked",
-   "reason": "RecipientNotAllowed(0x000000000000000000000000000000000000dEaD)",
-   "tx": "0x2b46fe2fd651758d33914edceac6f5b59969fa3230b0c276f792b25c0ab2c04f"
   }
  ],
  "status": "running (GitHub Actions)"
