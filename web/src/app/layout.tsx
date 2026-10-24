@@ -1,23 +1,22 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
-/** One identity on every host (monadefi.com, mona.grok.me, the GitHub Pages URL): canonical and Open Graph always point at monadefi.com. */
-const CANONICAL = 'https://monadefi.com/';
-const TITLE = 'MonaDefi · Your balance. Your rules. Put it to work.';
-const DESCRIPTION = 'Add supported funds, deploy into selected vaults, and manage partial or full withdrawals from one simple dashboard. Stay in control with clear rules, visible fees, and transparent withdrawal conditions. Built on PolicyPilot for Monad.';
+const CANONICAL = 'https://monaf.ai/';
+const TITLE = 'MONAF · Programmable money for you and your agents';
+const DESCRIPTION = 'MONAF.ai shows every vault, pool, aprMON balance and staked token this wallet owns on Monad. Withdraw, claim, or fund an agent. Your wallet signs. No promised return.';
 export const metadata: Metadata = {
-  metadataBase: new URL('https://monadefi.com'),
+  metadataBase: new URL('https://monaf.ai'),
   title: TITLE,
   description: DESCRIPTION,
-  applicationName: 'MonaDefi',
-  keywords: ['MonaDefi', 'Monad', 'vault investing', 'liquid staking', 'aprMON', 'PolicyPilot', 'MON'],
-  alternates: { canonical: CANONICAL },
-  robots: { index: true, follow: true },
-  openGraph: { title: TITLE, description: DESCRIPTION, url: CANONICAL, siteName: 'MonaDefi', type: 'website', locale: 'en_GB', images: [{ url: `https://blockchains.github.io${BP || '/policypilot-monad'}/icon-512.png`, width: 512, height: 512, alt: 'MonaDefi' }] },
+  applicationName: 'MONAF',
+  keywords: ['MONAF', 'MONAF.ai', 'Monad', 'MON', 'agent vault', 'aprMON', 'programmable money'],
+  alternates: { canonical: CANONICAL, languages: { en: CANONICAL, 'x-default': CANONICAL } },
+  robots: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: CANONICAL, siteName: 'MONAF', type: 'website', locale: 'en_GB' },
   twitter: { card: 'summary', title: TITLE, description: DESCRIPTION },
   manifest: `${BP}/manifest.webmanifest`,
-  icons: { icon: `${BP}/favicon.png`, apple: `${BP}/apple-touch-icon.png` },
-  appleWebApp: { capable: true, title: 'MonaDefi', statusBarStyle: 'black-translucent' },
+  icons: { icon: [{ url: `${BP}/favicon.svg`, type: 'image/svg+xml' }], apple: `${BP}/favicon.svg` },
+  appleWebApp: { capable: true, title: 'MONAF', statusBarStyle: 'black-translucent' },
 };
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#09090b', colorScheme: 'dark' };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
